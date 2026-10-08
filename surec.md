@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Son commit: yok · Testler: henüz yok
+Son commit: `da848eb` (Faz 0–1 başı) · Testler: 197 geçiyor
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -25,8 +25,9 @@ Son commit: yok · Testler: henüz yok
 4b. ✅ Hücre düzenleme bitti: `model/girdi.py` (girdi çözümleyici) + `Izgara` satır içi düzenleyici, Delete, Ctrl+Z/Y (55 test)
 4c. ✅ Ana pencere bitti (`ui/window.py`): yeşil başlık şeridi (+ Win11 başlık çubuğu rengi), ad kutusu, formül çubuğu, sayfa sekmeleri, durum çubuğu, yakınlaştırma (20 test)
 4d. ✅ Satır/sütun işlemleri bitti: kenardan sürükleyerek boyutlandırma (seçili tam satır/sütunlar birlikte), çift tık otomatik sığdır, ekle/sil/gizle/göster, başlık sağ tık menüsü, Ctrl+9/0 gizle, Ctrl+Shift+9/0 göster, Ctrl+−/+ sil/ekle, gizli satır/sütunlar gezinmede atlanır; hepsi geri alınır (27 test)
-4e. Faz 1 kalan — birden çok aralık (Ctrl), `####`, taşan metin, Alt+Enter, sayfa rengi, Dosya menüsü (Yeni/Çıkış dışında boş), hücre sağ tık menüsü (pano ile)
-5. Faz 1 — pano (TSV/HTML); (✅ yakınlaştırma, ✅ sayfa sıralama modeli+sekme sürükleme); Faz 1 sonu Opus gözden geçirmesi
+4e. ✅ Pano bitti: `model/pano.py` + ızgara Ctrl+C/X/V (Ctrl+Insert, Shift+Insert/Delete), kesik çizgili çerçeve, hücre sağ tık menüsü (41 test)
+4f. Faz 1 kalan — birden çok aralık (Ctrl+tık), `####`, taşan metin, Alt+Enter, sayfa rengi, Dosya menüsü (Yeni/Çıkış dışında boş); sonra Faz 1 Opus gözden geçirmesi + 100.000 hücre ölçümü (§5b)
+5. Faz 1 sonu Opus gözden geçirmesi (✅ pano, ✅ yakınlaştırma, ✅ sayfa sıralama)
 5b. **Faz 2'ye geçmeden ZORUNLU:** 100.000 hücre performans ölçümü (5.000 × 20: ilk çizim, kaydırma kare süresi < 16 ms, düzenleme, geri al, `kullanilan_aralik`, Ctrl+ok); sonuç §8'e yazılır (kullanıcı kararı 2026-10-08)
 5c. Her faz sonunda **gerçek iş senaryosu testi** (örnek bütçe/stok/not çizelgesi) ve gidiş-dönüş/regresyon denetimi
 6. Faz 2 — formül motoru çekirdeği (**Opus ile**), sonra fonksiyonlar (Sonnet)
@@ -94,6 +95,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 7 | 15 anlamlı basamak: 16+ basamaklı sayı girişi, `=0,1+0,2-0,3`, `=1*(0,5-0,4-0,1)`, karşılaştırma `=(0,1+0,2)=0,3` sonuçları | Bilinmiyor | ⏳ |
 | 8 | 1900 artık yıl hatası: `=TARİH(1900;2;29)`, `=HAFTANINGÜNÜ(1)`, `=HAFTANINGÜNÜ(59)`, `=GÜN(60)` ve `AY(60)` sonuçları | 60 = 29.2.1900 kabul | ⏳ |
 | 9 | Çok hücreli seçimde Enter, seçim içinde mi gezer? | Gezmez, aktif hücre bir aşağı (basitleştirme) | ⏳ |
+| 10 | Kopyalanan aralık, seçilen hedefin katı olmadığında (ör. 1×2 kaynak, 2×3 seçim) Excel ne yapar? Hata verir mi, sol üst köşeye mi yapıştırır? | Sol üst köşeye yapıştırır (`yapistirma_plani`) | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -167,5 +169,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Sapma: boyutlandırmada alt sınır 3 px (0'a çekince gizlemek yerine); gizleme menüden/Ctrl+9,0
 - Henüz yok: hücre aralığı seçiliyken Ctrl+−/+ ("hücreleri kaydır" diyaloğu), satır yüksekliğini metin kaydırmaya göre otomatik sığdırma (Faz 3)
 - Testler: toplam 156 geçti. Sonraki: pano (TSV/HTML) + hücre sağ tık menüsü
+
+## [2026-10-08] — Faz 1: Pano + ilk commit (Sonnet 5.5)
+- İlk commit `da848eb` (kullanıcı istedi): Faz 0 + Faz 1'in o ana kadarki işi
+- `model/gosterim.py` (`goster`, Genel biçim; grid'den taşındı), `model/pano.py` (Qt'siz): `PanoVerisi` (göreli konumlu hücreler + JSON), `pano_araligi` (tam satır/sütun seçimi kullanılan alanla sınırlanır), TSV yaz/çöz (Excel gibi tırnaklama; çok satırlı hücre, boş satır, `
+`), HTML yaz/çöz (`html.parser`, ilk tablo, colspan, `<br>`, iç içe tablo/script yoksayılır), `yapistirma_plani` (kaynağın boş hücreleri hedefi boşaltır; tek hücre/kat → seçime yayılır; sınır aşımı `AdresHatasi`)
+- Izgara: kopyala/kes/yapıştır panoya 3 biçimde yazar (düz metin TSV + HTML tablo + kendi `application/x-tabcel-hucreler` JSON'u + jeton); yapıştırırken sıra: kendi biçimimiz → HTML tablo → düz metin. Dışarıdan gelen metin hücreye elle yazılmış gibi çözülür (`girdi_coz`). **Kes**: yapıştırılana kadar yerinde kalır, yapıştırınca kaynak boşalır (kaynak+hedef tek geri al adımı, sayfalar arası da); yalnızca bir kez. Pano başka yerden değişirse (jeton eşleşmezse) işaret kalkar; Esc de kaldırır. Yapıştırılan bölge seçilir. Hücre sağ tık menüsü: Kes/Kopyala/Yapıştır/İçeriği temizle (başlık menüsüne de pano eylemleri eklendi)
+- Sapma/eksik: formül kopyalanınca **göreli başvurular kaymaz** (Faz 2'de başvuru kaydırma ile); formülün hesaplanmış değeri yokken dışarıya formül metni verilir; biçim (renk/yazı tipi) panoya Faz 3'te; "Özel Yapıştır" yok; çerçeve animasyonsuz (sabit kesik çizgi)
+- **Excel web'de doğrulanacak** (§8b'ye eklendi): çok hücreli seçime, kat olmayan boyutta kopya yapıştırınca Excel'in tam davranışı
+- Testler: toplam 197 geçti. Sonraki: çoklu aralık, `####`, taşan metin, Alt+Enter (Faz 1 kalanları)
 
 *(Yeni girişler en alta eklenir.)*

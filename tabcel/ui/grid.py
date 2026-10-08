@@ -3,31 +3,24 @@
 Bu aşamada: çizim, kaydırma, seçim, gezinme. Düzenleme sonraki adımda.
 Kaydırma çubukları hücre sırasıyla çalışır (değer = ilk görünen satır/sütun − 1), Excel gibi.
 """
+import uuid
 from typing import Dict, Iterator, Optional, Tuple
 
-from PySide6.QtCore import QEvent, QPoint, QRect, Qt, Signal
+from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
-from PySide6.QtWidgets import QAbstractScrollArea, QInputDialog, QLineEdit, QMenu
+from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QInputDialog, QLineEdit, QMenu
 
-from ..model.adres import MAX_COL, MAX_ROW, Aralik, hucre_yaz, sutun_harfe
+from ..model.adres import (
+    MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
+)
 from ..model.girdi import duzenleme_metni, girdi_coz
-from ..model.komutlar import GeriAlYigini, HucrelerDegis, OlcuDegis, SatirEkleSil, SutunEkleSil
-from ..model import olcu
+from ..model.gosterim import goster  # noqa: F401  (testler grid.goster'i de kullanır)
+from ..model.komutlar import (
+    GeriAlYigini, Grup, HucrelerDegis, OlcuDegis, SatirEkleSil, SutunEkleSil,
+)
+from ..model import olcu, pano
 from ..model.sayfa import Sayfa
 from . import theme
-
-
-def goster(deger) -> str:
-    """Geçici 'Genel' biçim: sayı Türkçe ondalık virgülüyle. Sayı biçimleri Faz 3'te."""
-    if deger is None:
-        return ""
-    if isinstance(deger, bool):
-        return "DOĞRU" if deger else "YANLIŞ"
-    if isinstance(deger, float):
-        if deger == int(deger) and abs(deger) < 1e11:
-            return str(int(deger))
-        return f"{deger:.10g}".replace(".", ",")
-    return str(deger)
 
 
 class _Duzenleyici(QLineEdit):
@@ -87,6 +80,9 @@ class Izgara(QAbstractScrollArea):
     uyari = Signal(str)                   # kullanıcıya gösterilecek iletiler
 
     TOPLU_SINIR = 20000                   # tek işlemde en çok satır/sütun (gizle, boyutlandır)
+    MIME_HUCRELER = "application/x-tabcel-hucreler"
+    MIME_JETON = "application/x-tabcel-jeton"
+    _pano_durumu: Optional[dict] = None   # tüm ızgaralarda ortak: kopyalanan/kesilen aralık
 
     SATIR_BASLIK_GENISLIGI = 46
     SUTUN_BASLIK_YUKSEKLIGI = 20
@@ -108,6 +104,7 @@ class Izgara(QAbstractScrollArea):
         self.verticalScrollBar().setRange(0, MAX_ROW - 1)
         self.horizontalScrollBar().valueChanged.connect(self._kayinca)
         self.verticalScrollBar().valueChanged.connect(self._kayinca)
+        QApplication.clipboard().dataChanged.connect(self._pano_degisti)
 
     # --- ölçüler ---
     def _z(self, v: float) -> int:
@@ -299,6 +296,10 @@ class Izgara(QAbstractScrollArea):
                         p.fillRect(x, y, g - 1, h - 1, dolgu)
         if sutunlar and satirlar:
             self._secim_cercevesi(p, sec, sutunlar, satirlar)
+        d = Izgara._pano_durumu
+        if d and d["sayfa"] is self.sayfa and sutunlar and satirlar:
+            self._secim_cercevesi(p, d["aralik"], sutunlar, satirlar,
+                                  QPen(QColor(theme.ACCENT), 2, Qt.DashLine), tek_hucre=True)
         ar = self.hucre_dikdortgeni(*self._aktif)
         if ar:
             p.setPen(QPen(QColor(theme.ACCENT), 2))
@@ -324,9 +325,9 @@ class Izgara(QAbstractScrollArea):
         yazi.setPointSizeF(max(6.0, self.font().pointSizeF() * self.yakinlastirma))
         return yazi
 
-    def _secim_cercevesi(self, p, sec, sutunlar, satirlar):
-        """Çok hücreli seçimin dış çerçevesi (görünen kısım)."""
-        if sec.ilk_satir == sec.son_satir and sec.ilk_sutun == sec.son_sutun:
+    def _secim_cercevesi(self, p, sec, sutunlar, satirlar, kalem=None, tek_hucre=False):
+        """Aralığın dış çerçevesi (görünen kısım). Seçimde yalnızca çok hücreli aralık çizilir."""
+        if not tek_hucre and sec.ilk_satir == sec.son_satir and sec.ilk_sutun == sec.son_sutun:
             return
         x1 = next((x for c, x, g in sutunlar if c >= sec.ilk_sutun), None)
         y1 = next((y for r, y, h in satirlar if r >= sec.ilk_satir), None)
@@ -334,7 +335,7 @@ class Izgara(QAbstractScrollArea):
         alt = [y + h for r, y, h in satirlar if r <= sec.son_satir]
         if None in (x1, y1) or not sag or not alt:
             return
-        p.setPen(QPen(QColor(theme.ACCENT), 2))
+        p.setPen(kalem or QPen(QColor(theme.ACCENT), 2))
         p.drawRect(QRect(x1, y1, max(sag) - x1 - 2, max(alt) - y1 - 2))
 
     def _baslik_ciz(self, p, ar: QRect, metin: str, secili: bool, izgara: QPen):
@@ -499,7 +500,7 @@ class Izgara(QAbstractScrollArea):
             self.sec(self._gizlileri_atla((self._aktif[0] + yon[0], self._aktif[1]), yon) or self._aktif)
         elif k == Qt.Key_F2:
             self.duzenle_baslat(None)
-        elif k == Qt.Key_Delete:
+        elif k == Qt.Key_Delete and not shift:
             self.secimi_temizle()
         elif k == Qt.Key_Backspace:
             self.duzenle_baslat("")
@@ -515,6 +516,14 @@ class Izgara(QAbstractScrollArea):
             self.satirlari_sil() if self._tam_satir_secimi() else self.sutunlari_sil()
         elif ctrl and k in (Qt.Key_Plus, Qt.Key_Equal) and (self._tam_satir_secimi() or self._tam_sutun_secimi()):
             self.satirlari_ekle() if self._tam_satir_secimi() else self.sutunlari_ekle()
+        elif ctrl and k == Qt.Key_C or (ctrl and k == Qt.Key_Insert):
+            self.kopyala()
+        elif ctrl and k == Qt.Key_X or (shift and k == Qt.Key_Delete):
+            self.kes()
+        elif ctrl and k == Qt.Key_V or (shift and k == Qt.Key_Insert):
+            self.yapistir()
+        elif k == Qt.Key_Escape:
+            self._pano_isareti_temizle()
         elif k == Qt.Key_Z and ctrl:
             self.geri_al()
         elif k == Qt.Key_Y and ctrl:
@@ -524,6 +533,111 @@ class Izgara(QAbstractScrollArea):
             self.duzenle_baslat(olay.text())
         else:
             super().keyPressEvent(olay)
+
+    # --- pano ---
+    def kopyala(self) -> None:
+        self._panoya_koy(kesilen=False)
+
+    def kes(self) -> None:
+        """Kes: hücreler yapıştırılana kadar yerinde kalır (Excel gibi), kesik çizgili çerçeveyle işaretlenir."""
+        self._panoya_koy(kesilen=True)
+
+    def _panoya_koy(self, kesilen: bool) -> None:
+        ar = pano.pano_araligi(self.sayfa, self.secim)
+        veri = pano.pano_verisi_al(self.sayfa, ar)
+        satirlar = pano.metin_satirlari(veri)
+        jeton = uuid.uuid4().hex
+        Izgara._pano_durumu = {"sayfa": self.sayfa, "aralik": ar, "kesildi": kesilen, "jeton": jeton}
+        md = QMimeData()
+        md.setText(pano.tsv_yaz(satirlar))
+        md.setHtml(pano.html_yaz(satirlar))
+        md.setData(self.MIME_HUCRELER, veri.json_yaz().encode("utf-8"))
+        md.setData(self.MIME_JETON, jeton.encode("ascii"))
+        QApplication.clipboard().setMimeData(md)
+        self.viewport().update()
+
+    def _pano_degisti(self) -> None:
+        """Pano başka bir uygulamadan/kopyalamadan değiştiyse işareti kaldır."""
+        d = Izgara._pano_durumu
+        if d is not None:
+            md = QApplication.clipboard().mimeData()
+            if md is None or not md.hasFormat(self.MIME_JETON) or \
+                    bytes(md.data(self.MIME_JETON)).decode("ascii") != d["jeton"]:
+                Izgara._pano_durumu = None
+        self.viewport().update()
+
+    def _pano_isareti_temizle(self) -> None:
+        if Izgara._pano_durumu is not None:
+            Izgara._pano_durumu = None
+            self.viewport().update()
+
+    def _pano_oku(self) -> Optional[pano.PanoVerisi]:
+        md = QApplication.clipboard().mimeData()
+        if md is None:
+            return None
+        try:
+            if md.hasFormat(self.MIME_HUCRELER):
+                return pano.PanoVerisi.json_oku(bytes(md.data(self.MIME_HUCRELER)).decode("utf-8"))
+            if md.hasHtml() and "<table" in md.html().lower():
+                satirlar = pano.html_tablo_coz(md.html())
+                if satirlar:
+                    return pano.metinden_pano_verisi(satirlar)
+            if md.hasText() and md.text() != "":
+                return pano.metinden_pano_verisi(pano.tsv_coz(md.text()))
+        except (ValueError, KeyError, TypeError):
+            return None
+        return None
+
+    def yapistirilabilir(self) -> bool:
+        md = QApplication.clipboard().mimeData()
+        return md is not None and (md.hasFormat(self.MIME_HUCRELER) or md.hasHtml() or md.hasText())
+
+    def yapistir(self) -> None:
+        veri = self._pano_oku()
+        if veri is None:
+            return
+        sec = self.secim
+        try:
+            plan = pano.yapistirma_plani(veri, sec.ilk_satir, sec.ilk_sutun, sec)
+        except AdresHatasi:
+            self.uyari.emit("Yapıştırılan veri sayfa sınırlarını aşıyor.")
+            return
+        komutlar = []
+        d = Izgara._pano_durumu
+        kesme = bool(d and d["kesildi"])
+        if kesme:
+            ar = d["aralik"]
+            temizle = {(r, c): None for r, c, _ in d["sayfa"].dolu_hucreler()
+                       if ar.ilk_satir <= r <= ar.son_satir and ar.ilk_sutun <= c <= ar.son_sutun}
+            if temizle:
+                komutlar.append(HucrelerDegis(d["sayfa"], temizle))
+        komutlar.append(HucrelerDegis(self.sayfa, plan))
+        self.yigin.calistir(Grup(komutlar))
+        if kesme:
+            Izgara._pano_durumu = None       # kesilen yalnızca bir kez yapıştırılır
+        satirlar = [k[0] for k in plan]
+        sutunlar = [k[1] for k in plan]
+        self.sec((min(satirlar), min(sutunlar)), (max(satirlar), max(sutunlar)))
+        self._guncelle()
+
+    # --- hücre sağ tık menüsü ---
+    def _pano_eylemleri(self, m: QMenu) -> None:
+        m.addAction("Kes", self.kes)
+        m.addAction("Kopyala", self.kopyala)
+        yap = m.addAction("Yapıştır", self.yapistir)
+        yap.setEnabled(self.yapistirilabilir())
+
+    def hucre_menusu(self, p: QPoint) -> Optional[QMenu]:
+        satir, sutun = self._noktadan(p)
+        if satir is None or sutun is None:
+            return None
+        if not aralik_icinde(self.secim, satir, sutun):
+            self.sec((satir, sutun))
+        m = QMenu(self)
+        self._pano_eylemleri(m)
+        m.addSeparator()
+        m.addAction("İçeriği temizle", self.secimi_temizle)
+        return m
 
     # --- gizli satır/sütun atlama ---
     def _gizlileri_atla(self, hedef: Tuple[int, int], yon: Tuple[int, int]):
@@ -748,6 +862,8 @@ class Izgara(QAbstractScrollArea):
             self._sutun_sec(i, False)
         sec = self.secim
         m = QMenu(self)
+        self._pano_eylemleri(m)
+        m.addSeparator()
         if satir_mi:
             m.addAction("Ekle", self.satirlari_ekle)
             m.addAction("Sil", self.satirlari_sil)
@@ -783,7 +899,7 @@ class Izgara(QAbstractScrollArea):
             self.satir_yuksekligi_ayarla(olcu.punto_px(deger))
 
     def contextMenuEvent(self, olay):
-        m = self.baslik_menusu(olay.pos())
+        m = self.baslik_menusu(olay.pos()) or self.hucre_menusu(olay.pos())
         if m:
             m.exec(olay.globalPos())
 

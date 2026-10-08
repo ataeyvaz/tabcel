@@ -23,6 +23,7 @@ def izgara(app):
     for r in range(1, 6):
         s.ata(r, 1, Hucre(float(r)))
     s.ata(10, 3, Hucre("x"))
+    Izgara._pano_durumu = None
     g = Izgara(s)
     g.resize(600, 400)
     g.show()
@@ -435,7 +436,8 @@ def test_baslik_menusu(izgara):
     d = izgara.hucre_dikdortgeni(1, 3)
     m = izgara.baslik_menusu(QPoint(d.center().x(), 5))
     metinler = [a.text() for a in m.actions() if not a.isSeparator()]
-    assert metinler == ["Ekle", "Sil", "Gizle", "Göster", "Sütun genişliği…", "Otomatik sığdır"]
+    assert metinler == ["Kes", "Kopyala", "Yapıştır", "Ekle", "Sil", "Gizle", "Göster",
+                        "Sütun genişliği…", "Otomatik sığdır"]
     assert izgara.secim.ilk_sutun == izgara.secim.son_sutun == 3     # tıklanan sütun seçildi
     goster_ = next(a for a in m.actions() if a.text() == "Göster")
     assert not goster_.isEnabled()
@@ -466,3 +468,195 @@ def test_imlec_kenarda_degisir(izgara):
     assert izgara.viewport().cursor().shape() == Qt.SplitVCursor
     izgara._imlec_guncelle(izgara.hucre_dikdortgeni(2, 2).center())
     assert izgara.viewport().cursor().shape() == Qt.ArrowCursor
+
+
+# --- pano ---
+def panoya_metin(metin):
+    from PySide6.QtCore import QMimeData
+    md = QMimeData()
+    md.setText(metin)
+    QApplication.clipboard().setMimeData(md)
+
+
+def panoya_html(html, metin=""):
+    from PySide6.QtCore import QMimeData
+    md = QMimeData()
+    md.setHtml(html)
+    if metin:
+        md.setText(metin)
+    QApplication.clipboard().setMimeData(md)
+
+
+def test_kopyala_uc_bicimde_panoya_yazar(izgara):
+    izgara.sayfa.ata(1, 2, Hucre(2.5))
+    izgara.sec((1, 1), (2, 2))
+    tus(izgara, Qt.Key_C, Qt.ControlModifier)
+    md = QApplication.clipboard().mimeData()
+    assert md.text() == "1\t2,5\r\n2\t\r\n"
+    assert "<table>" in md.html() and "2,5" in md.html()
+    assert md.hasFormat(Izgara.MIME_HUCRELER)
+    assert Izgara._pano_durumu["sayfa"] is izgara.sayfa and not Izgara._pano_durumu["kesildi"]
+
+
+def test_kopyala_yapistir_deger_ve_formul(izgara):
+    izgara.sayfa.ata(2, 2, Hucre(None, "=A1+A2"))
+    izgara.sec((1, 1), (2, 2))
+    izgara.kopyala()
+    izgara.sec((7, 3))
+    tus(izgara, Qt.Key_V, Qt.ControlModifier)
+    assert izgara.sayfa.deger(7, 3) == 1.0 and izgara.sayfa.deger(8, 3) == 2.0
+    assert izgara.sayfa.hucre(8, 4).formul == "=A1+A2"
+    assert izgara.sayfa.deger(1, 1) == 1.0                  # kaynak yerinde
+    assert izgara.secim == Aralik(7, 3, 8, 4)               # yapıştırılan bölge seçilir
+    izgara.geri_al()
+    assert izgara.sayfa.deger(7, 3) is None and izgara.sayfa.hucre(8, 4) is None
+
+
+def test_kes_yapistir_kaynagi_bosaltir_ve_tek_adimda_geri_alinir(izgara):
+    izgara.sec((1, 1), (3, 1))
+    izgara.kes()
+    assert izgara.sayfa.deger(1, 1) == 1.0                  # yapıştırana kadar yerinde
+    assert Izgara._pano_durumu["kesildi"]
+    izgara.sec((1, 5))
+    izgara.yapistir()
+    assert [izgara.sayfa.deger(r, 5) for r in (1, 2, 3)] == [1.0, 2.0, 3.0]
+    assert [izgara.sayfa.deger(r, 1) for r in (1, 2, 3)] == [None, None, None]
+    assert Izgara._pano_durumu is None                      # bir kez yapıştırılır
+    izgara.geri_al()                                        # tek adım
+    assert [izgara.sayfa.deger(r, 1) for r in (1, 2, 3)] == [1.0, 2.0, 3.0]
+    assert izgara.sayfa.deger(1, 5) is None
+    izgara.yinele()
+    assert izgara.sayfa.deger(1, 1) is None and izgara.sayfa.deger(1, 5) == 1.0
+
+
+def test_kes_ikinci_yapistirma_kaynagi_tekrar_bosaltmaz(izgara):
+    izgara.sec((1, 1))
+    izgara.kes()
+    izgara.sec((1, 5))
+    izgara.yapistir()
+    izgara.sayfa.ata(1, 1, Hucre("yeni"))
+    izgara.sec((1, 6))
+    izgara.yapistir()                                       # pano hâlâ geçerli; artık sıradan kopya
+    assert izgara.sayfa.deger(1, 6) == 1.0 and izgara.sayfa.deger(1, 1) == "yeni"
+
+
+def test_kes_ust_uste_biner_alan(izgara):
+    izgara.sec((1, 1), (3, 1))
+    izgara.kes()
+    izgara.sec((2, 1))
+    izgara.yapistir()
+    assert [izgara.sayfa.deger(r, 1) for r in (1, 2, 3, 4)] == [None, 1.0, 2.0, 3.0]
+
+
+def test_kes_sayfalar_arasi(izgara):
+    s2 = Sayfa("S2")
+    g2 = Izgara(s2, yigin=izgara.yigin)
+    izgara.sec((1, 1), (2, 1))
+    izgara.kes()
+    g2.sec((4, 4))
+    g2.yapistir()
+    assert s2.deger(4, 4) == 1.0 and s2.deger(5, 4) == 2.0
+    assert izgara.sayfa.deger(1, 1) is None
+    izgara.geri_al()                                        # ortak yığın: ikisi birden geri gelir
+    assert izgara.sayfa.deger(1, 1) == 1.0 and s2.deger(4, 4) is None
+
+
+def test_baska_kaynaktan_metin_yapistir(izgara):
+    izgara.sec((1, 1))
+    izgara.kopyala()
+    panoya_metin("Ürün\tFiyat\n\"Kalem\nİki\"\t1.234,5\n")
+    assert Izgara._pano_durumu is None                      # dış değişiklik işareti kaldırır
+    izgara.sec((10, 1))
+    izgara.yapistir()
+    assert izgara.sayfa.deger(10, 1) == "Ürün" and izgara.sayfa.deger(10, 2) == "Fiyat"
+    assert izgara.sayfa.deger(11, 1) == "Kalem\nİki"
+    assert izgara.sayfa.deger(11, 2) == 1234.5              # elle yazılmış gibi çözülür
+
+
+def test_html_tablo_yapistir(izgara):
+    panoya_html("<table><tr><td>a</td><td>1,5</td></tr><tr><td>b</td><td></td></tr></table>",
+                "yanlış\tmetin")
+    izgara.sec((10, 1))
+    izgara.yapistir()                                       # tablo varsa HTML tercih edilir
+    assert izgara.sayfa.deger(10, 1) == "a" and izgara.sayfa.deger(10, 2) == 1.5
+    assert izgara.sayfa.deger(11, 1) == "b"
+
+
+def test_tek_hucre_secime_yayilir(izgara):
+    izgara.sec((1, 1))
+    izgara.kopyala()
+    izgara.sec((10, 5), (12, 6))
+    izgara.yapistir()
+    assert all(izgara.sayfa.deger(r, c) == 1.0 for r in (10, 11, 12) for c in (5, 6))
+
+
+def test_bos_pano_yapistirma_bir_sey_yapmaz(izgara):
+    panoya_metin("")
+    izgara.sec((10, 1))
+    izgara.yapistir()
+    assert not izgara.yigin.geri_alinabilir()
+
+
+def test_yapistirma_sinir_asimi_uyari(izgara):
+    from tabcel.model.adres import MAX_ROW
+    izgara.sec((1, 1), (3, 1))
+    izgara.kopyala()
+    izgara.sec((MAX_ROW - 1, 1))
+    uyarilar = []
+    izgara.uyari.connect(uyarilar.append)
+    izgara.yapistir()
+    assert uyarilar and izgara.sayfa.deger(MAX_ROW - 1, 1) is None
+
+
+def test_tam_sutun_kopyalama_sinirli(izgara):
+    izgara._sutun_sec(1, False)
+    izgara.kopyala()
+    assert Izgara._pano_durumu["aralik"] == Aralik(1, 1, 10, 1)
+    assert QApplication.clipboard().text().count("\r\n") == 10
+
+
+def test_esc_isareti_kaldirir(izgara):
+    izgara.sec((1, 1))
+    izgara.kopyala()
+    tus(izgara, Qt.Key_Escape)
+    assert Izgara._pano_durumu is None
+
+
+def test_karinca_cercevesi_cizilir(izgara, tmp_path):
+    izgara.sec((1, 1), (3, 1))
+    izgara.kes()
+    izgara.sec((8, 8))
+    img = izgara.viewport().grab()
+    assert not img.isNull()
+
+
+def test_hucre_menusu(izgara):
+    izgara.kopyala()
+    d = izgara.hucre_dikdortgeni(4, 2)
+    m = izgara.hucre_menusu(d.center())
+    assert [a.text() for a in m.actions() if not a.isSeparator()] == \
+        ["Kes", "Kopyala", "Yapıştır", "İçeriği temizle"]
+    assert izgara.aktif == (4, 2)                           # seçim dışına tıklayınca seçilir
+    izgara.sec((1, 1), (5, 1))
+    izgara.hucre_menusu(izgara.hucre_dikdortgeni(3, 1).center())
+    assert izgara.secim == Aralik(1, 1, 5, 1)               # seçim içindeyse bozulmaz
+    assert izgara.hucre_menusu(QPoint(5, 5)) is None
+
+
+def test_hucre_menusu_temizle(izgara):
+    izgara.sec((1, 1), (2, 1))
+    m = izgara.hucre_menusu(izgara.hucre_dikdortgeni(1, 1).center())
+    next(a for a in m.actions() if a.text() == "İçeriği temizle").trigger()
+    assert izgara.sayfa.deger(1, 1) is None and izgara.sayfa.deger(2, 1) is None
+
+
+def test_duzenleyicide_ctrl_c_metin_kopyalar_ve_isareti_kaldirir(izgara):
+    izgara.sec((1, 1))
+    izgara.kopyala()
+    izgara.duzenle_baslat(None)
+    e = izgara.focusWidget()
+    e.selectAll()
+    QTest.keyClick(e, Qt.Key_C, Qt.ControlModifier)         # düzenleyicinin kendi kopyalaması
+    izgara.duzenlemeyi_bitir(False)
+    assert QApplication.clipboard().text() == "1"
+    assert Izgara._pano_durumu is None                      # hücre panosu artık geçerli değil
