@@ -43,3 +43,15 @@ def test_sifira_yuvarlanan_sifir_gosterilmez():
     t = sayiyi_sigdir(0.0004, sigar(3))
     assert t is None or t != "0"
     assert sayiyi_sigdir(0.0, sigar(1)) == "0"
+
+
+def test_hata_turkce_gosterilir():
+    from tabcel.model.deger import BASV, BOL0, DEGER_HATASI, Hata
+    assert goster(BOL0) == "#BÖL/0!" and goster(BASV) == "#BAŞV!" and goster(DEGER_HATASI) == "#DEĞER!"
+    assert goster(Hata("#BILINMEYEN")) == "#BILINMEYEN"       # tanımsız kod olduğu gibi
+
+
+def test_hata_dahil_tum_degerler_goster_icin_str_doner():
+    from tabcel.model.deger import YOK
+    for v in (None, "a", 1.5, True, YOK):
+        assert isinstance(goster(v), str)

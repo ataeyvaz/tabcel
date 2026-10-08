@@ -21,13 +21,10 @@ class HucrelerDegis:
         self.eski: Dict[Anahtar, Optional[Hucre]] = {}
 
     def yap(self) -> None:
-        self.eski = {}
-        for (s, c), h in self.yeni.items():
-            self.eski[(s, c)] = self.sayfa.ata(s, c, h)
+        self.eski = self.sayfa.toplu_yaz(self.yeni)
 
     def geri_al(self) -> None:
-        for (s, c), h in self.eski.items():
-            self.sayfa.ata(s, c, h)
+        self.sayfa.toplu_yaz(self.eski)
 
 
 class _SatirSutun:
@@ -87,9 +84,69 @@ class OlcuDegis:
         self.eski = self.sayfa.boyut_durumu()
         self.uygula(self.sayfa)
         self.yeni = self.sayfa.boyut_durumu()
+        self.sayfa.boyut_degisti()
 
     def geri_al(self) -> None:
         self.sayfa.boyut_durumu_yukle(self.eski)
+
+
+class SayfaEkle:
+    """Kitabın sonuna yeni sayfa ekler. Geri alınca sayfa (verisiyle) kitaptan çıkar; yinelenince
+    aynı nesne/kimlikle geri gelir."""
+
+    def __init__(self, kitap, ad=None):
+        self.kitap, self.ad = kitap, ad
+        self.sayfa = None
+        self.indeks = None
+
+    def yap(self) -> None:
+        if self.sayfa is None:
+            self.sayfa = self.kitap.sayfa_ekle(self.ad)
+        else:
+            self.kitap.sayfa_geri_koy(self.sayfa, self.indeks)
+
+    def geri_al(self) -> None:
+        self.indeks = self.kitap.sayfa_sil(self.sayfa)
+
+
+class SayfaSil:
+    """Sayfayı kitaptan çıkarır; nesnesi ve verisi komutta saklanır, geri alınca aynı yere döner."""
+
+    def __init__(self, kitap, sayfa):
+        self.kitap, self.sayfa = kitap, sayfa
+        self.indeks = None
+
+    def yap(self) -> None:
+        self.indeks = self.kitap.sayfa_sil(self.sayfa)
+
+    def geri_al(self) -> None:
+        self.kitap.sayfa_geri_koy(self.sayfa, self.indeks)
+
+
+class SayfaYenidenAdlandir:
+    def __init__(self, kitap, sayfa, ad: str):
+        self.kitap, self.sayfa, self.ad = kitap, sayfa, ad
+        self.eski_ad = None
+
+    def yap(self) -> None:
+        self.eski_ad = self.sayfa.ad
+        self.kitap.yeniden_adlandir(self.sayfa, self.ad)
+
+    def geri_al(self) -> None:
+        self.kitap.yeniden_adlandir(self.sayfa, self.eski_ad)
+
+
+class SayfaTasi:
+    def __init__(self, kitap, sayfa, yeni_indeks: int):
+        self.kitap, self.sayfa, self.yeni_indeks = kitap, sayfa, yeni_indeks
+        self.eski_indeks = None
+
+    def yap(self) -> None:
+        self.eski_indeks = self.kitap.sayfalar.index(self.sayfa)
+        self.kitap.sayfa_tasi(self.sayfa, self.yeni_indeks)
+
+    def geri_al(self) -> None:
+        self.kitap.sayfa_tasi(self.sayfa, self.eski_indeks)
 
 
 class Grup:

@@ -36,7 +36,8 @@ def test_aralik_disi():
 def test_kullanilan_aralik_ve_formul():
     s = Sayfa("S")
     s.ata(2, 3, H("a"))
-    s.ata(5, 1, Hucre(7.0, "=SUM(A1:A3)"))
+    s.ata(5, 1, Hucre(None, "=SUM(A1:A3)"))
+    s.sonuc_ata(5, 1, 7.0)
     assert s.kullanilan_aralik() == (2, 1, 5, 3)
     assert s.hucre(5, 1).formul == "=SUM(A1:A3)"
 
@@ -289,7 +290,7 @@ def test_k1_mantiksal_ile_sayi_esit_degil():
     assert Hucre(True) != Hucre(1.0) and Hucre(False) != Hucre(0.0)
     assert Hucre(1.0) == Hucre(1.0) and Hucre("a") == Hucre("a")
     assert Hucre(None, "=A1") == Hucre(None, "=A1") and Hucre(None, "=A1") != Hucre(None, "=A2")
-    assert Hucre(1.0, "=A1") != Hucre(1.0)
+    assert Hucre(None, "=A1") != Hucre(1.0)
     assert len({Hucre(True), Hucre(1.0), Hucre("1")}) == 3          # hash da türü ayırır
     assert Hucre(1.0) != "1.0"
 
@@ -326,3 +327,84 @@ def test_k2_komut_reddedilince_yigin_bozulmaz():
     with pytest.raises(AdresHatasi):
         y.calistir(SatirEkleSil(s, 1, 1, ekle=True))
     assert not y.geri_alinabilir() and s.deger(MAX_ROW, 1) == "son"
+
+
+# --- K4: girdi / sonuç ayrımı ---
+def test_k4_hucre_ya_sabit_ya_formul():
+    with pytest.raises(ValueError):
+        Hucre(7.0, "=A1")
+    Hucre(None, "=A1"); Hucre(7.0); Hucre()
+
+
+def test_k4_gorunen_deger_sonuctur_girdi_degil():
+    s = Sayfa("S")
+    s.ata(1, 1, H(5.0))
+    s.ata(1, 2, Hucre(None, "=A1*2"))
+    assert s.deger(1, 1) == 5.0
+    assert s.deger(1, 2) is None                               # henüz hesaplanmadı
+    s.sonuc_ata(1, 2, 10.0)
+    assert s.deger(1, 2) == 10.0 and s.sonuc(1, 2) == 10.0
+    assert s.hucre(1, 2) == Hucre(None, "=A1*2")               # girdi sonuçtan etkilenmez
+    assert [(r, c) for r, c, _ in s.dolu_hucreler()] == [(1, 1), (1, 2)]
+
+
+def test_k4_sonuc_yalniz_formul_hucresine_yazilir():
+    s = Sayfa("S")
+    s.ata(1, 1, H(5.0))
+    with pytest.raises(ValueError):
+        s.sonuc_ata(1, 1, 9.0)
+    with pytest.raises(ValueError):
+        s.sonuc_ata(7, 7, 9.0)
+
+
+def test_k4_girdi_degisince_eski_sonuc_atilir():
+    s = Sayfa("S")
+    s.ata(1, 1, Hucre(None, "=1+1"))
+    s.sonuc_ata(1, 1, 2.0)
+    s.ata(1, 1, Hucre(None, "=1+1"))                           # aynı girdi: sonuç kalır
+    assert s.sonuc(1, 1) == 2.0
+    s.ata(1, 1, Hucre(None, "=2+2"))                           # farklı formül
+    assert s.sonuc(1, 1) is None
+    s.sonuc_ata(1, 1, 4.0)
+    s.ata(1, 1, None)
+    assert s.sonuc(1, 1) is None and s.deger(1, 1) is None
+
+
+def test_k4_geri_al_yalniz_girdiyi_geri_yukler_sonuc_atilir():
+    s = Sayfa("S")
+    y = GeriAlYigini()
+    y.calistir(HucrelerDegis(s, {(1, 1): Hucre(None, "=1+1")}))
+    s.sonuc_ata(1, 1, 2.0)
+    y.calistir(HucrelerDegis(s, {(1, 1): Hucre(None, "=3+3")}))
+    s.sonuc_ata(1, 1, 6.0)
+    y.geri_al()
+    assert s.hucre(1, 1) == Hucre(None, "=1+1")
+    assert s.sonuc(1, 1) is None                               # bayat sonuç geri gelmez; motor yeniden hesaplar
+    y.geri_al()
+    assert s.hucre(1, 1) is None
+
+
+def test_k4_sonuclar_satir_ekle_sil_ile_kayar():
+    s = Sayfa("S")
+    s.ata(3, 1, Hucre(None, "=1"))
+    s.sonuc_ata(3, 1, 1.0)
+    s.ata(5, 2, Hucre(None, "=2"))
+    s.sonuc_ata(5, 2, 2.0)
+    s.satir_ekle(2, 2)
+    assert s.sonuc(5, 1) == 1.0 and s.sonuc(7, 2) == 2.0 and s.sonuc(3, 1) is None
+    s.satir_sil(5, 1)                                          # sonucu olan satır silinir
+    assert s.sonuc(5, 1) is None and s.sonuc(6, 2) == 2.0
+    s.sutun_sil(1, 1)
+    assert s.sonuc(6, 1) == 2.0
+
+
+def test_k4_hata_degeri():
+    from tabcel.model.deger import BASV, BOL0, HATALAR, Hata, hata_bul
+    assert BOL0 == Hata("#DIV/0!") and BOL0 != BASV and hash(BOL0) != hash(BASV)
+    assert hata_bul("#ref!") is BASV and hata_bul("yok") is None
+    assert len(HATALAR) == 7
+    s = Sayfa("S")
+    s.ata(1, 1, Hucre(None, "=1/0"))
+    s.sonuc_ata(1, 1, BOL0)
+    assert s.deger(1, 1) is BOL0
+    assert Hucre(None, "=1/0") != Hucre(True)

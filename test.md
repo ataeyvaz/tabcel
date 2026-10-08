@@ -82,20 +82,24 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 
 <!-- OTOMATIK:BASLA -->
 
-**Son çalıştırma: 2026-10-08 — ✅ 259/259 test geçti, 0 olumsuz** (süre ≈ 2.5 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
+**Son çalıştırma: 2026-10-08 — ✅ 322/322 test geçti, 0 olumsuz** (süre ≈ 3.1 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
 
 | Dosya | Kapsam | Test | ✅ Olumlu | ❌ Olumsuz |
 |---|---|---|---|---|
 | `test_adres.py` | Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576) | 26 | 26 | 0 |
 | `test_girdi.py` | Girdi çözümleyici: yazılan metin → sayı/mantıksal/formül/metin (Türkçe yerel ayar) | 42 | 42 | 0 |
-| `test_gosterim.py` | Genel sayı biçimi ve sığdırma (####, bilimsel) | 6 | 6 | 0 |
+| `test_gosterim.py` | Genel sayı biçimi ve sığdırma (####, bilimsel) | 8 | 8 | 0 |
 | `test_iskelet.py` | Proje iskeleti: ad/sürüm sabiti, kaynak klasörü, model/formül paketlerinin Qt'siz olması | 3 | 3 | 0 |
 | `test_izgara.py` | Izgara arayüzü: çizim, gezinme, seçim, düzenleme, boyutlandırma, gizleme, pano, taşan metin, çoklu aralık, artımlı kaydırma | 108 | 108 | 0 |
+| `test_olay.py` |  | 18 | 18 | 0 |
 | `test_olcu.py` | Excel ölçü birimleri: karakter/punto ⇄ piksel | 3 | 3 | 0 |
-| `test_pano.py` | Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı | 24 | 24 | 0 |
+| `test_pano.py` | Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı | 25 | 25 | 0 |
 | `test_pencere.py` | Ana pencere: ad kutusu, formül çubuğu, durum çubuğu, sayfa sekmeleri, yakınlaştırma | 21 | 21 | 0 |
-| `test_sayfa.py` | Veri modeli: seyrek sayfa, satır/sütun ekle-sil, geri al yığını, sayfa adı kuralları, gizleme, kullanılan aralık önbelleği | 26 | 26 | 0 |
-| **Toplam** | | **259** | **259** | **0** |
+| `test_pencere_sayfa.py` |  | 16 | 16 | 0 |
+| `test_sayfa.py` | Veri modeli: seyrek sayfa, satır/sütun ekle-sil, geri al yığını, sayfa adı kuralları, gizleme, kullanılan aralık önbelleği | 33 | 33 | 0 |
+| `test_sayfa_komutlari.py` |  | 7 | 7 | 0 |
+| `test_toplu_ve_sonuc.py` |  | 12 | 12 | 0 |
+| **Toplam** | | **322** | **322** | **0** |
 
 ### `testler/test_adres.py` — 26/26 ✅
 *Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576)*
@@ -173,7 +177,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ duzenleme gidis donus `[hucre14]
 - ✅ duzenleme metni bicimi
 
-### `testler/test_gosterim.py` — 6/6 ✅
+### `testler/test_gosterim.py` — 8/8 ✅
 *Genel sayı biçimi ve sığdırma (####, bilimsel)*
 
 - ✅ goster genel
@@ -182,6 +186,8 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ tam kisim yuvarlanamazsa bilimsel
 - ✅ hic sigmazsa none
 - ✅ sifira yuvarlanan sifir gosterilmez
+- ✅ hata turkce gosterilir
+- ✅ hata dahil tum degerler goster icin str doner
 
 ### `testler/test_iskelet.py` — 3/3 ✅
 *Proje iskeleti: ad/sürüm sabiti, kaynak klasörü, model/formül paketlerinin Qt'siz olması*
@@ -302,6 +308,28 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ k3 geri al pano isaretini iptal eder
 - ✅ koru odak kaybinda sifirlanir
 
+### `testler/test_olay.py` — 18/18 ✅
+**
+
+- ✅ hucre olayi eski ve yeni tasir
+- ✅ degismeyen yazim olay yaymaz
+- ✅ sonuc olayi
+- ✅ yapi olayi ekle ve sil
+- ✅ reddedilen ekleme olay yaymaz
+- ✅ boyut olayi komut ve geri al
+- ✅ geri al da olay yayar
+- ✅ dinlemeyi birakma
+- ✅ birden cok dinleyici sirayla cagrilir
+- ✅ kitapsiz sayfa olay yaymadan calisir
+- ✅ sayfa olaylari
+- ✅ degismeyen sayfa islemleri olay yaymaz
+- ✅ kimlikler benzersiz ve kalici
+- ✅ silinen sayfa geri konunca ayni kimlik ve veri
+- ✅ silinmis sayfa olay yaymaz
+- ✅ geri koyma hatalari
+- ✅ sayfa silme son sayfa ve olay
+- ✅ kitap kimlikleri 1den baslar
+
 ### `testler/test_olcu.py` — 3/3 ✅
 *Excel ölçü birimleri: karakter/punto ⇄ piksel*
 
@@ -309,7 +337,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ gidis donus
 - ✅ sinirlar
 
-### `testler/test_pano.py` — 24/24 ✅
+### `testler/test_pano.py` — 25/25 ✅
 *Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı*
 
 - ✅ tsv yaz basit ve tirnak
@@ -336,6 +364,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ plan kat degilse ust sol koseye
 - ✅ plan sinir asimi
 - ✅ plan tam sutun secimine tek hucre asiri yayilmaz
+- ✅ k4 pano formul sonucunu metin olarak verir girdiyi json ile
 
 ### `testler/test_pencere.py` — 21/21 ✅
 *Ana pencere: ad kutusu, formül çubuğu, durum çubuğu, sayfa sekmeleri, yakınlaştırma*
@@ -362,7 +391,27 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ sekme rengi tasinan sekmeyle gider
 - ✅ sekme menusu rengi kaldir yalniz renkliyse
 
-### `testler/test_sayfa.py` — 26/26 ✅
+### `testler/test_pencere_sayfa.py` — 16/16 ✅
+**
+
+- ✅ sayfa ekle geri al yinele
+- ✅ sayfa sil geri al gecmis silinmez izgara korunur
+- ✅ ortadaki sayfa silinince komsu secilir
+- ✅ son sayfa silinince onceki secilir
+- ✅ son sayfa silinemez
+- ✅ yeniden adlandirma geri alinir
+- ✅ ayni adla yeniden adlandirma gecmise girmez
+- ✅ sekme tasima geri alinir
+- ✅ model dogrudan degisirse arayuz olaylarla eslesir
+- ✅ baska sayfadaki degisikligi geri alinca o sayfaya gecilir
+- ✅ ayni sayfadaki geri al sekme degistirmez
+- ✅ sayfa silme kopya isaretini temizler
+- ✅ gecersiz ad geri al yigina girmez
+- ✅ sekme rengi esitlemede korunur
+- ✅ silinen sayfa olaylari arayuzu bozmaz
+- ✅ birden cok sayfa islemi art arda tutarli
+
+### `testler/test_sayfa.py` — 33/33 ✅
 *Veri modeli: seyrek sayfa, satır/sütun ekle-sil, geri al yığını, sayfa adı kuralları, gizleme, kullanılan aralık önbelleği*
 
 - ✅ ata oku sil
@@ -391,6 +440,40 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ k2 ekleme dolu hucreyi sayfa disina itmez
 - ✅ k2 sinira tam sigan ekleme calisir tasan calismaz
 - ✅ k2 komut reddedilince yigin bozulmaz
+- ✅ k4 hucre ya sabit ya formul
+- ✅ k4 gorunen deger sonuctur girdi degil
+- ✅ k4 sonuc yalniz formul hucresine yazilir
+- ✅ k4 girdi degisince eski sonuc atilir
+- ✅ k4 geri al yalniz girdiyi geri yukler sonuc atilir
+- ✅ k4 sonuclar satir ekle sil ile kayar
+- ✅ k4 hata degeri
+
+### `testler/test_sayfa_komutlari.py` — 7/7 ✅
+**
+
+- ✅ sayfa ekle geri al yinele ayni nesne
+- ✅ sayfa sil geri al veri ve sira korunur
+- ✅ sayfa yeniden adlandir ve tasi geri al
+- ✅ gecersiz yeniden adlandirma yigina girmez
+- ✅ karisik gecmis sayfa silme dahil tutarli geri alinir — Sayfadaki yazım → sayfa silme → ikisi de sırayla geri alınır (geçmiş silinmez).
+- ✅ sayfa komutlari sayfa olaylari yayar
+- ✅ silme geri al sayfa sirasi birden cok silmede
+
+### `testler/test_toplu_ve_sonuc.py` — 12/12 ✅
+**
+
+- ✅ toplu yaz tek olay ve eskiler
+- ✅ toplu yaz hic degisiklik yoksa olay yok
+- ✅ toplu yaz sinir disi hata verir
+- ✅ toplu yaz kullanilan aralik ve sonuclari gunceller
+- ✅ formul hucresi sonuc gelene kadar bos gorunur
+- ✅ hata sonucu turkce ve ortali
+- ✅ metin sonucu soldan tasar
+- ✅ otomatik sigdir sonucu olcer
+- ✅ ozet formul sonuclarini toplar
+- ✅ ozet ust uste binen araliklar bir kez sayilir
+- ✅ toplu yaz kullanilan aralik onbellegi rastgele islemlerle eslesir
+- ✅ toplu yaz ata ile ayni sonucu verir
 
 <!-- OTOMATIK:BITIR -->
 
@@ -407,13 +490,13 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | Dikey kaydırma 1 satır/kare (başta) | 49 ms | **8,7 ms** | 16 | ✅ |
 | Dikey kaydırma 1 satır/kare (ortada) | 49 ms | **9,8 ms** | 16 | ✅ |
 | Dikey kaydırma 3 satır/kare | — | **13,7 ms** | 16 | ✅ |
-| Ok tuşu ile hücre değiştirme + boyama | (tam çizim 58 ms) | **16,0 ms** | 16 | ✅ (sınırda) |
+| Ok tuşu ile hücre değiştirme + boyama | (tam çizim 58 ms) | **15,4 ms** | 16 | ✅ (sınırda) |
 | Dikey sıçrama (kaydırma çubuğu sürükleme, 500 satır/kare) | 34 ms | 28,8 ms | 16 | ❌ tam çizim gerekir (≈35 ms) |
 | Yatay kaydırma | 29 ms | 18,6 ms | 16 | ❌ tam çizim (taşan metin nedeniyle artımlı yapılmadı) |
 | Shift+Ok ile seçim genişletme + boyama | — | 25,1 ms | 16 | ❌ durum çubuğu özeti + bölge boyama |
 | İlk çizim (soğuk önbellek) | 123 ms | 40,5 ms | 16 | ❌ tek seferlik, kare değil |
 | Ctrl+A + durum çubuğu özeti (100.000 hücre seçili) | 583 ms | 105 ms | 100 | ❌ marjinal; tek seferlik |
-| Durum çubuğu özeti, 100.000 hücre seçili | 543 ms | 124 ms | 100 | ❌ marjinal; tek seferlik |
+| Durum çubuğu özeti, 100.000 hücre seçili | 543 ms | **82 ms** (olay katmanı + sonuç ayrımı sonrası yeniden ölçüldü) | 100 | ✅ |
 | Tam çizim (bilgi) | 123 ms | 34,6 ms/kare | — | bilgi |
 | Veri yükleme (100.000 `ata`) | 334–1030 ms | 797 ms | — | bilgi |
 | Ctrl+Aşağı / Ctrl+Yukarı / Ctrl+End | 28 / 31 / 26 ms | 45 / 8 / 2 ms | 100 | ✅ |
@@ -460,7 +543,7 @@ Gerçek ekran görüntüsü ile sıfırdan çizilen görüntü karşılaştırı
 | 1 | Kaydırma çubuğunu sürükleyince (sıçrama) kare süresi ≈ 29 ms | Hafif takılma; Qt olayları birleştirdiği için pratikte az fark edilir | ❌ kabul önerilir; iyileştirme: sütun başına çizim önbelleği (Faz 3 biçimlendirmeyle birlikte) |
 | 2 | Yatay kaydırma ≈ 18,6 ms/kare | Hedefin %16 üstü | ❌ kabul önerilir; artımlı yatay çizim taşan metin yüzünden riskli |
 | 3 | Shift+Ok ile seçim genişletme ≈ 25 ms | Basılı tutunca takılma | ❌ iyileştirilebilir: özeti gecikmeli (zamanlayıcıyla) hesaplamak |
-| 4 | 100.000 hücre seçiliyken özet hesabı ≈ 105–124 ms | Tek seferlik | ❌ marjinal |
+| 4 | Ctrl+A (tümünü seç) + özet ≈ 105–160 ms (özetin kendisi 82 ms ✅; geri kalanı Qt seçim/boyama) | Tek seferlik | ❌ marjinal |
 | 5 | İlk çizim ≈ 40 ms | Tek seferlik | ❌ kare süresi değil |
 | 6 | Seçili alan ekranın bir kenarından dışarı taşarken 1 piksellik köşe artefaktı | Görünmez; sonraki tam çizimde düzelir | ❌ bilinen, düşük öncelik |
 | 7 | Fare sürüklerken kenarda sürekli otomatik kaydırma yok (her fare olayında 1 adım) | Excel'de fare kenarda durunca kaydırma sürer | ➖ eksik özellik |
@@ -486,6 +569,8 @@ Gerçek ekran görüntüsü ile sıfırdan çizilen görüntü karşılaştırı
 
 *Yapan: Opus 5.5 (salt okunur alt ajan; Claude Code'da `/model` yalnızca kullanıcıda olduğu için ajan olarak çalıştırıldı). Rapor model çıktısıdır; bulgular tek tek **yeniden üretilip** doğrulandı (önce başarısız test, sonra düzeltme).*
 
+**Durum (2026-10-08, aynı gün sonrası):** K1–K3 düzeltildi; kullanıcı onayıyla K4–K6 mimari düzenleme yapıldı (adım adım, her adımda testler geçti: 259 → 322); K7 Faz 2 başında. Performans yeniden ölçüldü, gerileme yok (olay katmanı toplu işlemlerde TEK olay; `toplu_yaz`).
+
 **Genel değerlendirme (Opus):** Faz 1 kodu temiz, katmanlar doğru ayrılmış, testler gerçek davranışı sınıyor; boşa geçen test yok; kural 1/2/5 ihlali yok. Asıl risk modelin *"tek sayfa, doğrudan yazım, girdi ile sonuç aynı nesnede"* varsayımı. **Faz 2'ye geçiş tavsiyesi: koşullu evet** — önce K1–K3 hata düzeltmeleri, K4–K6 mimari kararlar ve K7 tasarım notu.
 
 | # | Bulgu | Önem | Doğrulama | Durum |
@@ -493,9 +578,9 @@ Gerçek ekran görüntüsü ile sıfırdan çizilen görüntü karşılaştırı
 | K1 | `Hucre(True) == Hucre(1.0)`: 1 olan hücreye DOĞRU yazmak "değişmedi" sayılıyordu | Kritik | ✅ yeniden üretildi (test kırmızıydı) | ✅ **düzeltildi**: eşitlik/hash artık değer türünü de karşılaştırır; 2 test |
 | K2 | Satır/sütun ekleme sayfa sonundaki dolu hücreyi sessizce siliyor, geri al getirmiyor (model düzeyinde; arayüz zaten önceden kontrol ediyordu) | Önemli | ✅ yeniden üretildi | ✅ **düzeltildi**: `Sayfa._kaydir` Excel gibi reddeder (`AdresHatasi`), komut yığına girmez; 3 test |
 | K3 | Kes → satır ekle/sil → yapıştır yanlış hücreleri boşaltıyor (kes işareti bayat) + sayfa silinince işaret kalıyor + kaynak düzenlenince kes modu iptal edilmiyor | Önemli | ✅ yeniden üretildi | ✅ **düzeltildi**: içerik/yapı değişikliği ve geri al/yinele ve sayfa silme işareti iptal eder; boyutlandırma/gizleme ve art arda yapıştırma işareti korur; 6 test |
-| K4 | Hesaplanan sonuç ile kullanıcı girdisi aynı `Hucre`'de (`deger`+`formul`): her yeniden hesaplama yeni nesne yazar, geri al "girdi + eski sonuç" geri yükler | Mimari | kod okuma + betik | ⏳ **karar bekliyor** (öneri: `Hucre` yalnız girdi; sonuç `Sayfa._sonuc`/motor deposunda; `Hata` değer türü) |
-| K5 | Tek değişiklik giriş noktası / Qt'siz olay katmanı yok (komutlar `Sayfa.ata`/`_kaydir` çağırır; motor her yazımı görmeli; başka sayfa başvuruları düzeltilmeli) | Mimari | kod okuma | ⏳ **karar bekliyor** (öneri: `CalismaKitabi` tek giriş + değişiklik dinleyicileri, komutlar kitaba bağlı) |
-| K6 | Sayfa ekle/sil/yeniden adlandır/taşı geri alınamıyor; sayfa silmek tüm geri al geçmişini siler; plan.md "sayfa_tasi + geri al komutu" diyor ama komut yok | Önemli | ✅ kod: window.py `yigin.temizle()` | ⏳ **karar bekliyor** (formülde sayfa **adı mı kimliği mi** tutulacak; Opus önerisi: AST'de kimlik, metinde ad) |
+| K4 | Hesaplanan sonuç ile kullanıcı girdisi aynı `Hucre`'de (`deger`+`formul`): her yeniden hesaplama yeni nesne yazar, geri al "girdi + eski sonuç" geri yükler | Mimari | kod okuma + betik | ✅ **yapıldı** (kullanıcı onayladı): `Hucre` yalnız girdi (ya sabit ya formül, ikisi birden hata); sonuç `Sayfa._sonuc` + `sonuc_ata`/`sonuc`/`deger`; girdi değişince sonuç atılır, satır/sütun ekle-sil sonuçları da kaydırır; `Hata` değer türü (`model/deger.py`, Türkçe gösterim doğrulanacak); pano/ızgara/özet sonucu kullanır; 17 test |
+| K5 | Tek değişiklik giriş noktası / Qt'siz olay katmanı yok (komutlar `Sayfa.ata`/`_kaydir` çağırır; motor her yazımı görmeli; başka sayfa başvuruları düzeltilmeli) | Mimari | kod okuma | ✅ **yapıldı**: `model/olay.py` + `CalismaKitabi.dinle`; `Sayfa` her yazımda olay yayar (`hucre` [toplu işlemde TEK olay], `sonuc`, `yapi`, `boyut`), kitap `sayfa` olayları (ekle/sil/ad/taşı); sayfa **kimliği** (kalıcı, silme+geri almada aynı); `Sayfa.toplu_yaz`; geri al da aynı yoldan olay yayar; 30 test. *Not:* komutlar hâlâ doğrudan `Sayfa`'ya yazar — tek giriş noktası `Sayfa` mutatörleridir (her yazım olay yayar), bu Faz 2 motoru için yeterli |
+| K6 | Sayfa ekle/sil/yeniden adlandır/taşı geri alınamıyor; sayfa silmek tüm geri al geçmişini siler; plan.md "sayfa_tasi + geri al komutu" diyor ama komut yok | Önemli | ✅ kod: window.py `yigin.temizle()` | ✅ **yapıldı** (karar: **kimlik, metinde ad**): `SayfaEkle/Sil/YenidenAdlandir/Tasi` komutları; geçmiş artık silinmez; pencere model olaylarıyla eşitlenir (komutsuz değişiklik, geri al, yinele aynı yoldan); silinen sayfanın ızgarası saklanır (geri alınca seçim/kaydırma korunur); başka sayfadaki değişikliği geri alınca o sayfaya geçilir; 22 test |
 | K7 | Formül yazarken başka hücreye tıklamak Excel'de başvuru ekler; bizde onaylıyor (`mousePressEvent`, `focusOutEvent`); pencere odağı kaybolunca (Alt+Tab) düzenleme onaylanıp kapanıyor | Önemli (Faz 2) | kod okuma | ⏳ Faz 2 başında "işaretleme modu" tasarımı |
 | — | `_koru` yalnız fare bırakılınca sıfırlanıyor (odak kaybında takılabilir) | Düşük | senaryo üretilemedi | ✅ önlem: odak kaybında sıfırlanır; 1 test |
 | — | Geri al yığını bellek: 100.000 hücrelik silme komutu ≈ 16 MB (100 adımda ≈ 1,6 GB; RAM 7,9 GB) | Sonra | ✅ tracemalloc | ⏳ öneri: yığını adım yerine toplam hücre girdisiyle sınırla (2–5 milyon); boş hedef için `None` girdileri saklama |

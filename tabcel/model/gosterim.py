@@ -4,10 +4,21 @@ Geçici 'Genel' biçim; sayı biçimleri (Para, Tarih, Yüzde…) Faz 3'te gelec
 """
 from decimal import ROUND_HALF_UP, Decimal
 
+from .deger import Hata
+
+# Türkçe hata gösterimi. DOĞRULANMADI (surec.md §8b-5): plan.md'deki liste; Microsoft'un resmî
+# Türkçe listesiyle ve Excel web'de kontrol edilecek.
+HATA_TR = {
+    "#DIV/0!": "#BÖL/0!", "#N/A": "#YOK", "#NAME?": "#AD?", "#NULL!": "#BOŞ!",
+    "#NUM!": "#SAYI!", "#REF!": "#BAŞV!", "#VALUE!": "#DEĞER!",
+}
+
 
 def goster(deger) -> str:
     if deger is None:
         return ""
+    if isinstance(deger, Hata):
+        return HATA_TR.get(deger.kod, deger.kod)
     if isinstance(deger, bool):
         return "DOĞRU" if deger else "YANLIŞ"
     if isinstance(deger, float):

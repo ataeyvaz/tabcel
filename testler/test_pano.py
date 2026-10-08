@@ -165,3 +165,18 @@ def test_plan_tam_sutun_secimine_tek_hucre_asiri_yayilmaz():
     v = metinden_pano_verisi([["x"]])
     plan = yapistirma_plani(v, 3, 3, Aralik(1, 3, MAX_ROW, 3))      # 1 milyon hücre > sınır
     assert plan == {(3, 3): H("x")}
+
+
+def test_k4_pano_formul_sonucunu_metin_olarak_verir_girdiyi_json_ile():
+    from tabcel.model.deger import BOL0
+    s = Sayfa("S")
+    s.ata(1, 1, Hucre(None, "=A2*2"))
+    s.sonuc_ata(1, 1, 10.0)
+    s.ata(1, 2, Hucre(None, "=1/0"))
+    s.sonuc_ata(1, 2, BOL0)
+    s.ata(1, 3, Hucre(None, "=ABC"))                           # henüz hesaplanmamış
+    v = pano_verisi_al(s, Aralik(1, 1, 1, 3))
+    assert metin_satirlari(v) == [["10", "#BÖL/0!", "=ABC"]]
+    geri = PanoVerisi.json_oku(v.json_yaz())
+    assert geri.hucreler[(0, 0)] == Hucre(None, "=A2*2")       # kendi biçimimiz yalnız girdiyi taşır
+    assert geri.sonuclar == {}

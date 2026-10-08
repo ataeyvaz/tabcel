@@ -28,6 +28,8 @@ class PanoVerisi:
     satir_sayisi: int
     sutun_sayisi: int
     hucreler: Dict[Tuple[int, int], Hucre] = field(default_factory=dict)   # (satır farkı, sütun farkı)
+    # formül hücrelerinin hesaplanmış sonuçları (yalnızca dışarıya metin verirken; kendi biçimimize girmez)
+    sonuclar: Dict[Tuple[int, int], object] = field(default_factory=dict, compare=False)
 
     def json_yaz(self) -> str:
         return json.dumps({
@@ -58,20 +60,25 @@ def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
     v = PanoVerisi(ar.son_satir - ar.ilk_satir + 1, ar.son_sutun - ar.ilk_sutun + 1)
     for r, c, h in sayfa.aralikta(ar):
         v.hucreler[(r - ar.ilk_satir, c - ar.ilk_sutun)] = h
+        if h.formul is not None:
+            sonuc = sayfa.sonuc(r, c)
+            if sonuc is not None:
+                v.sonuclar[(r - ar.ilk_satir, c - ar.ilk_sutun)] = sonuc
     return v
 
 
-def hucre_metni(h: Optional[Hucre]) -> str:
-    """Dışarı verilen metin. Formülün hesaplanmış değeri henüz yok (Faz 2): formül metni verilir."""
+def hucre_metni(h: Optional[Hucre], sonuc=None) -> str:
+    """Dışarı verilen metin (Excel gibi görünen değer). Formülün hesaplanmış sonucu yoksa
+    (Faz 2'ye kadar hep böyle) formül metni verilir."""
     if h is None:
         return ""
-    if h.deger is None and h.formul is not None:
-        return h.formul
+    if h.formul is not None:
+        return goster(sonuc) if sonuc is not None else h.formul
     return goster(h.deger)
 
 
 def metin_satirlari(v: PanoVerisi) -> List[List[str]]:
-    return [[hucre_metni(v.hucreler.get((r, c))) for c in range(v.sutun_sayisi)]
+    return [[hucre_metni(v.hucreler.get((r, c)), v.sonuclar.get((r, c))) for c in range(v.sutun_sayisi)]
             for r in range(v.satir_sayisi)]
 
 

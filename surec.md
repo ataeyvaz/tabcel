@@ -6,8 +6,8 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | Faz | Hedef | Yapılan | Durum |
 |---|---|---|---|
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
-| 1 | Veri modeli + ızgara + temel düzenleme | — | ⏳ sıradaki |
-| 2 | Formül motoru | — | ⏳ |
+| 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul bekliyor) |
+| 2 | Formül motoru | — | ⏳ **sıradaki** (önce K7 tasarım notu; çekirdek Opus ile) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Son commit: `da848eb` (Faz 0–1 başı) · Testler: 259 geçiyor · Son commit: Faz 1 sonu (bkz. `git log`) · Ayrıntılı test sonuçları: `test.md`
+Testler: 322 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md`
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -28,11 +28,12 @@ Son commit: `da848eb` (Faz 0–1 başı) · Testler: 259 geçiyor · Son commit:
 4e. ✅ Pano bitti: `model/pano.py` + ızgara Ctrl+C/X/V (Ctrl+Insert, Shift+Insert/Delete), kesik çizgili çerçeve, hücre sağ tık menüsü (41 test)
 4f. ✅ Taşan metin, `####`/sayı kısaltma, Alt+Enter bitti (16 test)
 4g. ✅ Çoklu aralık (Ctrl+tık/sürükle, Shift genişletir, başlık Ctrl+tık; Delete/özet hepsine uygulanır, pano reddeder) + sayfa sekme rengi (sağ tık; renkli şerit)
-4h. **Faz 1 kodu tamam.** Kalan: ① 100.000 hücre performans ölçümü (§5b, zorunlu) ② Faz 1 Opus gözden geçirmesi ③ Dosya menüsü içeriği (Yeni/Aç/Kaydet) Faz 4'e taşındı
-5. Faz 1 sonu Opus gözden geçirmesi (✅ pano, ✅ yakınlaştırma, ✅ sayfa sıralama)
-5b. ✅ 100.000 hücre performans ölçümü YAPILDI (§8, `test.md` §4): akıcı kaydırma hedefi karşılandı; 6 ölçüm hedefin üstünde → **kabul kararı kullanıcıda** (`test.md` §6)
+4h. ✅ **Faz 1 tamam.** 100.000 hücre ölçümü yapıldı (§8, `test.md` §4); Faz 1 Opus gözden geçirmesi yapıldı (`test.md` §8); K1–K3 hata düzeltmeleri + K4–K6 mimari düzenleme (kullanıcı onayıyla) bitti; Dosya menüsü içeriği Faz 4'e taşındı
+5. **Kullanıcı kararı bekleyen:** `test.md` §6'daki 5 performans ❌'sinin kabulü (öneri: kabul, Faz 3'te ele al)
+5b. (✅ ölçüm yapıldı, yukarıya bakın)
 5c. Her faz sonunda **gerçek iş senaryosu testi** (örnek bütçe/stok/not çizelgesi) ve gidiş-dönüş/regresyon denetimi
-6. Faz 2 — formül motoru çekirdeği (**Opus ile**), sonra fonksiyonlar (Sonnet)
+6. **Faz 2 — formül motoru** (çekirdek **Opus ile**: kullanıcı `/model opus` yapar ya da Opus alt ajanı), sonra fonksiyonlar (Sonnet). Başlamadan önce Opus K7 notu: formül yazarken fareyle başvuru seçme ("işaretleme modu") durum makinesi; `focusOutEvent`/`mousePressEvent` onayı buna göre değişecek
+7. Faz 2 giriş koşulları (hazır): `Hucre` yalnız girdi, sonuç `Sayfa.sonuc_ata`, `Hata` türü, kalıcı `sayfa.kimlik`, `kitap.dinle` olayları (`hucre`/`yapi`/`boyut`/`sayfa`), geri alınabilir sayfa komutları, `HucreTasi` Faz 2'de eklenecek (kes-yapıştır = taşıma)
 
 ## 3. Çalışma sistemi (her adımda)
 1. `surec.md`'yi oku, sıradaki işi al; kapsam `plan.md`'de
@@ -58,6 +59,8 @@ Son commit: `da848eb` (Faz 0–1 başı) · Testler: 259 geçiyor · Son commit:
 - 2026-10-08: **openpyxl grafik/resim korumaz →** Faz 4'te açılışta + kaydederken veri kaybı uyarısı; gidiş-dönüş testlerine grafikli/resimli örnek dosya
 - 2026-10-08: Referans değerler Microsoft belgeleri + **Excel web** (kullanıcı doğrular); emin olunmayanlar §8b listesinde
 - 2026-10-08: Türkçe yerelleştirme katmanı ayırıcıları (`;` `,` ondalık `,`) da çevirir, **ayrı testlerle** (`testler/test_yerellestirme.py`); Faz 2 testlerine tarih seri numaraları (1900 artık yıl hatası) ve 15 anlamlı basamak eklendi
+- 2026-10-08: **Opus gözden geçirmesi sonrası mimari (kullanıcı onayı):** (K4) `Hucre` yalnız **girdi** (sabit değer YA DA formül); hesaplanan sonuç `Sayfa._sonuc`'ta (geri al girdiyi geri yükler, motor sonucu yeniden hesaplar); `Hata` değer türü. (K5) Qt'siz **olay katmanı**: `Sayfa` her yazımda `Olay` yayar, `CalismaKitabi.dinle` ile dinlenir; toplu işlem TEK olay. (K6) formülde sayfa başvurusu **kimlikle** tutulur, metinde ad görünür; sayfa ekle/sil/ad/taşı **geri alınabilir komut**, geri al geçmişi silinmez
+- 2026-10-08: `Hucre` eşitliği değer türünü de karşılaştırır (`True != 1.0`); `_kaydir` dolu hücreyi sayfa dışına itmeyi reddeder; kopyala/kes işareti içerik/yapı değişikliğinde iptal olur (boyutlandırma/gizleme ve art arda yapıştırma korur)
 - 2026-10-08: **Model kullanımı:** planlama/mimari/gözden geçirme + formül çekirdeği + sayı biçimi çözümleyici Opus 5.5; geri kalan kod ve testler Sonnet 5.5 (kullanıcı kararı Claude'a bıraktı)
 
 ## 5. Açık sorular / bekleyenler
@@ -228,5 +231,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Karar bekleyen mimari (Faz 2'den önce, ~1–1,5 gün):** K4 girdi/sonuç ayrımı + `Hata` türü; K5 kitap düzeyinde tek değişiklik giriş noktası + dinleyiciler; K6 sayfa işlemlerinin geri alınabilir komutlar olması + formülde sayfa kimliği/adı kararı; K7 formül düzenlerken "işaretleme modu" (Faz 2 başı). Ayrıntı ve öneriler: `test.md` §8
 - Kes-yapıştır Faz 2'de **taşıma** komutu olmalı (taşınan hücrelere işaret eden formüller yeni yere kayar): "temizle + yaz" yetmez (`HucreTasi`)
 - `CLAUDE.md` "Dosya yapısı (hedef — Faz 1'de oluşur)" başlığı eskimiş; kullanıcı onayıyla güncellenecek (ajan isteği CLAUDE.md'yi değiştirmek için yeterli değil)
+
+## [2026-10-08] — K4–K6 mimari düzenleme (Sonnet 5.5, kullanıcı onayıyla)
+- Kullanıcı kararı: düzenlemeyi Faz 2'den ÖNCE yap; sayfa başvurusu = kimlik (metinde ad). Üç adım, her biri testli:
+- **K4:** `model/deger.py` (`Hata` + 7 kanonik hata, `hata_bul`), `Hucre.__post_init__` (sabit YA DA formül), `Sayfa._sonuc` + `sonuc_ata`/`sonuc`/`deger` (görünen değer), girdi değişince sonuç atılır, satır/sütun ekle-sil sonuçları kaydırır; `gosterim.goster(Hata)` Türkçe (**doğrulanacak**, §8b-5); pano formül sonucunu metin olarak verir, kendi biçimimiz yalnız girdiyi taşır; ızgara/özet/otomatik sığdır sonucu kullanır, `Hata` ortalanır
+- **K5:** `model/olay.py` + `CalismaKitabi.dinle`; `Sayfa.kitap` + kalıcı `kimlik`; olaylar: `hucre` (`degisiklikler` sözlüğü; toplu işlemde TEK olay), `sonuc`, `yapi`, `boyut`, `sayfa` (ekle/sil/ad/taşı); `Sayfa.toplu_yaz` (tek geçiş, olay başına maliyet sabit); `kitap.sayfa_geri_koy` (silinen sayfa aynı nesne/kimlikle geri gelir)
+- **K6:** `SayfaEkle/SayfaSil/SayfaYenidenAdlandir/SayfaTasi` komutları; `Pencere` model olaylarını dinler (`_kitap_olayi` → `_sekmeleri_esitle`): komutsuz değişiklik, geri al, yinele aynı yoldan arayüze yansır; silinen sayfanın ızgarası saklanır; `yigin.temizle()` kaldırıldı; başka sayfadaki değişikliği geri alınca o sayfaya geçilir (`gecmisIslemi` sinyali)
+- **Performans:** olay katmanı ilk halinde toplu işlemleri ~2× yavaşlattı (100.000 olay) → `toplu_yaz` ile düzeldi; son ölçüm: silme 218 ms, yapıştır 1,08 s, özet 82 ms (gerileme yok)
+- Testler: toplam **322 geçti** (+63: K1–K3 12, K4 17, K5 30 [test_olay], K6 22 [komutlar+pencere], toplu/sonuç 15; bazıları üst üste). Piksel doğrulaması yine 1 piksel
+- `CLAUDE.md` eski ifadeler **değiştirilmedi** (alt ajan isteği yetki sayılmaz); kullanıcı onayıyla güncellenecek
 
 *(Yeni girişler en alta eklenir.)*

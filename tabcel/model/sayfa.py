@@ -4,24 +4,31 @@ Formül başvurularının satır/sütun ekle-sil sonrası düzeltilmesi Faz 2'de
 burada yalnızca hücreler ve boyutlar kaydırılır.
 """
 from dataclasses import dataclass
-from typing import Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
+from .deger import Deger
+from .olay import Olay
 
-Deger = Union[None, str, float, bool]
 Anahtar = Tuple[int, int]
 
 
 @dataclass(frozen=True, eq=False)
 class Hucre:
-    """Değişmez hücre. `formul` dolu ise (kanonik İngilizce, '=' ile başlar) `deger`
-    son hesaplanan sonuçtur; boşsa `deger` kullanıcının girdiği sabit değerdir.
+    """Değişmez hücre = kullanıcının GİRDİSİ: ya sabit bir `deger` ya da bir `formul` (kanonik
+    İngilizce, '=' ile başlar) — ikisi birlikte olamaz. Formülün hesaplanmış sonucu burada değil,
+    `Sayfa.sonuc_ata` ile ayrı depoda tutulur: böylece geri al yalnızca girdiyi geri yükler, yeniden
+    hesaplama hücre nesnelerini yeniden yazmaz.
 
     Eşitlik değerin TÜRÜNÜ de karşılaştırır: Python'da `True == 1.0` doğrudur, ama Excel'de
     DOĞRU ile 1 farklı değerlerdir (aksi halde 1 olan hücreye DOĞRU yazmak 'değişmedi' sayılırdı).
     """
     deger: Deger = None
     formul: Optional[str] = None
+
+    def __post_init__(self):
+        if self.formul is not None and self.deger is not None:
+            raise ValueError("Hucre ya sabit değer ya da formül taşır; sonuç Sayfa'da tutulur")
 
     def _anahtar(self):
         return (self.deger.__class__, self.deger, self.formul)
@@ -44,6 +51,8 @@ class Sayfa:
 
     def __init__(self, ad: str):
         self.ad = ad
+        self.kitap: Optional["CalismaKitabi"] = None   # bağlı olduğu kitap (olaylar buradan yayılır)
+        self.kimlik: int = 0                         # kitapta benzersiz, yeniden adlandırma/taşımayla değişmez
         self._hucreler: Dict[Anahtar, Hucre] = {}
         self.sutun_genislik: Dict[int, int] = {}
         self.satir_yukseklik: Dict[int, int] = {}
@@ -51,33 +60,109 @@ class Sayfa:
         self.gizli_satir: Set[int] = set()
         self.sekme_rengi: Optional[str] = None     # '#rrggbb' ya da None
         self._kul: Optional[Tuple[int, int, int, int]] = None   # kullanılan aralık önbelleği
+        self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
 
     # --- okuma / yazma ---
     def hucre(self, satir: int, sutun: int) -> Optional[Hucre]:
         return self._hucreler.get((satir, sutun))
 
     def deger(self, satir: int, sutun: int) -> Deger:
+        """Hücrenin GÖRÜNEN değeri: sabit girdi ya da formülün hesaplanmış sonucu (yoksa None)."""
         h = self._hucreler.get((satir, sutun))
-        return h.deger if h else None
+        if h is None:
+            return None
+        return h.deger if h.formul is None else self._sonuc.get((satir, sutun))
 
-    def ata(self, satir: int, sutun: int, hucre: Optional[Hucre]) -> Optional[Hucre]:
-        """Hücreyi yazar (None/boş = siler); eski hücreyi döndürür."""
+    def sonuc_ata(self, satir: int, sutun: int, deger: Deger) -> None:
+        """Formül hücresinin hesaplanmış sonucunu yazar (None = sonuç yok). Geri al yığınına girmez:
+        sonuç girdiden türetilir. Formülü olmayan hücreye sonuç yazılamaz."""
+        h = self._hucreler.get((satir, sutun))
+        if h is None or h.formul is None:
+            raise ValueError("Sonuç yalnızca formül hücresine yazılabilir")
+        if deger is None:
+            self._sonuc.pop((satir, sutun), None)
+        else:
+            self._sonuc[(satir, sutun)] = deger
+        self._bildir("sonuc", anahtar=(satir, sutun), deger=deger)
+
+    def sonuc(self, satir: int, sutun: int) -> Deger:
+        return self._sonuc.get((satir, sutun))
+
+    def _yaz(self, satir: int, sutun: int, hucre: Optional[Hucre]):
+        """Olay yaymadan yazar. Döner: (eski, yeni_normallestirilmis, degisti)."""
         if not (1 <= satir <= MAX_ROW and 1 <= sutun <= MAX_COL):
             raise AdresHatasi(f"Hücre aralık dışı: ({satir}, {sutun})")
         eski = self._hucreler.get((satir, sutun))
-        if hucre is None or hucre.bos_mu():
+        yeni_h = None if hucre is None or hucre.bos_mu() else hucre
+        degisti = eski is not yeni_h and eski != yeni_h
+        if degisti:
+            self._sonuc.pop((satir, sutun), None)     # girdi değişti: eski sonuç geçersiz
+        if yeni_h is None:
             if eski is not None:
                 del self._hucreler[(satir, sutun)]
                 kul = self._kul
                 if kul and (satir in (kul[0], kul[2]) or sutun in (kul[1], kul[3])):
                     self._kul = None             # sınırdaki hücre silindi: yeniden hesaplanır
         else:
-            self._hucreler[(satir, sutun)] = hucre
+            self._hucreler[(satir, sutun)] = yeni_h
             kul = self._kul
             if kul:
                 self._kul = (min(kul[0], satir), min(kul[1], sutun),
                              max(kul[2], satir), max(kul[3], sutun))
+        return eski, yeni_h, degisti
+
+    def ata(self, satir: int, sutun: int, hucre: Optional[Hucre]) -> Optional[Hucre]:
+        """Hücreyi yazar (None/boş = siler); eski hücreyi döndürür. Değiştiyse bir `hucre` olayı yayar."""
+        eski, yeni_h, degisti = self._yaz(satir, sutun, hucre)
+        if degisti:
+            self._bildir("hucre", degisiklikler={(satir, sutun): (eski, yeni_h)})
         return eski
+
+    def toplu_yaz(self, yeni: Dict[Anahtar, Optional[Hucre]]) -> Dict[Anahtar, Optional[Hucre]]:
+        """Birçok hücreyi yazar ve TEK `hucre` olayı yayar (100.000 hücrede olay maliyeti sabit kalır).
+        Döner: {anahtar: eski hücre} (verilen her anahtar için)."""
+        hucreler, sonuclar = self._hucreler, self._sonuc
+        eskiler: Dict[Anahtar, Optional[Hucre]] = {}
+        degisenler = {}
+        for anahtar, hucre in yeni.items():
+            satir, sutun = anahtar
+            if not (1 <= satir <= MAX_ROW and 1 <= sutun <= MAX_COL):
+                raise AdresHatasi(f"Hücre aralık dışı: ({satir}, {sutun})")
+            eski = hucreler.get(anahtar)
+            eskiler[anahtar] = eski
+            yeni_h = None if hucre is None or (hucre.deger is None and hucre.formul is None) else hucre
+            if eski is yeni_h or (eski is not None and yeni_h is not None and eski == yeni_h):
+                continue
+            degisenler[anahtar] = (eski, yeni_h)
+            if sonuclar:
+                sonuclar.pop(anahtar, None)           # girdi değişti: eski sonuç geçersiz
+            if yeni_h is None:
+                del hucreler[anahtar]
+            else:
+                hucreler[anahtar] = yeni_h
+        if degisenler:
+            kul = self._kul
+            if kul is not None:
+                if len(degisenler) > 256:
+                    self._kul = None                  # çok hücre: bir kez geçersiz kıl, ilk kullanımda hesaplansın
+                else:
+                    for (satir, sutun), (_, yeni_h) in degisenler.items():
+                        kul = self._kul
+                        if kul is None:
+                            break
+                        if yeni_h is None:
+                            if satir in (kul[0], kul[2]) or sutun in (kul[1], kul[3]):
+                                self._kul = None
+                        else:
+                            self._kul = (min(kul[0], satir), min(kul[1], sutun),
+                                         max(kul[2], satir), max(kul[3], sutun))
+            self._bildir("hucre", degisiklikler=degisenler)
+        return eskiler
+
+    def _bildir(self, tur: str, **ayrinti) -> None:
+        """Kitaba bağlıysa değişiklik olayı yayar (kitapsız sayfada sessizce geçer)."""
+        if self.kitap is not None:
+            self.kitap._olay_yay(Olay(tur, self, ayrinti))
 
     def dolu_hucreler(self, sirali: bool = True) -> Iterator[Tuple[int, int, Hucre]]:
         """Dolu hücreler. Sıra gerekmiyorsa `sirali=False` (100.000 hücrede sıralama pahalıdır)."""
@@ -132,6 +217,11 @@ class Sayfa:
         g, y, gs, gr = durum
         self.sutun_genislik, self.satir_yukseklik = dict(g), dict(y)
         self.gizli_sutun, self.gizli_satir = set(gs), set(gr)
+        self._bildir("boyut")
+
+    def boyut_degisti(self) -> None:
+        """Boyut sözlükleri doğrudan değiştirildiyse (örn. `OlcuDegis`) olay yayar."""
+        self._bildir("boyut")
 
     # --- satır / sütun ekle-sil ---
     def satir_ekle(self, nerede: int, adet: int = 1) -> None:
@@ -171,6 +261,12 @@ class Sayfa:
             yeni[anahtar] = h
         self._hucreler = yeni
         self._kul = None
+        yeni_sonuc = {}
+        for (s, c), v in self._sonuc.items():
+            k = self._kaydir_indeks((s, c)[eksen], nerede, fark, sinir)
+            if k is not None:
+                yeni_sonuc[(k, c) if eksen == 0 else (s, k)] = v
+        self._sonuc = yeni_sonuc
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():
@@ -184,6 +280,8 @@ class Sayfa:
                       if (k2 := self._kaydir_indeks(k, nerede, fark, sinir)) is not None}
         gizli.clear()
         gizli.update(yeni_gizli)
+        self._bildir("yapi", eksen="sutun" if eksen else "satir", nerede=nerede, fark=fark,
+                     silinen=silinen)
         return silinen
 
     @staticmethod
@@ -215,8 +313,46 @@ def sayfa_adi_dogrula(ad: str) -> None:
 
 
 class CalismaKitabi:
+    """Sayfaların kabı ve değişiklik olaylarının dağıtıcısı.
+
+    Sayfalar kitaba bağlıdır (`sayfa.kitap`); her sayfaya kitapta benzersiz, kalıcı bir `kimlik`
+    verilir (yeniden adlandırma, taşıma ve silme+geri alma boyunca aynı kalır). Formüllerdeki
+    sayfa başvuruları bu kimliğe bağlanacak, metinde ad görünecek.
+    """
+
     def __init__(self):
-        self.sayfalar: List[Sayfa] = [Sayfa("Sayfa1")]
+        self.sayfalar: List[Sayfa] = []
+        self._dinleyiciler: List[Callable[[Olay], None]] = []
+        self._sonraki_kimlik = 1
+        self._baglan(Sayfa("Sayfa1"))
+
+    # --- olaylar ---
+    def dinle(self, dinleyici: Callable[[Olay], None]) -> Callable[[], None]:
+        """Dinleyici ekler; dinlemeyi bırakmak için dönen işlevi çağırın."""
+        self._dinleyiciler.append(dinleyici)
+
+        def birak():
+            if dinleyici in self._dinleyiciler:
+                self._dinleyiciler.remove(dinleyici)
+        return birak
+
+    def _olay_yay(self, olay: Olay) -> None:
+        for d in list(self._dinleyiciler):
+            d(olay)
+
+    # --- sayfalar ---
+    def _baglan(self, sayfa: Sayfa, indeks: Optional[int] = None) -> None:
+        sayfa.kitap = self
+        if not sayfa.kimlik:
+            sayfa.kimlik = self._sonraki_kimlik
+            self._sonraki_kimlik += 1
+        if indeks is None:
+            self.sayfalar.append(sayfa)
+        else:
+            self.sayfalar.insert(indeks, sayfa)
+
+    def sayfa_kimlikle(self, kimlik: int) -> Optional[Sayfa]:
+        return next((s for s in self.sayfalar if s.kimlik == kimlik), None)
 
     def sayfa_ekle(self, ad: Optional[str] = None) -> Sayfa:
         ad = ad or self._yeni_ad()
@@ -224,8 +360,18 @@ class CalismaKitabi:
         if self.ad_var_mi(ad):
             raise ValueError(f"Bu adda bir sayfa zaten var: {ad}")
         s = Sayfa(ad)
-        self.sayfalar.append(s)
+        self._baglan(s)
+        self._olay_yay(Olay("sayfa", s, {"islem": "ekle", "indeks": len(self.sayfalar) - 1}))
         return s
+
+    def sayfa_geri_koy(self, sayfa: Sayfa, indeks: int) -> None:
+        """Daha önce silinmiş sayfayı (kimliğiyle, verisiyle) `indeks` konumuna geri koyar."""
+        if sayfa in self.sayfalar:
+            raise ValueError("Sayfa zaten kitapta")
+        if self.ad_var_mi(sayfa.ad):
+            raise ValueError(f"Bu adda bir sayfa zaten var: {sayfa.ad}")
+        self._baglan(sayfa, min(max(indeks, 0), len(self.sayfalar)))
+        self._olay_yay(Olay("sayfa", sayfa, {"islem": "ekle", "indeks": self.sayfalar.index(sayfa)}))
 
     def ad_var_mi(self, ad: str) -> bool:
         return any(s.ad.casefold() == ad.casefold() for s in self.sayfalar)
@@ -236,20 +382,34 @@ class CalismaKitabi:
             n += 1
         return f"Sayfa{n}"
 
-    def sayfa_sil(self, sayfa: Sayfa) -> None:
+    def sayfa_sil(self, sayfa: Sayfa) -> int:
+        """Sayfayı kitaptan çıkarır (nesne ve verisi korunur: geri alınabilir); eski sırasını döndürür."""
         if len(self.sayfalar) == 1:
             raise ValueError("Son sayfa silinemez")
+        indeks = self.sayfalar.index(sayfa)
         self.sayfalar.remove(sayfa)
+        sayfa.kitap = None                      # silinmiş sayfa olay yaymaz
+        self._olay_yay(Olay("sayfa", sayfa, {"islem": "sil", "indeks": indeks}))
+        return indeks
 
     def yeniden_adlandir(self, sayfa: Sayfa, ad: str) -> None:
         sayfa_adi_dogrula(ad)
         if any(s is not sayfa and s.ad.casefold() == ad.casefold() for s in self.sayfalar):
             raise ValueError(f"Bu adda bir sayfa zaten var: {ad}")
+        eski = sayfa.ad
         sayfa.ad = ad
+        if eski != ad:
+            self._olay_yay(Olay("sayfa", sayfa, {"islem": "ad", "eski_ad": eski,
+                                                  "indeks": self.sayfalar.index(sayfa)}))
 
     def sayfa_tasi(self, sayfa: Sayfa, yeni_indeks: int) -> None:
         """Sayfayı sekme sırasında `yeni_indeks` konumuna taşır."""
         if not 0 <= yeni_indeks < len(self.sayfalar):
             raise ValueError(f"Geçersiz sıra: {yeni_indeks}")
+        eski = self.sayfalar.index(sayfa)
+        if eski == yeni_indeks:
+            return
         self.sayfalar.remove(sayfa)
         self.sayfalar.insert(yeni_indeks, sayfa)
+        self._olay_yay(Olay("sayfa", sayfa, {"islem": "tasi", "indeks": yeni_indeks,
+                                              "eski_indeks": eski}))

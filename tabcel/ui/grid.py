@@ -14,6 +14,7 @@ from ..model.adres import (
     MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
 )
 from ..model.girdi import duzenleme_metni, girdi_coz
+from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model.komutlar import (
     GeriAlYigini, Grup, HucrelerDegis, OlcuDegis, SatirEkleSil, SutunEkleSil,
@@ -78,6 +79,7 @@ class Izgara(QAbstractScrollArea):
     modDegisti = Signal(str)              # 'Hazır' | 'Gir' | 'Düzenle'
     duzenlemeMetniDegisti = Signal(str)   # hücre içi düzenleyicideki metin (formül çubuğu aynalar)
     suruklemeBitti = Signal()
+    gecmisIslemi = Signal(bool)           # geri al/yinele başladı (True) / bitti (False)
     yakinlastirmaDegisti = Signal(float)
     uyari = Signal(str)                   # kullanıcıya gösterilecek iletiler
 
@@ -307,6 +309,7 @@ class Izgara(QAbstractScrollArea):
         self._onbellek_hazirla()
         genislikler, sayilar = self._genislik_onb, self._sayi_onb
         hucre_al = self.sayfa.hucre
+        sonuc_al = self.sayfa._sonuc.get
 
         def olc(t: str) -> int:
             w = genislikler.get(t)
@@ -319,9 +322,11 @@ class Izgara(QAbstractScrollArea):
         for r, y, h in satirlar:
             for i, (c, x, g) in enumerate(sutunlar):
                 hucre = hucre_al(r, c)
-                if hucre is None or hucre.deger is None:
+                if hucre is None:
                     continue
-                v = hucre.deger
+                v = hucre.deger if hucre.formul is None else sonuc_al((r, c))
+                if v is None:
+                    continue
                 if isinstance(v, str):
                     # Alt+Enter ile girilen satır sonları kaydırma kapalıyken görünmez
                     metin = v.replace("\r", "").replace("\n", "") if ("\n" in v or "\r" in v) else v
@@ -338,7 +343,7 @@ class Izgara(QAbstractScrollArea):
                         j += 1
                     metinler.append((QRect(x, y, toplam - 1, h),
                                      QRect(x + pad, y, toplam - 2 * pad, h), sol, metin, w))
-                elif isinstance(v, bool):
+                elif isinstance(v, (bool, Hata)):           # mantıksal ve hata değerleri ortalanır
                     metin = goster(v)
                     metinler.append((QRect(x, y, g - 1, h), QRect(x + pad, y, g - 2 * pad, h),
                                      orta, metin, olc(metin)))
@@ -945,9 +950,11 @@ class Izgara(QAbstractScrollArea):
         hedef = set(sutunlar)
         olcer = QFontMetrics(self.font())          # 100% yakınlaştırmadaki yazı tipi
         en: Dict[int, int] = {}
-        for _, c, h in self.sayfa.dolu_hucreler(sirali=False):
-            if c in hedef and h.deger is not None:
-                en[c] = max(en.get(c, 0), olcer.horizontalAdvance(goster(h.deger)))
+        for r, c, _ in self.sayfa.dolu_hucreler(sirali=False):
+            if c in hedef:
+                v = self.sayfa.deger(r, c)
+                if v is not None:
+                    en[c] = max(en.get(c, 0), olcer.horizontalAdvance(goster(v)))
 
         def uygula(s):
             for c in sutunlar:
@@ -1189,11 +1196,18 @@ class Izgara(QAbstractScrollArea):
             self._guncelle()
 
     def geri_al(self) -> None:
-        if self.yigin.geri_al():
-            self._guncelle()
+        self._gecmis(self.yigin.geri_al)
 
     def yinele(self) -> None:
-        if self.yigin.yinele():
+        self._gecmis(self.yigin.yinele)
+
+    def _gecmis(self, islem) -> None:
+        self.gecmisIslemi.emit(True)       # pencere: başka sayfadaki değişikliğe geçebilsin
+        try:
+            tamam = islem()
+        finally:
+            self.gecmisIslemi.emit(False)
+        if tamam:
             self._guncelle()
 
     def _guncelle(self, pano_iptal: bool = True) -> None:

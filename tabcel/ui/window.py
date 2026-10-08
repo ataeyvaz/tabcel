@@ -16,7 +16,10 @@ from PySide6.QtWidgets import (
 from .. import APP_NAME
 from ..model.adres import AdresHatasi, aralik_coz, hucre_yaz
 from ..model.girdi import duzenleme_metni
-from ..model.komutlar import GeriAlYigini
+from ..model.komutlar import (
+    GeriAlYigini, SayfaEkle, SayfaSil, SayfaTasi, SayfaYenidenAdlandir,
+)
+from ..model.olay import Olay
 from ..model.sayfa import CalismaKitabi, Sayfa
 from . import theme
 from .grid import Izgara, goster
@@ -66,13 +69,15 @@ class Pencere(QMainWindow):
         self.yigin = GeriAlYigini()
         self.belge_adi = "Adsız"
         self._izgaralar: Dict[Sayfa, Izgara] = {}
+        self._saklanan: Dict[Sayfa, Izgara] = {}      # kitaptan çıkan sayfaların ızgarası (geri al için)
+        self._secili_sayfa: Optional[Sayfa] = None
+        self._son_indeks = 0
+        self._gecmis_islemi = False
         self._mod = "Hazır"
         self.setStyleSheet(theme.stylesheet())
         self._kur()
-        for s in self.kitap.sayfalar:
-            self._sekme_ekle(s)
-        self.sekmeler.setCurrentIndex(0)
-        self._sekme_degisti(0)
+        self._sekmeleri_esitle(self.kitap.sayfalar[0])
+        self.kitap.dinle(self._kitap_olayi)           # sayfa ekle/sil/ad/taşı + geri al/yinele buradan yansır
         self._baslik_guncelle()
         self.resize(1100, 700)
 
@@ -196,7 +201,7 @@ class Pencere(QMainWindow):
         self.belge_etiketi.setText(f"{self.belge_adi} — {APP_NAME}")
 
     # ------------------------------------------------------------------ sayfalar
-    def _sekme_ekle(self, sayfa: Sayfa, indeks: Optional[int] = None) -> Izgara:
+    def _izgara_olustur(self, sayfa: Sayfa) -> Izgara:
         g = Izgara(sayfa, yigin=self.yigin)
         g.aktifDegisti.connect(self._arayuzu_guncelle)
         g.secimDegisti.connect(self._arayuzu_guncelle)
@@ -206,19 +211,66 @@ class Pencere(QMainWindow):
         g.suruklemeBitti.connect(self._arayuzu_guncelle)
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
+        g.gecmisIslemi.connect(self._gecmis_islemi_ayarla)
         self._izgaralar[sayfa] = g
         self.izgara_yigini.addWidget(g)
-        if indeks is None:
-            i = self.sekmeler.addTab(sayfa.ad)
-        else:
-            i = self.sekmeler.insertTab(indeks, sayfa.ad)
-        self.sekmeler.setTabData(i, sayfa.sekme_rengi)
         return g
 
+    def _gecmis_islemi_ayarla(self, basladi: bool):
+        self._gecmis_islemi = basladi
+
+    def _sekmeleri_esitle(self, secilecek: Optional[Sayfa] = None):
+        """Izgaraları ve sekme çubuğunu kitabın güncel sayfa listesine göre eşitler.
+
+        Kitaptan çıkan sayfanın ızgarası atılmaz, saklanır (silmeyi geri alınca seçim/kaydırma/
+        yakınlaştırma korunur)."""
+        sayfalar = self.kitap.sayfalar
+        for s in [s for s in self._izgaralar if s not in sayfalar]:
+            g = self._izgaralar.pop(s)
+            self.izgara_yigini.removeWidget(g)
+            g.hide()
+            self._saklanan[s] = g
+        for s in sayfalar:
+            if s not in self._izgaralar:
+                g = self._saklanan.pop(s, None)
+                if g is None:
+                    self._izgara_olustur(s)
+                else:
+                    self._izgaralar[s] = g
+                    self.izgara_yigini.addWidget(g)
+        adlar = [s.ad for s in sayfalar]
+        if [self.sekmeler.tabText(i) for i in range(self.sekmeler.count())] != adlar:
+            self.sekmeler.blockSignals(True)         # (sürüklemeden gelen olayda zaten eşit: yeniden kurulmaz)
+            while self.sekmeler.count():
+                self.sekmeler.removeTab(0)
+            for ad in adlar:
+                self.sekmeler.addTab(ad)
+            self.sekmeler.blockSignals(False)
+        for i, s in enumerate(sayfalar):
+            self.sekmeler.setTabData(i, s.sekme_rengi)
+        if secilecek not in sayfalar:
+            secilecek = (self._secili_sayfa if self._secili_sayfa in sayfalar
+                         else sayfalar[min(self._son_indeks, len(sayfalar) - 1)])
+        i = sayfalar.index(secilecek)
+        self.sekmeler.blockSignals(True)
+        self.sekmeler.setCurrentIndex(i)
+        self.sekmeler.blockSignals(False)
+        self.sekmeler.update()
+        self._sekme_degisti(i)
+
+    def _kitap_olayi(self, olay: Olay):
+        """Modeldeki değişikliklere arayüz tepkisi (doğrudan yazım, geri al ve yinele aynı yoldan gelir)."""
+        if olay.tur == "sayfa":
+            if olay["islem"] == "sil":
+                self._son_indeks = olay["indeks"]
+            self._sekmeleri_esitle(olay.sayfa if olay["islem"] == "ekle" else None)
+        elif (self._gecmis_islemi and olay.tur in ("hucre", "yapi", "boyut")
+              and olay.sayfa in self._izgaralar and olay.sayfa is not self._secili_sayfa):
+            # geri al/yinele başka sayfadaki bir değişikliği geri aldı: o sayfaya geç (Excel gibi)
+            self.sekmeler.setCurrentIndex(self.kitap.sayfalar.index(olay.sayfa))
+
     def sayfa_ekle(self):
-        s = self.kitap.sayfa_ekle()
-        self._sekme_ekle(s)
-        self.sekmeler.setCurrentIndex(len(self.kitap.sayfalar) - 1)
+        self.yigin.calistir(SayfaEkle(self.kitap))
 
     def sayfa_sil(self, i: int):
         sayfa = self.kitap.sayfalar[i]
@@ -228,18 +280,13 @@ class Pencere(QMainWindow):
         if sayfa.kullanilan_aralik() is not None:
             c = QMessageBox.question(
                 self, APP_NAME,
-                f"“{sayfa.ad}” sayfası silinecek ve bu işlem geri alınamaz. Devam edilsin mi?",
+                f"“{sayfa.ad}” sayfası ve içindeki veriler silinecek (Ctrl+Z ile geri alınabilir). "
+                "Devam edilsin mi?",
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if c != QMessageBox.Yes:
                 return
-        self.kitap.sayfa_sil(sayfa)
         Izgara._pano_durumu = None        # kesilen/kopyalanan sayfa silinmiş olabilir
-        g = self._izgaralar.pop(sayfa)
-        self.izgara_yigini.removeWidget(g)
-        g.deleteLater()
-        self.sekmeler.removeTab(i)
-        self.yigin.temizle()      # silinen sayfaya ait komutlar geçersiz kalır
-        self._sekme_degisti(self.sekmeler.currentIndex())
+        self.yigin.calistir(SayfaSil(self.kitap, sayfa))
 
     def sayfa_yeniden_adlandir(self, i: int, yeni: Optional[str] = None):
         sayfa = self.kitap.sayfalar[i]
@@ -248,12 +295,12 @@ class Pencere(QMainWindow):
                                                text=sayfa.ad)
             if not tamam:
                 return
+        if yeni == sayfa.ad:
+            return
         try:
-            self.kitap.yeniden_adlandir(sayfa, yeni)
+            self.yigin.calistir(SayfaYenidenAdlandir(self.kitap, sayfa, yeni))
         except ValueError as e:
             QMessageBox.warning(self, APP_NAME, str(e))
-            return
-        self.sekmeler.setTabText(i, sayfa.ad)
 
     def sekme_rengi_ata(self, i: int, renk: Optional[str]):
         self.kitap.sayfalar[i].sekme_rengi = renk
@@ -283,7 +330,7 @@ class Pencere(QMainWindow):
         self.sekme_menusu_olustur(nokta).exec(self.sekmeler.mapToGlobal(nokta))
 
     def _sekme_tasindi(self, kaynak: int, hedef: int):
-        self.kitap.sayfa_tasi(self.kitap.sayfalar[kaynak], hedef)
+        self.yigin.calistir(SayfaTasi(self.kitap, self.kitap.sayfalar[kaynak], hedef))
 
     def _sekme_git(self, yon: int):
         n = self.sekmeler.count()
@@ -292,7 +339,8 @@ class Pencere(QMainWindow):
     def _sekme_degisti(self, i: int):
         if i < 0 or i >= len(self.kitap.sayfalar):
             return
-        g = self._izgaralar[self.kitap.sayfalar[i]]
+        self._secili_sayfa = self.kitap.sayfalar[i]
+        g = self._izgaralar[self._secili_sayfa]
         self.izgara_yigini.setCurrentWidget(g)
         self.yakin_kaydirici.blockSignals(True)
         self.yakin_kaydirici.setValue(round(g.yakinlastirma * 100))
@@ -373,11 +421,19 @@ class Pencere(QMainWindow):
             self.ozet_etiketi.setText("")
             return
         sayilar, dolu = [], 0
-        hucreler = {(r, c): h for a in g.secimler for r, c, h in g.sayfa.aralikta(a)}
-        for h in hucreler.values():                  # üst üste binen aralıklarda hücre bir kez sayılır
-            dolu += 1
-            if isinstance(h.deger, float):
-                sayilar.append(h.deger)
+        aralik_listesi = g.secimler
+        sonuc_al = g.sayfa.sonuc
+        gorulen = set() if len(aralik_listesi) > 1 else None   # üst üste binen aralıklarda hücre bir kez sayılır
+        for a in aralik_listesi:
+            for r, c, h in g.sayfa.aralikta(a):
+                if gorulen is not None:
+                    if (r, c) in gorulen:
+                        continue
+                    gorulen.add((r, c))
+                dolu += 1
+                v = h.deger if h.formul is None else sonuc_al(r, c)
+                if isinstance(v, float):
+                    sayilar.append(v)
         if not sayilar:
             self.ozet_etiketi.setText(f"Sayım: {dolu}  " if dolu else "")
             return
