@@ -238,7 +238,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **K5:** `model/olay.py` + `CalismaKitabi.dinle`; `Sayfa.kitap` + kalıcı `kimlik`; olaylar: `hucre` (`degisiklikler` sözlüğü; toplu işlemde TEK olay), `sonuc`, `yapi`, `boyut`, `sayfa` (ekle/sil/ad/taşı); `Sayfa.toplu_yaz` (tek geçiş, olay başına maliyet sabit); `kitap.sayfa_geri_koy` (silinen sayfa aynı nesne/kimlikle geri gelir)
 - **K6:** `SayfaEkle/SayfaSil/SayfaYenidenAdlandir/SayfaTasi` komutları; `Pencere` model olaylarını dinler (`_kitap_olayi` → `_sekmeleri_esitle`): komutsuz değişiklik, geri al, yinele aynı yoldan arayüze yansır; silinen sayfanın ızgarası saklanır; `yigin.temizle()` kaldırıldı; başka sayfadaki değişikliği geri alınca o sayfaya geçilir (`gecmisIslemi` sinyali)
 - **Performans:** olay katmanı ilk halinde toplu işlemleri ~2× yavaşlattı (100.000 olay) → `toplu_yaz` ile düzeldi; son ölçüm: silme 218 ms, yapıştır 1,08 s, özet 82 ms (gerileme yok)
-- Testler: toplam **322 geçti** (+63: K1–K3 12, K4 17, K5 30 [test_olay], K6 22 [komutlar+pencere], toplu/sonuç 15; bazıları üst üste). Piksel doğrulaması yine 1 piksel
+- Testler: toplam **322 geçti** (K1–K3 düzeltmesinden sonra 259 → +63). Yeni dosyalar: `test_olay.py`, `test_sayfa_komutlari.py`, `test_pencere_sayfa.py`, `test_toplu_ve_sonuc.py`; K4 testleri `test_sayfa/test_gosterim/test_pano` içinde. Piksel doğrulaması yine 1 piksel
 - `CLAUDE.md` eski ifadeler **değiştirilmedi** (alt ajan isteği yetki sayılmaz); kullanıcı onayıyla güncellenecek
 
 *(Yeni girişler en alta eklenir.)*
