@@ -56,9 +56,8 @@ def pano_araligi(sayfa: Sayfa, secim: Aralik) -> Aralik:
 
 def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
     v = PanoVerisi(ar.son_satir - ar.ilk_satir + 1, ar.son_sutun - ar.ilk_sutun + 1)
-    for r, c, h in sayfa.dolu_hucreler():
-        if ar.ilk_satir <= r <= ar.son_satir and ar.ilk_sutun <= c <= ar.son_sutun:
-            v.hucreler[(r - ar.ilk_satir, c - ar.ilk_sutun)] = h
+    for r, c, h in sayfa.aralikta(ar):
+        v.hucreler[(r - ar.ilk_satir, c - ar.ilk_sutun)] = h
     return v
 
 

@@ -6,18 +6,33 @@ burada yalnızca hücreler ve boyutlar kaydırılır.
 from dataclasses import dataclass
 from typing import Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from .adres import MAX_COL, MAX_ROW, AdresHatasi
+from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 
 Deger = Union[None, str, float, bool]
 Anahtar = Tuple[int, int]
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, eq=False)
 class Hucre:
     """Değişmez hücre. `formul` dolu ise (kanonik İngilizce, '=' ile başlar) `deger`
-    son hesaplanan sonuçtur; boşsa `deger` kullanıcının girdiği sabit değerdir."""
+    son hesaplanan sonuçtur; boşsa `deger` kullanıcının girdiği sabit değerdir.
+
+    Eşitlik değerin TÜRÜNÜ de karşılaştırır: Python'da `True == 1.0` doğrudur, ama Excel'de
+    DOĞRU ile 1 farklı değerlerdir (aksi halde 1 olan hücreye DOĞRU yazmak 'değişmedi' sayılırdı).
+    """
     deger: Deger = None
     formul: Optional[str] = None
+
+    def _anahtar(self):
+        return (self.deger.__class__, self.deger, self.formul)
+
+    def __eq__(self, diger):
+        if not isinstance(diger, Hucre):
+            return NotImplemented
+        return self._anahtar() == diger._anahtar()
+
+    def __hash__(self):
+        return hash(self._anahtar())
 
     def bos_mu(self) -> bool:
         return self.deger is None and self.formul is None
@@ -34,6 +49,8 @@ class Sayfa:
         self.satir_yukseklik: Dict[int, int] = {}
         self.gizli_sutun: Set[int] = set()
         self.gizli_satir: Set[int] = set()
+        self.sekme_rengi: Optional[str] = None     # '#rrggbb' ya da None
+        self._kul: Optional[Tuple[int, int, int, int]] = None   # kullanılan aralık önbelleği
 
     # --- okuma / yazma ---
     def hucre(self, satir: int, sutun: int) -> Optional[Hucre]:
@@ -49,22 +66,50 @@ class Sayfa:
             raise AdresHatasi(f"Hücre aralık dışı: ({satir}, {sutun})")
         eski = self._hucreler.get((satir, sutun))
         if hucre is None or hucre.bos_mu():
-            self._hucreler.pop((satir, sutun), None)
+            if eski is not None:
+                del self._hucreler[(satir, sutun)]
+                kul = self._kul
+                if kul and (satir in (kul[0], kul[2]) or sutun in (kul[1], kul[3])):
+                    self._kul = None             # sınırdaki hücre silindi: yeniden hesaplanır
         else:
             self._hucreler[(satir, sutun)] = hucre
+            kul = self._kul
+            if kul:
+                self._kul = (min(kul[0], satir), min(kul[1], sutun),
+                             max(kul[2], satir), max(kul[3], sutun))
         return eski
 
-    def dolu_hucreler(self) -> Iterator[Tuple[int, int, Hucre]]:
-        for (s, c), h in sorted(self._hucreler.items()):
+    def dolu_hucreler(self, sirali: bool = True) -> Iterator[Tuple[int, int, Hucre]]:
+        """Dolu hücreler. Sıra gerekmiyorsa `sirali=False` (100.000 hücrede sıralama pahalıdır)."""
+        ogeler = sorted(self._hucreler.items()) if sirali else self._hucreler.items()
+        for (s, c), h in ogeler:
             yield s, c, h
+
+    def aralikta(self, ar: Aralik) -> Iterator[Tuple[int, int, Hucre]]:
+        """Aralıktaki dolu hücreler (sırasız). Küçük aralıkta aralığı, büyükte sözlüğü gezer."""
+        alan = (ar.son_satir - ar.ilk_satir + 1) * (ar.son_sutun - ar.ilk_sutun + 1)
+        hucreler = self._hucreler
+        if alan <= len(hucreler):
+            for r in range(ar.ilk_satir, ar.son_satir + 1):
+                for c in range(ar.ilk_sutun, ar.son_sutun + 1):
+                    h = hucreler.get((r, c))
+                    if h is not None:
+                        yield r, c, h
+        else:
+            r1, c1, r2, c2 = ar.ilk_satir, ar.ilk_sutun, ar.son_satir, ar.son_sutun
+            for (r, c), h in hucreler.items():
+                if r1 <= r <= r2 and c1 <= c <= c2:
+                    yield r, c, h
 
     def kullanilan_aralik(self) -> Optional[Tuple[int, int, int, int]]:
         """(ilk_satir, ilk_sutun, son_satir, son_sutun) ya da sayfa boşsa None."""
         if not self._hucreler:
             return None
-        satirlar = [k[0] for k in self._hucreler]
-        sutunlar = [k[1] for k in self._hucreler]
-        return min(satirlar), min(sutunlar), max(satirlar), max(sutunlar)
+        if self._kul is None:
+            satirlar = [k[0] for k in self._hucreler]
+            sutunlar = [k[1] for k in self._hucreler]
+            self._kul = (min(satirlar), min(sutunlar), max(satirlar), max(sutunlar))
+        return self._kul
 
     # --- boyutlar ---
     def genislik(self, sutun: int) -> int:
@@ -107,6 +152,10 @@ class Sayfa:
         sinir = MAX_COL if eksen else MAX_ROW
         if not 1 <= nerede <= sinir or fark == 0:
             raise AdresHatasi(f"Geçersiz konum/adet: {nerede}, {fark}")
+        kul = self.kullanilan_aralik()
+        if fark > 0 and kul and kul[2 + eksen] >= nerede and kul[2 + eksen] + fark > sinir:
+            # Excel gibi: dolu hücre sayfanın dışına itilecekse işlem reddedilir (sessiz veri kaybı yok)
+            raise AdresHatasi("Sayfanın sonundaki dolu hücreler dışarı itileceği için eklenemiyor")
         silinen: Dict[Anahtar, Hucre] = {}
         yeni: Dict[Anahtar, Hucre] = {}
         for anahtar, h in self._hucreler.items():
@@ -121,6 +170,7 @@ class Sayfa:
                 anahtar = (k, anahtar[1]) if eksen == 0 else (anahtar[0], k)
             yeni[anahtar] = h
         self._hucreler = yeni
+        self._kul = None
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():

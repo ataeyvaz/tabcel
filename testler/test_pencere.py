@@ -202,3 +202,29 @@ def test_ctrl_tekerlek_yakinlastirir(pencere):
     QApplication.sendEvent(g.viewport(), olay)
     g.wheelEvent(olay)
     assert g.yakinlastirma > 1.0
+
+
+def test_sekme_rengi(pencere):
+    pencere.sekme_rengi_ata(0, "#ff0000")
+    assert pencere.kitap.sayfalar[0].sekme_rengi == "#ff0000"
+    assert pencere.sekmeler.tabData(0) == "#ff0000"
+    assert not pencere.sekmeler.grab().isNull()                  # renkli şeritle çizim
+    pencere.sekme_rengi_ata(0, None)
+    assert pencere.kitap.sayfalar[0].sekme_rengi is None
+
+
+def test_sekme_rengi_tasinan_sekmeyle_gider(pencere):
+    pencere.sayfa_ekle()
+    pencere.sekme_rengi_ata(0, "#00ff00")
+    pencere.sekmeler.moveTab(0, 1)
+    assert pencere.kitap.sayfalar[1].sekme_rengi == "#00ff00"
+    assert pencere.sekmeler.tabData(1) == "#00ff00"
+
+
+def test_sekme_menusu_rengi_kaldir_yalniz_renkliyse(pencere):
+    d = pencere.sekmeler.tabRect(0).center()
+    metinler = [a.text() for a in pencere.sekme_menusu_olustur(d).actions()]
+    assert "Sekme rengini kaldır" not in metinler and "Sekme rengi…" in metinler
+    pencere.sekme_rengi_ata(0, "#123456")
+    metinler = [a.text() for a in pencere.sekme_menusu_olustur(d).actions()]
+    assert "Sekme rengini kaldır" in metinler

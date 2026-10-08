@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Son commit: `da848eb` (Faz 0–1 başı) · Testler: 197 geçiyor
+Son commit: `da848eb` (Faz 0–1 başı) · Testler: 259 geçiyor · Son commit: Faz 1 sonu (bkz. `git log`) · Ayrıntılı test sonuçları: `test.md`
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -26,9 +26,11 @@ Son commit: `da848eb` (Faz 0–1 başı) · Testler: 197 geçiyor
 4c. ✅ Ana pencere bitti (`ui/window.py`): yeşil başlık şeridi (+ Win11 başlık çubuğu rengi), ad kutusu, formül çubuğu, sayfa sekmeleri, durum çubuğu, yakınlaştırma (20 test)
 4d. ✅ Satır/sütun işlemleri bitti: kenardan sürükleyerek boyutlandırma (seçili tam satır/sütunlar birlikte), çift tık otomatik sığdır, ekle/sil/gizle/göster, başlık sağ tık menüsü, Ctrl+9/0 gizle, Ctrl+Shift+9/0 göster, Ctrl+−/+ sil/ekle, gizli satır/sütunlar gezinmede atlanır; hepsi geri alınır (27 test)
 4e. ✅ Pano bitti: `model/pano.py` + ızgara Ctrl+C/X/V (Ctrl+Insert, Shift+Insert/Delete), kesik çizgili çerçeve, hücre sağ tık menüsü (41 test)
-4f. Faz 1 kalan — birden çok aralık (Ctrl+tık), `####`, taşan metin, Alt+Enter, sayfa rengi, Dosya menüsü (Yeni/Çıkış dışında boş); sonra Faz 1 Opus gözden geçirmesi + 100.000 hücre ölçümü (§5b)
+4f. ✅ Taşan metin, `####`/sayı kısaltma, Alt+Enter bitti (16 test)
+4g. ✅ Çoklu aralık (Ctrl+tık/sürükle, Shift genişletir, başlık Ctrl+tık; Delete/özet hepsine uygulanır, pano reddeder) + sayfa sekme rengi (sağ tık; renkli şerit)
+4h. **Faz 1 kodu tamam.** Kalan: ① 100.000 hücre performans ölçümü (§5b, zorunlu) ② Faz 1 Opus gözden geçirmesi ③ Dosya menüsü içeriği (Yeni/Aç/Kaydet) Faz 4'e taşındı
 5. Faz 1 sonu Opus gözden geçirmesi (✅ pano, ✅ yakınlaştırma, ✅ sayfa sıralama)
-5b. **Faz 2'ye geçmeden ZORUNLU:** 100.000 hücre performans ölçümü (5.000 × 20: ilk çizim, kaydırma kare süresi < 16 ms, düzenleme, geri al, `kullanilan_aralik`, Ctrl+ok); sonuç §8'e yazılır (kullanıcı kararı 2026-10-08)
+5b. ✅ 100.000 hücre performans ölçümü YAPILDI (§8, `test.md` §4): akıcı kaydırma hedefi karşılandı; 6 ölçüm hedefin üstünde → **kabul kararı kullanıcıda** (`test.md` §6)
 5c. Her faz sonunda **gerçek iş senaryosu testi** (örnek bütçe/stok/not çizelgesi) ve gidiş-dönüş/regresyon denetimi
 6. Faz 2 — formül motoru çekirdeği (**Opus ile**), sonra fonksiyonlar (Sonnet)
 
@@ -80,7 +82,21 @@ Son commit: `da848eb` (Faz 0–1 başı) · Testler: 197 geçiyor
 - Sözcük'ten ders: ikonlar 20 px ızgarada 1 px çizgiyle çizilmeli, yoksa bulanık görünür
 
 ## 8. Performans ölçümleri
-- **100.000 hücre ölçümü: HENÜZ YAPILMADI** — Faz 2'den önce zorunlu (§2, madde 5b). Sonuç buraya tarihli yazılacak.
+**2026-10-08 — 100.000 dolu hücre (5.000 × 20), 1280×800 pencere, Windows, gerçek yazı tipi** (`araclar/performans_olcum.py`; ayrıntı ve tüm satırlar: `test.md` §4)
+| Ölçüm | İlk | Son | Hedef |
+|---|---|---|---|
+| Dikey kaydırma 1 satır/kare | 49 ms | **8,7 ms** ✅ | 16 |
+| Dikey kaydırma 3 satır/kare | — | 13,7 ms ✅ | 16 |
+| Ok tuşu + boyama | tam çizim 58 ms | 16,0 ms ✅ (sınırda) | 16 |
+| Dikey sıçrama (çubuk sürükleme) | 34 ms | 28,8 ms ❌ | 16 |
+| Yatay kaydırma | 29 ms | 18,6 ms ❌ | 16 |
+| Shift+Ok seçim genişletme | — | 25,1 ms ❌ | 16 |
+| Özet (100.000 hücre seçili) | 543 ms | 124 ms ❌ (tek seferlik) | 100 |
+| Yapıştır 100.000 hücre | 3044 ms | 1058 ms ✅ | 3000 |
+| Sütun sığdır / `kullanilan_aralik` | 726 / 21 ms | 130 / 0 ms ✅ | 500 / 50 |
+
+Yapılan: metin/sayı/`QStaticText` önbelleği, sığan metne kırpma yok, dikey kaydırmada `viewport().scroll()` + yalnız açığa çıkan satırları çizme (**tuzak:** `QAbstractScrollArea.scrollContentsBy` tüm viewport'u geçersiz kılar → boşaltıldı), seçim değişince yalnız eski+yeni bölgeyi boyama, `kullanilan_aralik` önbelleği, sırasız `aralikta`. Doğrulama: `araclar/cizim_dogrula.py` gerçek ekran görüntüsüyle artımlı çizimi tam çizimle karşılaştırır (2 gerçek hata yakalandı ve düzeltildi; kalan fark 1 piksel).
+**Kabul kararı bekliyor:** kalan ❌'ler için öneri "kabul, Faz 3'te çizim yeniden yapılırken ele al" (`test.md` §6).
 
 ## 8b. Excel web'de doğrulanacaklar (kullanıcı doğrular; sonra teste dönüşür)
 Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel ayara ayarlıyken denenecek. Her satır "belirsiz" — doğrulanana dek kodda varsayım olarak işaretli.
@@ -96,6 +112,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 8 | 1900 artık yıl hatası: `=TARİH(1900;2;29)`, `=HAFTANINGÜNÜ(1)`, `=HAFTANINGÜNÜ(59)`, `=GÜN(60)` ve `AY(60)` sonuçları | 60 = 29.2.1900 kabul | ⏳ |
 | 9 | Çok hücreli seçimde Enter, seçim içinde mi gezer? | Gezmez, aktif hücre bir aşağı (basitleştirme) | ⏳ |
 | 10 | Kopyalanan aralık, seçilen hedefin katı olmadığında (ör. 1×2 kaynak, 2×3 seçim) Excel ne yapar? Hata verir mi, sol üst köşeye mi yapıştırır? | Sol üst köşeye yapıştırır (`yapistirma_plani`) | ⏳ |
+| 11 | Alt+Enter'lı hücre kaydırma kapalıyken tek satırda nasıl görünür (satır sonu hiç yok mu, boşluk mu)? Genel biçimde dar sütunda sayı yuvarlama/bilimsel geçiş eşiği nedir? | Satır sonu görünmez; 0,01 altı bilimsele geçer | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -172,11 +189,44 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 
 ## [2026-10-08] — Faz 1: Pano + ilk commit (Sonnet 5.5)
 - İlk commit `da848eb` (kullanıcı istedi): Faz 0 + Faz 1'in o ana kadarki işi
-- `model/gosterim.py` (`goster`, Genel biçim; grid'den taşındı), `model/pano.py` (Qt'siz): `PanoVerisi` (göreli konumlu hücreler + JSON), `pano_araligi` (tam satır/sütun seçimi kullanılan alanla sınırlanır), TSV yaz/çöz (Excel gibi tırnaklama; çok satırlı hücre, boş satır, `
+- `model/gosterim.py` (`goster`, Genel biçim; grid'den taşındı), `model/pano.py` (Qt'siz): `PanoVerisi` (göreli konumlu hücreler + JSON), `pano_araligi` (tam satır/sütun seçimi kullanılan alanla sınırlanır), TSV yaz/çöz (Excel gibi tırnaklama; çok satırlı hücre, boş satır, `
+
 `), HTML yaz/çöz (`html.parser`, ilk tablo, colspan, `<br>`, iç içe tablo/script yoksayılır), `yapistirma_plani` (kaynağın boş hücreleri hedefi boşaltır; tek hücre/kat → seçime yayılır; sınır aşımı `AdresHatasi`)
 - Izgara: kopyala/kes/yapıştır panoya 3 biçimde yazar (düz metin TSV + HTML tablo + kendi `application/x-tabcel-hucreler` JSON'u + jeton); yapıştırırken sıra: kendi biçimimiz → HTML tablo → düz metin. Dışarıdan gelen metin hücreye elle yazılmış gibi çözülür (`girdi_coz`). **Kes**: yapıştırılana kadar yerinde kalır, yapıştırınca kaynak boşalır (kaynak+hedef tek geri al adımı, sayfalar arası da); yalnızca bir kez. Pano başka yerden değişirse (jeton eşleşmezse) işaret kalkar; Esc de kaldırır. Yapıştırılan bölge seçilir. Hücre sağ tık menüsü: Kes/Kopyala/Yapıştır/İçeriği temizle (başlık menüsüne de pano eylemleri eklendi)
 - Sapma/eksik: formül kopyalanınca **göreli başvurular kaymaz** (Faz 2'de başvuru kaydırma ile); formülün hesaplanmış değeri yokken dışarıya formül metni verilir; biçim (renk/yazı tipi) panoya Faz 3'te; "Özel Yapıştır" yok; çerçeve animasyonsuz (sabit kesik çizgi)
 - **Excel web'de doğrulanacak** (§8b'ye eklendi): çok hücreli seçime, kat olmayan boyutta kopya yapıştırınca Excel'in tam davranışı
 - Testler: toplam 197 geçti. Sonraki: çoklu aralık, `####`, taşan metin, Alt+Enter (Faz 1 kalanları)
+
+## [2026-10-08] — Faz 1: Taşan metin, #### , Alt+Enter (Sonnet 5.5)
+- `Izgara._yerlesim()`: görünen hücrelerin metin yerleşimi (test edilebilir). Metin sola yaslıysa ve sığmıyorsa sağdaki **boş** hücrelere taşar (dolu komşuda kesilir; gizli sütunlar atlanır); taşan metnin altındaki dikey ızgara çizgisi çizilmez; sayılar taşmaz; mantıksal değer ortalanır. Çizim sırası artık: yerleşim → çizgiler → metin → seçim
+- `model/gosterim.sayiyi_sigdir`: sayı sütuna sığmazsa Excel'in Genel biçimi gibi önce ondalıkları yuvarlar (yarım değer sıfırdan uzağa: 2,5→3), olmazsa bilimsel (`1,2E+11`), o da sığmazsa `####`. `goster` büyük `E` kullanır. Yaklaşım: 0,01'in altındaki sayılar doğrudan bilimsele geçer (yuvarlama basamak kaybettirmesin)
+- Alt+Enter: düzenleyicide satır sonu ekler (QLineEdit `
+` taşır, düzenlemede boşluk gibi görünür); hücrede **kaydırma kapalıyken satır sonu görünmez** ("ilk"+"ikinci" → "ilkikinci"). Metni kaydır (Faz 3) gelince çok satırlı gösterilecek, Excel de Alt+Enter'da kaydırmayı otomatik açar
+- **Excel web'de doğrulanacak** (§8b 11): Alt+Enter'lı hücre, kaydırma kapalıyken satır sonunu hiç göstermez mi, boşluk gibi mi? Genel biçimde dar sütunda yuvarlama/bilimsel geçiş eşiği
+- Eksik: ekran dışında sola kaymış hücrenin sağa taşan metni görünür alana uzanmıyor; metin ortalı/sağa hizalı taşma (Faz 3 hizalamayla)
+- Testler: toplam 213 geçti. Commit atılmadı (kullanıcı istemedi)
+
+## [2026-10-08] — Faz 1: Çoklu aralık + sekme rengi (Sonnet 5.5)
+- Izgara: `secimler` (Ctrl ile eklenen önceki aralıklar + birincil), `secili_mi(r,c)`. Ctrl+tık/sürükle yeni aralık ekler (ilk hücre/başlık dahil), Shift+tık son aralığı genişletir, düz tık ya da klavye gezintisi tümünü kaldırır. Dolgu/başlık vurgusu tüm aralıklar için; ek aralıklar kendi çerçevesiyle. Delete tüm aralıkları tek adımda siler. Durum çubuğu özeti aralıkları birleştirir (üst üste binen hücre bir kez sayılır)
+- Sapma: çoklu seçimde **kopyala/kes reddedilir** ("Bu komut birden çok seçimde kullanılamaz", Excel de aynı; hizalı aralık istisnası yok); satır/sütun ekle-sil-gizle-boyutlandır yalnız birincil aralığa uygulanır (Excel hepsine uygular) — gerekirse Faz 3'te biçimlendirmeyle birlikte genişletilir
+- Sekme rengi: `Sayfa.sekme_rengi`, sağ tık ▸ Sekme rengi…/kaldır, sekmenin altında renkli şerit, sürüklemeyle taşınır; .xlsx'e yazma Faz 4
+- Tuzak: `QMenu.exec` yamalanamaz (gerçek menü açılıp testi kilitler) → menüler `*_olustur`/`baslik_menusu` gibi yöntemlerde kurulur, testte exec edilmez
+- Testler: toplam 225 geçti. Sonraki: 100.000 hücre ölçümü (§5b)
+
+## [2026-10-08] — Faz 1 sonu: performans ölçümü, optimizasyon, test.md (Sonnet 5.5)
+- İstek: 100.000 hücre ölçümü + test süreci/sonuçları `test.md`'ye; Opus gerekiyorsa geçilsin
+- Ölçüm → profil (`cProfile`) → düzeltme döngüsü; kare süresi 49 → 8,7 ms (bkz. §8). 2 gerçek çizim hatası piksel doğrulamayla bulundu ve düzeltildi (ekran dışı satırda eski başlık vurgusu; uzun seçim çerçevesinin kaydırma artefaktı)
+- `araclar/`: `performans_olcum.py`, `cizim_dogrula.py` (gerçek pencere), `test_raporu.py` (test.md otomatik bölümünü üretir)
+- Yeni testler: kullanılan aralık önbelleği (rastgele işlemlerle), `aralikta`, artımlı kaydırma geometrisi, PageUp/Down, Ctrl+Shift+9/0, Ctrl+Artı, Ctrl+Insert/Shift+Insert/Shift+Delete, satır otomatik sığdır, sürükleme, yakınlaştırma sinyali → toplam 248 geçti
+- `test.md` yazıldı: süreç, katmanlar, kapsam matrisi, her testin ✅/❌ sonucu, performans, piksel doğrulama, açık kusurlar, elle test bekleyenler
+- **Model geçişi:** Claude Code'da `/model` yalnızca kullanıcı tarafından değiştirilebilir; Opus gözden geçirmesi Opus 5.5 alt ajanıyla (salt okunur) yaptırıldı. Sonucu `test.md` §8'e işlenecek
+- Commit atılmadı (kullanıcı istemedi)
+
+## [2026-10-08] — Faz 1 Opus gözden geçirmesi ve düzeltmeler
+- Opus 5.5 (salt okunur alt ajan) Faz 1'i gözden geçirdi; rapor `test.md` §8'de. **Tavsiye: koşullu evet** (K1–K3 düzelt, K4–K6 mimari kararlar, K7 tasarım notu, sonra Faz 2)
+- **Düzeltildi (yeniden üretilip test yazıldı):** K1 `Hucre` eşitliği türü de karşılaştırır (`True != 1.0`); K2 `_kaydir` dolu hücreyi sayfa dışına itmeyi reddeder; K3 kopyala/kes işareti içerik/yapı değişikliği, düzenleme, geri al/yinele ve sayfa silmede iptal edilir (boyutlandırma/gizleme ve art arda yapıştırma işareti korur); `_koru` odak kaybında sıfırlanır → 259 test
+- **Karar bekleyen mimari (Faz 2'den önce, ~1–1,5 gün):** K4 girdi/sonuç ayrımı + `Hata` türü; K5 kitap düzeyinde tek değişiklik giriş noktası + dinleyiciler; K6 sayfa işlemlerinin geri alınabilir komutlar olması + formülde sayfa kimliği/adı kararı; K7 formül düzenlerken "işaretleme modu" (Faz 2 başı). Ayrıntı ve öneriler: `test.md` §8
+- Kes-yapıştır Faz 2'de **taşıma** komutu olmalı (taşınan hücrelere işaret eden formüller yeni yere kayar): "temizle + yaz" yetmez (`HucreTasi`)
+- `CLAUDE.md` "Dosya yapısı (hedef — Faz 1'de oluşur)" başlığı eskimiş; kullanıcı onayıyla güncellenecek (ajan isteği CLAUDE.md'yi değiştirmek için yeterli değil)
 
 *(Yeni girişler en alta eklenir.)*

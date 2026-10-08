@@ -3,7 +3,7 @@ import os
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 import pytest
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QApplication
 
@@ -660,3 +660,443 @@ def test_duzenleyicide_ctrl_c_metin_kopyalar_ve_isareti_kaldirir(izgara):
     izgara.duzenlemeyi_bitir(False)
     assert QApplication.clipboard().text() == "1"
     assert Izgara._pano_durumu is None                      # hücre panosu artık geçerli değil
+
+
+# --- taşan metin, #### ---
+def yerlesim(g):
+    from PySide6.QtGui import QFontMetrics
+    sut = list(g._gorunen_sutunlar())
+    sat = list(g._gorunen_satirlar())
+    return g._yerlesim(sut, sat, QFontMetrics(g._yazi_tipi()), g._z(4))
+
+
+def metin_bul(metinler, metin):
+    return next(m for m in metinler if m[3] == metin)
+
+
+def test_uzun_metin_bos_komsuya_tasar(izgara):
+    izgara.sayfa.ata(12, 1, Hucre("çok uzun bir metin burada taşıyor"))
+    metinler, tasma = yerlesim(izgara)
+    kirp = metin_bul(metinler, "çok uzun bir metin burada taşıyor")[0]
+    assert kirp.width() > izgara.sayfa.genislik(1) * 2
+    assert (12, 1) in tasma and (12, 2) in tasma
+
+
+def test_dolu_komsu_tasmayi_keser(izgara):
+    izgara.sayfa.ata(12, 1, Hucre("çok uzun bir metin burada taşıyor"))
+    izgara.sayfa.ata(12, 3, Hucre("engel"))
+    metinler, tasma = yerlesim(izgara)
+    kirp = metin_bul(metinler, "çok uzun bir metin burada taşıyor")[0]
+    assert kirp.width() == izgara.sayfa.genislik(1) * 2 - 1       # yalnızca B'ye kadar
+    assert (12, 2) not in tasma and (12, 1) in tasma
+
+
+def test_kisa_metin_tasmaz(izgara):
+    izgara.sayfa.ata(12, 1, Hucre("kısa"))
+    metinler, tasma = yerlesim(izgara)
+    assert (12, 1) not in tasma
+    assert metin_bul(metinler, "kısa")[0].width() == izgara.sayfa.genislik(1) - 1
+
+
+def test_sayi_tasmaz_sigmazsa_kisaltilir_ya_da_diyez(izgara):
+    izgara.sayfa.sutun_genislik[1] = 30
+    izgara.sayfa.ata(12, 1, Hucre(3.14159265))
+    izgara.sayfa.ata(13, 1, Hucre(123456789.0))
+    izgara.sayfa.ata(14, 1, Hucre(1.0))
+    metinler, tasma = yerlesim(izgara)
+    kisa = [m[3] for m in metinler if m[1].top() == izgara.hucre_dikdortgeni(12, 1).top()]
+    assert kisa and kisa[0] != "3,14159265" and kisa[0].startswith("3")
+    diyez = [m[3] for m in metinler if m[1].top() == izgara.hucre_dikdortgeni(13, 1).top()]
+    assert diyez and set(diyez[0]) <= set("#E+0123456789,")
+    assert "1" in [m[3] for m in metinler if m[1].top() == izgara.hucre_dikdortgeni(14, 1).top()]
+    assert not any(r in (12, 13, 14) for r, _ in tasma)            # sayılar taşmaz
+
+
+def test_cok_dar_sutunda_diyez(izgara):
+    izgara.sayfa.sutun_genislik[1] = 14
+    izgara.sayfa.ata(12, 1, Hucre(123456789.0))
+    metinler, _ = yerlesim(izgara)
+    t = [m[3] for m in metinler if m[1].top() == izgara.hucre_dikdortgeni(12, 1).top()][0]
+    assert t and set(t) == {"#"}
+
+
+def test_satir_sonu_tek_satir_gorunur(izgara):
+    izgara.sayfa.ata(12, 1, Hucre("a\nb"))
+    metinler, _ = yerlesim(izgara)
+    assert metin_bul(metinler, "ab")
+
+
+def test_mantiksal_ortalanir(izgara):
+    izgara.sayfa.ata(12, 1, Hucre(True))
+    metinler, _ = yerlesim(izgara)
+    m = metin_bul(metinler, "DOĞRU")
+    assert m[2] == Qt.AlignHCenter
+
+
+def test_gizli_sutun_tasmada_atlanir(izgara):
+    izgara.sayfa.ata(12, 1, Hucre("çok uzun bir metin burada taşıyor"))
+    izgara.sayfa.gizli_sutun.add(2)
+    metinler, tasma = yerlesim(izgara)
+    kirp = metin_bul(metinler, "çok uzun bir metin burada taşıyor")[0]
+    assert kirp.width() > 64                                       # C'ye kadar taşar
+
+
+def test_alt_enter_hucre_icinde_yeni_satir(izgara):
+    izgara.sec((12, 1))
+    yaz(izgara, "ilk")
+    e = izgara.focusWidget()
+    QTest.keyClick(e, Qt.Key_Return, Qt.AltModifier)
+    QTest.keyClicks(e, "ikinci")
+    assert izgara.duzenleniyor()                                   # onaylanmadı
+    QTest.keyClick(e, Qt.Key_Return)
+    assert izgara.sayfa.deger(12, 1) == "ilk\nikinci"
+    izgara.sec((12, 1))
+    tus(izgara, Qt.Key_F2)
+    assert izgara.focusWidget().text() == "ilk\nikinci"            # düzenlemede korunur
+    izgara.duzenlemeyi_bitir(False)
+
+
+def test_taşma_ile_cizim_hatasiz(izgara):
+    izgara.sayfa.ata(12, 1, Hucre("çok uzun bir metin burada taşıyor"))
+    izgara.sayfa.sutun_genislik[2] = 14
+    izgara.sayfa.ata(13, 1, Hucre(123456789.0))
+    assert not izgara.viewport().grab().isNull()
+
+
+# --- çoklu aralık (Ctrl+tık) ---
+def tikla(g, satir, sutun, mod=Qt.NoModifier):
+    QTest.mouseClick(g.viewport(), Qt.LeftButton, mod, g.hucre_dikdortgeni(satir, sutun).center())
+
+
+def test_ctrl_tik_aralik_ekler(izgara):
+    tikla(izgara, 2, 1)
+    tikla(izgara, 4, 3, Qt.ControlModifier)
+    tikla(izgara, 6, 2, Qt.ControlModifier)
+    assert izgara.secimler == [Aralik(2, 1, 2, 1), Aralik(4, 3, 4, 3), Aralik(6, 2, 6, 2)]
+    assert izgara.aktif == (6, 2)
+    assert izgara.secili_mi(2, 1) and izgara.secili_mi(4, 3) and not izgara.secili_mi(3, 1)
+
+
+def test_ctrl_surukleme_aralik_ekler(izgara):
+    tikla(izgara, 1, 1)
+    w = izgara.viewport()
+    bas = izgara.hucre_dikdortgeni(4, 3).center()
+    bit = izgara.hucre_dikdortgeni(6, 4).center()
+    QTest.mousePress(w, Qt.LeftButton, Qt.ControlModifier, bas)
+    QTest.mouseMove(w, bit)
+    QTest.mouseRelease(w, Qt.LeftButton, Qt.ControlModifier, bit)
+    assert izgara.secimler == [Aralik(1, 1, 1, 1), Aralik(4, 3, 6, 4)]
+
+
+def test_duz_tik_ve_klavye_coklu_secimi_kaldirir(izgara):
+    tikla(izgara, 2, 1)
+    tikla(izgara, 4, 3, Qt.ControlModifier)
+    assert len(izgara.secimler) == 2
+    tus(izgara, Qt.Key_Down)
+    assert len(izgara.secimler) == 1
+    tikla(izgara, 2, 1)
+    tikla(izgara, 4, 3, Qt.ControlModifier)
+    tikla(izgara, 5, 5)
+    assert izgara.secimler == [Aralik(5, 5, 5, 5)]
+
+
+def test_shift_tik_son_araligi_genisletir_oncekiler_kalir(izgara):
+    tikla(izgara, 1, 1)
+    tikla(izgara, 4, 3, Qt.ControlModifier)
+    tikla(izgara, 6, 4, Qt.ShiftModifier)
+    assert izgara.secimler == [Aralik(1, 1, 1, 1), Aralik(4, 3, 6, 4)]
+
+
+def test_ctrl_baslik_tik_sutun_ekler(izgara):
+    d1 = izgara.hucre_dikdortgeni(1, 1)
+    d3 = izgara.hucre_dikdortgeni(1, 3)
+    QTest.mouseClick(izgara.viewport(), Qt.LeftButton, Qt.NoModifier, QPoint(d1.center().x(), 5))
+    QTest.mouseClick(izgara.viewport(), Qt.LeftButton, Qt.ControlModifier, QPoint(d3.center().x(), 5))
+    assert izgara.secimler == [Aralik(1, 1, MAX_ROW, 1), Aralik(1, 3, MAX_ROW, 3)]
+    assert izgara.secili_mi(7, 3) and not izgara.secili_mi(7, 2)
+
+
+def test_delete_tum_secili_araliklari_temizler(izgara):
+    tikla(izgara, 1, 1)
+    tikla(izgara, 3, 1, Qt.ControlModifier)
+    tus(izgara, Qt.Key_Delete)
+    assert izgara.sayfa.deger(1, 1) is None and izgara.sayfa.deger(3, 1) is None
+    assert izgara.sayfa.deger(2, 1) == 2.0                  # arada seçilmeyen kalır
+    izgara.geri_al()                                        # tek adım
+    assert izgara.sayfa.deger(1, 1) == 1.0 and izgara.sayfa.deger(3, 1) == 3.0
+
+
+def test_coklu_secimde_kopyalama_reddedilir(izgara):
+    from PySide6.QtCore import QMimeData
+    md = QMimeData()
+    md.setText("onceki")
+    QApplication.clipboard().setMimeData(md)
+    tikla(izgara, 1, 1)
+    tikla(izgara, 3, 1, Qt.ControlModifier)
+    uyarilar = []
+    izgara.uyari.connect(uyarilar.append)
+    izgara.kopyala()
+    izgara.kes()
+    assert len(uyarilar) == 2
+    assert QApplication.clipboard().text() == "onceki" and Izgara._pano_durumu is None
+
+
+def test_coklu_secim_sinyali_ve_cizim(izgara):
+    secimler = []
+    izgara.secimDegisti.connect(secimler.append)
+    tikla(izgara, 1, 1)
+    tikla(izgara, 1, 1, Qt.ControlModifier)                 # aynı hücre: birincil değişmez ama ek eklendi
+    assert len(secimler) >= 1
+    tikla(izgara, 5, 5, Qt.ControlModifier)
+    assert not izgara.viewport().grab().isNull()
+
+
+def test_ozet_tum_araliklari_kapsar(izgara):
+    from tabcel.ui.window import Pencere
+    from tabcel.model.sayfa import CalismaKitabi
+    k = CalismaKitabi()
+    for r in range(1, 6):
+        k.sayfalar[0].ata(r, 1, Hucre(float(r)))
+    p = Pencere(k)
+    p.show()
+    g = p.izgara()
+    g.sec((1, 1))
+    tikla(g, 5, 1, Qt.ControlModifier)
+    t = p.ozet_etiketi.text()
+    assert "Sayım: 2" in t and "Toplam: 6" in t and "Ortalama: 3" in t
+    g.sec((1, 1), (3, 1))
+    tikla(g, 2, 1, Qt.ControlModifier)                      # üst üste binen: hücre bir kez sayılır
+    assert "Sayım: 3" in p.ozet_etiketi.text()
+
+
+# --- artımlı (piksel kaydırmalı) dikey kaydırma ---
+def kaydirma_kaydedici(g):
+    cagrilar = []
+    g.viewport().scroll = lambda dx, dy, ar: cagrilar.append((dx, dy, ar))
+    return cagrilar
+
+
+def test_kucuk_kaydirma_pikselleri_kaydirir(izgara):
+    cagrilar = kaydirma_kaydedici(izgara)
+    vs = izgara.verticalScrollBar()
+    vs.setValue(3)
+    assert len(cagrilar) == 1
+    dx, dy, ar = cagrilar[0]
+    assert (dx, dy) == (0, -3 * 20)                       # 3 satır yukarı
+    assert ar.top() == izgara._baslik_y()                  # sütun başlıkları kaymaz
+    vs.setValue(1)
+    assert cagrilar[-1][:2] == (0, 2 * 20)                 # 2 satır geri: aşağı
+
+
+def test_kaydirma_gizli_satirlari_piksel_hesabina_katmaz(izgara):
+    izgara.sayfa.gizli_satir.update({2, 3})
+    cagrilar = kaydirma_kaydedici(izgara)
+    izgara.verticalScrollBar().setValue(4)                 # satır 1,2,3,4 geçildi; 2 ve 3 gizli
+    assert cagrilar[-1][1] == -(20 + 0 + 0 + 20)
+
+
+def test_kaydirma_yakinlastirmada_piksel_carpanli(izgara):
+    izgara.yakinlastir(2.0)
+    cagrilar = kaydirma_kaydedici(izgara)
+    izgara.verticalScrollBar().setValue(2)
+    assert cagrilar[-1][1] == -2 * 40
+
+
+def test_buyuk_sicrama_piksel_kaydirmaz_tam_boyar(izgara):
+    cagrilar = kaydirma_kaydedici(izgara)
+    izgara.verticalScrollBar().setValue(5000)
+    assert cagrilar == []                                  # görünen satır sayısından büyük adım
+
+
+def test_ayni_deger_kaydirma_yapmaz(izgara):
+    cagrilar = kaydirma_kaydedici(izgara)
+    izgara.verticalScrollBar().setValue(0)
+    assert cagrilar == []
+
+
+def test_scroll_contents_by_tum_viewport_yenilemez(izgara):
+    izgara.scrollContentsBy(0, 10)          # Qt varsayılanı tüm viewport'u geçersiz kılardı; boş olmalı
+    izgara.scrollContentsBy(7, 0)
+
+
+def test_seçim_boyama_baslik_ekran_disi_satir_olsa_da_guncellenir(izgara):
+    """Seçili aralığın satırları ekran dışına kaydığında sütun başlığı vurgusu yine temizlenmeli."""
+    izgara.sec((1, 2))
+    izgara.verticalScrollBar().setValue(30)               # (1,2) artık görünmüyor
+    guncellenen = []
+    vp = izgara.viewport()
+    vp.update = lambda *a: guncellenen.append(a)
+    izgara.sec((35, 4))
+    sutun_basligi_icin = [a[0] for a in guncellenen if a and hasattr(a[0], "top") and a[0].top() == 0]
+    assert sutun_basligi_icin, "eski seçimin sütun başlığı yeniden boyanmadı"
+
+
+def test_boyutlu_viewport_secim_boyama_hatasiz_ve_tam_cizimle_ayni(izgara):
+    izgara.sec((2, 1), (5, 3))
+    izgara.sec((8, 2))
+    izgara.sec((1, 1), (2, 2))
+    assert not izgara.viewport().grab().isNull()
+
+
+# --- ek kısayol / klavye kapsamı ---
+def test_page_down_up_sayfa_kadar_gider(izgara):
+    sayfa = izgara.verticalScrollBar().pageStep()
+    assert sayfa >= 5
+    tus(izgara, Qt.Key_PageDown)
+    assert izgara.aktif == (1 + sayfa, 1)
+    assert izgara.ilk_satir > 1                               # görünüm de kaydı
+    tus(izgara, Qt.Key_PageUp)
+    assert izgara.aktif == (1, 1)
+    assert izgara.ilk_satir == 1
+
+
+def test_shift_page_down_secimi_genisletir(izgara):
+    sayfa = izgara.verticalScrollBar().pageStep()
+    tus(izgara, Qt.Key_PageDown, Qt.ShiftModifier)
+    assert izgara.aktif == (1, 1)
+    assert izgara.secim == Aralik(1, 1, 1 + sayfa, 1)
+
+
+def test_home_satir_basina_gider(izgara):
+    izgara.sec((5, 4))
+    tus(izgara, Qt.Key_Home)
+    assert izgara.aktif == (5, 1)
+    tus(izgara, Qt.Key_Right, Qt.ShiftModifier)
+    tus(izgara, Qt.Key_Home, Qt.ShiftModifier)                # Shift+Home: satır başına kadar seçer
+    assert izgara.secim.ilk_sutun == 1
+
+
+def test_ctrl_shift_rakam_gizli_satir_sutun_gosterir(izgara):
+    izgara.sayfa.gizli_satir.add(2)
+    izgara.sayfa.gizli_sutun.add(2)
+    izgara.sec((1, 1), (3, 3))
+    tus(izgara, Qt.Key_ParenLeft, Qt.ControlModifier | Qt.ShiftModifier)
+    assert 2 not in izgara.sayfa.gizli_satir and 2 in izgara.sayfa.gizli_sutun
+    tus(izgara, Qt.Key_ParenRight, Qt.ControlModifier | Qt.ShiftModifier)
+    assert not izgara.sayfa.gizli_sutun
+    izgara.geri_al(); izgara.geri_al()
+    assert 2 in izgara.sayfa.gizli_satir and 2 in izgara.sayfa.gizli_sutun
+
+
+def test_ctrl_artı_tam_satir_secimde_satir_ekler(izgara):
+    izgara._satir_sec(2, False)
+    tus(izgara, Qt.Key_Plus, Qt.ControlModifier | Qt.ShiftModifier)
+    assert izgara.sayfa.deger(2, 1) is None and izgara.sayfa.deger(3, 1) == 2.0
+
+
+def test_ctrl_eksi_hucre_seciliyken_hicbir_sey_silmez(izgara):
+    izgara.sec((2, 1))
+    tus(izgara, Qt.Key_Minus, Qt.ControlModifier)
+    assert izgara.sayfa.deger(2, 1) == 2.0 and izgara.sayfa.deger(3, 1) == 3.0
+
+
+def test_alternatif_pano_kisayollari(izgara):
+    izgara.sec((1, 1), (2, 1))
+    tus(izgara, Qt.Key_Insert, Qt.ControlModifier)             # Ctrl+Insert = kopyala
+    izgara.sec((8, 5))
+    tus(izgara, Qt.Key_Insert, Qt.ShiftModifier)               # Shift+Insert = yapıştır
+    assert izgara.sayfa.deger(8, 5) == 1.0 and izgara.sayfa.deger(9, 5) == 2.0
+    izgara.sec((3, 1))
+    tus(izgara, Qt.Key_Delete, Qt.ShiftModifier)               # Shift+Delete = kes
+    assert Izgara._pano_durumu["kesildi"] and izgara.sayfa.deger(3, 1) == 3.0   # yapıştırılana dek yerinde
+    izgara.sec((12, 5))
+    tus(izgara, Qt.Key_Insert, Qt.ShiftModifier)
+    assert izgara.sayfa.deger(12, 5) == 3.0 and izgara.sayfa.deger(3, 1) is None
+
+
+def test_shift_delete_hucreyi_silmez_ctrl_delete_gibi_davranmaz(izgara):
+    izgara.sec((2, 1))
+    tus(izgara, Qt.Key_Delete, Qt.ShiftModifier)
+    assert izgara.sayfa.deger(2, 1) == 2.0                    # silinmedi; yalnızca kesildi
+
+
+def test_satir_otomatik_sigdir_varsayilana_dondurur(izgara):
+    izgara.sayfa.satir_yukseklik[2] = 55
+    izgara.sec((2, 1))
+    izgara.satir_otomatik_sigdir()
+    assert izgara.sayfa.yukseklik(2) == 20
+    izgara.geri_al()
+    assert izgara.sayfa.yukseklik(2) == 55
+
+
+def test_fare_surukleme_alt_kenarin_otesinde_secimi_uzatir(izgara):
+    w = izgara.viewport()
+    bas = izgara.hucre_dikdortgeni(2, 1).center()
+    QTest.mousePress(w, Qt.LeftButton, Qt.NoModifier, bas)
+    QTest.mouseMove(w, QPoint(bas.x(), w.height() + 30))      # görünür alanın altı
+    QTest.mouseRelease(w, Qt.LeftButton, Qt.NoModifier, QPoint(bas.x(), w.height() + 30))
+    assert izgara.secim.son_satir > 2 and izgara.aktif == (2, 1)
+
+
+def test_yakinlastirma_sinyali(izgara):
+    degerler = []
+    izgara.yakinlastirmaDegisti.connect(degerler.append)
+    izgara.yakinlastir(1.5)
+    izgara.yakinlastir(1.5)                                   # aynı değer: sinyal yok
+    izgara.yakinlastir(0.05)                                  # alt sınır 0.1
+    assert degerler == [1.5, 0.1]
+
+
+# --- Opus gözden geçirmesi: K1 (DOĞRU ↔ 1), K3 (kes + yapısal değişiklik) ---
+def test_k1_bire_dogru_yazilabilir(izgara):
+    izgara.sayfa.ata(12, 1, Hucre(1.0))
+    izgara.hucre_gir(12, 1, "DOĞRU")
+    assert izgara.sayfa.deger(12, 1) is True
+    izgara.hucre_gir(12, 1, "0")
+    izgara.hucre_gir(12, 1, "YANLIŞ")
+    assert izgara.sayfa.deger(12, 1) is False
+
+
+def test_k3_kes_sonra_satir_ekle_isareti_iptal_eder(izgara):
+    izgara.sayfa.ata(1, 6, Hucre("v1")); izgara.sayfa.ata(2, 6, Hucre("v2")); izgara.sayfa.ata(3, 6, Hucre("v3"))
+    izgara.sec((1, 6), (3, 6))
+    izgara.kes()
+    izgara._satir_sec(1, False)
+    izgara.satirlari_ekle()                                   # kaynağın yeri kaydı
+    assert Izgara._pano_durumu is None                        # kes modu iptal
+    izgara.sec((1, 8))
+    izgara.yapistir()                                         # artık sıradan kopya: hiçbir hücre silinmez
+    assert [izgara.sayfa.deger(r, 6) for r in (2, 3, 4)] == ["v1", "v2", "v3"]
+    assert [izgara.sayfa.deger(r, 8) for r in (1, 2, 3)] == ["v1", "v2", "v3"]
+
+
+def test_k3_kes_sonra_kaynak_duzenlenirse_iptal(izgara):
+    izgara.sec((1, 1))
+    izgara.kes()
+    izgara.hucre_gir(4, 4, "baska bir hucre")
+    assert Izgara._pano_durumu is None
+
+
+def test_k3_kes_sonra_boyutlandirma_kes_modunu_bozmaz(izgara):
+    izgara.sec((1, 1))
+    izgara.kes()
+    izgara.sec((1, 2))
+    izgara.sutun_genisligi_ayarla(90)
+    assert Izgara._pano_durumu is not None and Izgara._pano_durumu["kesildi"]
+    izgara.sec((8, 5))
+    izgara.yapistir()
+    assert izgara.sayfa.deger(8, 5) == 1.0 and izgara.sayfa.deger(1, 1) is None
+
+
+def test_k3_kopya_isareti_birden_cok_yapistirmada_kalir(izgara):
+    izgara.sec((1, 1))
+    izgara.kopyala()
+    izgara.sec((8, 5)); izgara.yapistir()
+    assert Izgara._pano_durumu is not None                    # Excel gibi: kopya işareti kalır
+    izgara.sec((9, 5)); izgara.yapistir()
+    assert izgara.sayfa.deger(8, 5) == 1.0 and izgara.sayfa.deger(9, 5) == 1.0
+
+
+def test_k3_geri_al_pano_isaretini_iptal_eder(izgara):
+    izgara.hucre_gir(4, 4, "x")
+    izgara.sec((1, 1))
+    izgara.kes()
+    izgara.geri_al()
+    assert Izgara._pano_durumu is None
+
+
+def test_koru_odak_kaybinda_sifirlanir(izgara):
+    from PySide6.QtGui import QFocusEvent
+    izgara._koru = True
+    izgara.focusOutEvent(QFocusEvent(QEvent.FocusOut))
+    assert izgara._koru is False

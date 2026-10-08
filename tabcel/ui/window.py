@@ -7,9 +7,9 @@ yığını çalışma kitabı genelinde ortaktır.
 from typing import Dict, Optional
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QKeySequence, QShortcut
+from PySide6.QtGui import QColor, QKeySequence, QPainter, QShortcut
 from PySide6.QtWidgets import (
-    QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
+    QColorDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
     QSlider, QStackedWidget, QTabBar, QToolButton, QVBoxLayout, QWidget,
 )
 
@@ -24,6 +24,18 @@ from .grid import Izgara, goster
 
 class _SekmeCubugu(QTabBar):
     ciftTik = Signal(int)
+
+    def paintEvent(self, olay):
+        super().paintEvent(olay)
+        renkler = [self.tabData(i) for i in range(self.count())]
+        if not any(renkler):
+            return
+        p = QPainter(self)
+        for i, renk in enumerate(renkler):
+            if renk:                       # Excel gibi: sekmenin altında renkli şerit
+                r = self.tabRect(i)
+                p.fillRect(r.left() + 2, r.bottom() - 2, r.width() - 4, 3, QColor(renk))
+        p.end()
 
     def mouseDoubleClickEvent(self, olay):
         i = self.tabAt(olay.position().toPoint())
@@ -197,9 +209,10 @@ class Pencere(QMainWindow):
         self._izgaralar[sayfa] = g
         self.izgara_yigini.addWidget(g)
         if indeks is None:
-            self.sekmeler.addTab(sayfa.ad)
+            i = self.sekmeler.addTab(sayfa.ad)
         else:
-            self.sekmeler.insertTab(indeks, sayfa.ad)
+            i = self.sekmeler.insertTab(indeks, sayfa.ad)
+        self.sekmeler.setTabData(i, sayfa.sekme_rengi)
         return g
 
     def sayfa_ekle(self):
@@ -220,6 +233,7 @@ class Pencere(QMainWindow):
             if c != QMessageBox.Yes:
                 return
         self.kitap.sayfa_sil(sayfa)
+        Izgara._pano_durumu = None        # kesilen/kopyalanan sayfa silinmiş olabilir
         g = self._izgaralar.pop(sayfa)
         self.izgara_yigini.removeWidget(g)
         g.deleteLater()
@@ -241,14 +255,32 @@ class Pencere(QMainWindow):
             return
         self.sekmeler.setTabText(i, sayfa.ad)
 
-    def _sekme_menusu(self, nokta):
+    def sekme_rengi_ata(self, i: int, renk: Optional[str]):
+        self.kitap.sayfalar[i].sekme_rengi = renk
+        self.sekmeler.setTabData(i, renk)
+        self.sekmeler.update()
+
+    def _sekme_rengi_sor(self, i: int):
+        mevcut = self.kitap.sayfalar[i].sekme_rengi
+        r = QColorDialog.getColor(QColor(mevcut) if mevcut else QColor(theme.ACCENT), self,
+                                  "Sekme rengi")
+        if r.isValid():
+            self.sekme_rengi_ata(i, r.name())
+
+    def sekme_menusu_olustur(self, nokta) -> QMenu:
         i = self.sekmeler.tabAt(nokta)
         m = QMenu(self)
         m.addAction("Yeni sayfa", self.sayfa_ekle)
         if i >= 0:
             m.addAction("Yeniden adlandır…", lambda: self.sayfa_yeniden_adlandir(i))
+            m.addAction("Sekme rengi…", lambda: self._sekme_rengi_sor(i))
+            if self.kitap.sayfalar[i].sekme_rengi:
+                m.addAction("Sekme rengini kaldır", lambda: self.sekme_rengi_ata(i, None))
             m.addAction("Sil", lambda: self.sayfa_sil(i))
-        m.exec(self.sekmeler.mapToGlobal(nokta))
+        return m
+
+    def _sekme_menusu(self, nokta):
+        self.sekme_menusu_olustur(nokta).exec(self.sekmeler.mapToGlobal(nokta))
 
     def _sekme_tasindi(self, kaynak: int, hedef: int):
         self.kitap.sayfa_tasi(self.kitap.sayfalar[kaynak], hedef)
@@ -337,15 +369,15 @@ class Pencere(QMainWindow):
         """Seçimde Ortalama · Sayım · Toplam (Excel gibi; yalnızca dolu hücreler gezilir)."""
         g = self.izgara()
         sec = g.secim
-        if (sec.ilk_satir, sec.ilk_sutun) == (sec.son_satir, sec.son_sutun):
+        if not g._ekler and (sec.ilk_satir, sec.ilk_sutun) == (sec.son_satir, sec.son_sutun):
             self.ozet_etiketi.setText("")
             return
         sayilar, dolu = [], 0
-        for r, c, h in g.sayfa.dolu_hucreler():
-            if sec.ilk_satir <= r <= sec.son_satir and sec.ilk_sutun <= c <= sec.son_sutun:
-                dolu += 1
-                if isinstance(h.deger, float):
-                    sayilar.append(h.deger)
+        hucreler = {(r, c): h for a in g.secimler for r, c, h in g.sayfa.aralikta(a)}
+        for h in hucreler.values():                  # üst üste binen aralıklarda hücre bir kez sayılır
+            dolu += 1
+            if isinstance(h.deger, float):
+                sayilar.append(h.deger)
         if not sayilar:
             self.ozet_etiketi.setText(f"Sayım: {dolu}  " if dolu else "")
             return

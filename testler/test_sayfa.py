@@ -222,3 +222,107 @@ def test_satir_sil_geri_al_gizli_doner():
     assert s.gizli_satir == {2}
     y.geri_al()
     assert s.gizli_satir == {2, 3}
+
+
+# --- performans destek yapıları: aralikta, sırasız gezme, kullanılan aralık önbelleği ---
+def test_aralikta_iki_strateji_ayni_sonucu_verir():
+    from tabcel.model.adres import Aralik
+    s = Sayfa("S")
+    for r in range(1, 31):
+        for c in range(1, 6):
+            if (r + c) % 3 == 0:
+                s.ata(r, c, H(float(r * c)))
+    kucuk = Aralik(2, 2, 4, 3)                       # alan < hücre sayısı → aralığı gezer
+    buyuk = Aralik(1, 1, 1_000_000, 1_000)           # alan > hücre sayısı → sözlüğü gezer
+    for ar in (kucuk, buyuk, Aralik(5, 1, 20, 2)):
+        beklenen = {(r, c) for r, c, _ in s.dolu_hucreler()
+                    if ar.ilk_satir <= r <= ar.son_satir and ar.ilk_sutun <= c <= ar.son_sutun}
+        assert {(r, c) for r, c, _ in s.aralikta(ar)} == beklenen
+    assert {(r, c) for r, c, _ in s.aralikta(buyuk)} == {(r, c) for r, c, _ in s.dolu_hucreler()}
+
+
+def test_dolu_hucreler_sirali_ve_sirasiz():
+    s = Sayfa("S")
+    s.ata(3, 1, H(1.0)); s.ata(1, 2, H(2.0)); s.ata(1, 1, H(3.0))
+    assert [(r, c) for r, c, _ in s.dolu_hucreler()] == [(1, 1), (1, 2), (3, 1)]
+    assert {(r, c) for r, c, _ in s.dolu_hucreler(sirali=False)} == {(1, 1), (1, 2), (3, 1)}
+
+
+def test_kullanilan_aralik_onbellegi_dogru_kalir():
+    s = Sayfa("S")
+    assert s.kullanilan_aralik() is None
+    s.ata(5, 5, H(1.0))
+    assert s.kullanilan_aralik() == (5, 5, 5, 5)
+    s.ata(2, 8, H(1.0))
+    assert s.kullanilan_aralik() == (2, 5, 5, 8)           # genişler
+    s.ata(3, 6, H(1.0))
+    assert s.kullanilan_aralik() == (2, 5, 5, 8)           # içeride: değişmez
+    s.ata(2, 8, None)                                      # sınırdaki hücre silinir → daralır
+    assert s.kullanilan_aralik() == (3, 5, 5, 6)
+    s.ata(3, 6, None); s.ata(5, 5, None)
+    assert s.kullanilan_aralik() is None
+    s.ata(4, 4, H(1.0))
+    s.satir_ekle(1, 10)                                    # kaydırma önbelleği geçersiz kılar
+    assert s.kullanilan_aralik() == (14, 4, 14, 4)
+    s.sutun_sil(4, 1)
+    assert s.kullanilan_aralik() is None
+
+
+def test_kullanilan_aralik_onbellegi_gecmis_rastgele_islemlerle_eslesir():
+    import random
+    rnd = random.Random(7)
+    s = Sayfa("S")
+    for _ in range(400):
+        r, c = rnd.randint(1, 40), rnd.randint(1, 15)
+        s.ata(r, c, H(1.0) if rnd.random() < 0.6 else None)
+        if rnd.random() < 0.1:
+            s.satir_ekle(rnd.randint(1, 30), 2) if rnd.random() < 0.5 else s.satir_sil(rnd.randint(1, 30), 2)
+        gercek = None
+        if s._hucreler:
+            rs = [k[0] for k in s._hucreler]; cs = [k[1] for k in s._hucreler]
+            gercek = (min(rs), min(cs), max(rs), max(cs))
+        assert s.kullanilan_aralik() == gercek
+
+
+# --- Opus Faz 1 gözden geçirmesi: K1 (mantıksal ≠ sayı), K2 (sayfa dışına itme) ---
+def test_k1_mantiksal_ile_sayi_esit_degil():
+    assert Hucre(True) != Hucre(1.0) and Hucre(False) != Hucre(0.0)
+    assert Hucre(1.0) == Hucre(1.0) and Hucre("a") == Hucre("a")
+    assert Hucre(None, "=A1") == Hucre(None, "=A1") and Hucre(None, "=A1") != Hucre(None, "=A2")
+    assert Hucre(1.0, "=A1") != Hucre(1.0)
+    assert len({Hucre(True), Hucre(1.0), Hucre("1")}) == 3          # hash da türü ayırır
+    assert Hucre(1.0) != "1.0"
+
+
+def test_k2_ekleme_dolu_hucreyi_sayfa_disina_itmez():
+    from tabcel.model.adres import MAX_COL
+    s = Sayfa("S")
+    s.ata(MAX_ROW, 1, H("son"))
+    s.ata(1, MAX_COL, H("sag"))
+    with pytest.raises(AdresHatasi):
+        s.satir_ekle(1, 1)
+    with pytest.raises(AdresHatasi):
+        s.sutun_ekle(5, 1)
+    assert s.deger(MAX_ROW, 1) == "son" and s.deger(1, MAX_COL) == "sag"      # hiçbir şey değişmedi
+
+
+def test_k2_sinira_tam_sigan_ekleme_calisir_tasan_calismaz():
+    s = Sayfa("S")
+    s.ata(MAX_ROW - 1, 1, H("x"))
+    s.satir_ekle(1, 1)                                  # x tam son satıra gelir
+    assert s.deger(MAX_ROW, 1) == "x"
+    with pytest.raises(AdresHatasi):
+        s.satir_ekle(MAX_ROW, 1)                        # x'in bulunduğu satırdan itme → reddedilir
+    s3 = Sayfa("S3")
+    s3.ata(5, 1, H("a"))
+    s3.satir_ekle(MAX_ROW, 1)                           # verinin altına ekleme: itilecek dolu hücre yok
+    assert s3.deger(5, 1) == "a"
+
+
+def test_k2_komut_reddedilince_yigin_bozulmaz():
+    s = Sayfa("S")
+    s.ata(MAX_ROW, 1, H("son"))
+    y = GeriAlYigini()
+    with pytest.raises(AdresHatasi):
+        y.calistir(SatirEkleSil(s, 1, 1, ekle=True))
+    assert not y.geri_alinabilir() and s.deger(MAX_ROW, 1) == "son"
