@@ -12,12 +12,14 @@ from PySide6.QtWidgets import (
 )
 
 from .. import APP_NAME
-from ..io import son_dosyalar, xlsx_io
+from ..io import csv_io, son_dosyalar, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
 from ..model.sayfa import CalismaKitabi
 
 XLSX_FILTRESI = "Excel Çalışma Kitabı (*.xlsx)"
-ACMA_FILTRESI = "Excel Çalışma Kitabı (*.xlsx);;Tüm Dosyalar (*.*)"
+CSV_FILTRESI = "CSV (Noktalı virgülle ayrılmış) (*.csv)"
+KAYDET_FILTRESI = XLSX_FILTRESI + ";;" + CSV_FILTRESI
+ACMA_FILTRESI = ("Excel ve CSV (*.xlsx *.csv);;" + XLSX_FILTRESI + ";;CSV (*.csv);;Tüm Dosyalar (*.*)")
 
 
 def _ayni_yol(a: Optional[str], b: Optional[str]) -> bool:
@@ -33,6 +35,7 @@ class DosyaIslemleri:
     # ------------------------------------------------------------------ kurulum
     def _dosya_kur(self) -> None:
         self.yol: Optional[str] = None
+        self.kaynak_yol: Optional[str] = None               # .csv'den açıldıysa o dosya (kayıt yolu değil)
         self.rapor: Rapor = Rapor()
         self._temiz_damga = self.yigin.damga()
         DosyaIslemleri._acik_pencereler.add(self)
@@ -100,7 +103,8 @@ class DosyaIslemleri:
                 and self.kitap.sayfalar[0].kullanilan_aralik() is None)
 
     def _belge_adi_guncelle(self) -> None:
-        self.belge_adi = os.path.basename(self.yol) if self.yol else "Adsız"
+        kaynak = self.yol or self.kaynak_yol
+        self.belge_adi = os.path.basename(kaynak) if kaynak else "Adsız"
         self._baslik_guncelle()
 
     def _isaretle_temiz(self) -> None:
@@ -134,18 +138,25 @@ class DosyaIslemleri:
         """`yol`u yeni pencerede açar (açıksa o pencereyi öne getirir); başarısızsa None ve ileti."""
         from .window import Pencere
         for p in list(DosyaIslemleri._acik_pencereler):
-            if _ayni_yol(p.yol, yol):
+            if _ayni_yol(p.yol, yol) or (p.yol is None and _ayni_yol(p.kaynak_yol, yol)):
                 son_dosyalar.ekle(yol)
                 p._dosya_gorunur_yap()
                 return p
+        csv_mi = os.path.splitext(yol)[1].lower() == ".csv"
         try:
-            kitap, rapor = self._kitap_oku(yol)
-        except XlsxHatasi as e:
+            sonuc = self._csv_oku(yol) if csv_mi else self._kitap_oku(yol)
+        except (XlsxHatasi, csv_io.CsvHatasi) as e:
             son_dosyalar.sil(yol)
             QMessageBox.critical(self, APP_NAME, str(e))
             return None
+        if sonuc is None:                                    # CSV penceresinde İptal
+            return None
+        kitap, rapor = sonuc
         p = Pencere(kitap)
-        p.yol = os.path.abspath(yol)
+        if csv_mi:
+            p.kaynak_yol = os.path.abspath(yol)              # kayıt yolu değil: Kaydet → Farklı Kaydet (.xlsx önerilir)
+        else:
+            p.yol = os.path.abspath(yol)
         p.rapor = rapor
         p._belge_adi_guncelle()
         p._bilgi_goster()
@@ -155,6 +166,22 @@ class DosyaIslemleri:
         if self._bos_ve_temiz() and p is not self:
             self.close()                                     # boş, değişmemiş pencere yerine açıldı
         return p
+
+    def _csv_ayarlari(self, yol: str):
+        """(satırlar, metin_olarak) | None (iptal). Testlerde yamalanır."""
+        from .csv_penceresi import csv_ayarlari_sor
+        return csv_ayarlari_sor(yol, self)
+
+    def _csv_oku(self, yol: str):
+        a = self._csv_ayarlari(yol)
+        if a is None:
+            return None
+        satirlar, metin_olarak = a
+        kitap, uyarilar = csv_io.kitap_olustur(satirlar, csv_io.sayfa_adi_uret(yol), metin_olarak)
+        r = Rapor()
+        for u in uyarilar:
+            r.ekle(u)
+        return kitap, r
 
     @staticmethod
     def _kitap_oku(yol: str):
@@ -175,21 +202,40 @@ class DosyaIslemleri:
         return self._kaydet_yola(self.yol)
 
     def farkli_kaydet(self) -> bool:
-        onerilen = self.yol or os.path.join(self._baslangic_klasoru(), "Kitap1.xlsx")
-        yol, _ = QFileDialog.getSaveFileName(self, "Farklı Kaydet", onerilen, XLSX_FILTRESI)
+        if self.yol:
+            onerilen = self.yol
+        elif self.kaynak_yol:                                # .csv'den açıldı: aynı adla .xlsx öner
+            onerilen = os.path.splitext(self.kaynak_yol)[0] + ".xlsx"
+        else:
+            onerilen = os.path.join(self._baslangic_klasoru(), "Kitap1.xlsx")
+        yol, filtre = QFileDialog.getSaveFileName(self, "Farklı Kaydet", onerilen, KAYDET_FILTRESI)
         if not yol:
             return False
         if not os.path.splitext(yol)[1]:
-            yol += ".xlsx"
+            yol += ".csv" if "csv" in (filtre or "").lower() else ".xlsx"
         return self._kaydet_yola(yol)
 
+    def _csv_cok_sayfa_sorusu(self) -> bool:
+        """Birden çok sayfalı kitap CSV'ye yazılırken yalnız etkin sayfa kaydedilir: devam edilsin mi?"""
+        c = QMessageBox.question(
+            self, APP_NAME, "CSV biçimi yalnızca etkin sayfayı kaydeder; diğer sayfalar ve biçimlendirme "
+            "kaydedilmez. Devam edilsin mi?", QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Yes)
+        return c == QMessageBox.Yes
+
     def _kaydet_yola(self, yol: str) -> bool:
+        csv_mi = os.path.splitext(yol)[1].lower() == ".csv"
         try:
-            xlsx_io.kaydet(self.kitap, yol)
-        except XlsxHatasi as e:
+            if csv_mi:
+                if len(self.kitap.sayfalar) > 1 and not self._csv_cok_sayfa_sorusu():
+                    return False
+                csv_io.dosya_yaz(self.izgara().sayfa, yol)
+            else:
+                xlsx_io.kaydet(self.kitap, yol)
+        except (XlsxHatasi, csv_io.CsvHatasi) as e:
             QMessageBox.critical(self, APP_NAME, str(e))
             return False
         self.yol = os.path.abspath(yol)
+        self.kaynak_yol = None
         self.rapor = Rapor()                                 # artık dosya bu kitabın kendisi: kayıp uyarısı biter
         self._bilgi_goster()
         self._belge_adi_guncelle()
