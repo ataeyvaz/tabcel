@@ -9,6 +9,7 @@ from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 from .deger import Deger
 from .olay import Olay
+from .sayfa_yapisi import SayfaYapisi
 from .stil import Stil, StilHavuzu
 
 Anahtar = Tuple[int, int]
@@ -68,6 +69,7 @@ class Sayfa:
         self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
         self.dondur: Optional[Tuple[int, int]] = None   # kaydırılabilir bölgenin sol üst hücresi; None = dondurma yok
         self.kilavuz: bool = True                  # kılavuz çizgileri görünür mü
+        self.sayfa_yapisi = SayfaYapisi()           # yazdırma ayarları (Faz 4 / 4d)
         self.birlesimler: List[Aralik] = []        # birleştirilmiş hücre aralıkları (çakışmaz, ≥ 2 hücre)
         self._birlesim_idx: Dict[Anahtar, Aralik] = {}   # birleşimin kapsadığı her hücre → aralığı
 

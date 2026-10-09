@@ -561,3 +561,20 @@ class GeriAlYigini:
     def temizle(self) -> None:
         self._geri.clear()
         self._ileri.clear()
+
+
+class SayfaYapisiDegis:
+    """Sayfanın yazdırma ayarlarını değiştirir (geri alınabilir; Excel'de geri alınamaz — bilerek fark:
+    kayıt noktası işaretini ("değişti") doğru tutmak için komut)."""
+
+    def __init__(self, sayfa: Sayfa, yeni):
+        self.sayfa, self.yeni, self.eski = sayfa, yeni, sayfa.sayfa_yapisi
+
+    def bos_mu(self) -> bool:
+        return self.yeni == self.eski
+
+    def yap(self) -> None:
+        self.sayfa.sayfa_yapisi = self.yeni
+
+    def geri_al(self) -> None:
+        self.sayfa.sayfa_yapisi = self.eski

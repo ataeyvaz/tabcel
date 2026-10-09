@@ -8,17 +8,19 @@ from typing import List, Optional
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu, QMessageBox, QToolButton,
+    QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu, QMessageBox, QToolButton,
 )
 
 from .. import APP_NAME
 from ..io import csv_io, son_dosyalar, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
+from ..model.komutlar import SayfaYapisiDegis
 from ..model.sayfa import CalismaKitabi
 
 XLSX_FILTRESI = "Excel Çalışma Kitabı (*.xlsx)"
 CSV_FILTRESI = "CSV (Noktalı virgülle ayrılmış) (*.csv)"
 KAYDET_FILTRESI = XLSX_FILTRESI + ";;" + CSV_FILTRESI
+PDF_FILTRESI = "PDF (*.pdf)"
 ACMA_FILTRESI = ("Excel ve CSV (*.xlsx *.csv);;" + XLSX_FILTRESI + ";;CSV (*.csv);;Tüm Dosyalar (*.*)")
 
 
@@ -40,7 +42,8 @@ class DosyaIslemleri:
         self._temiz_damga = self.yigin.damga()
         DosyaIslemleri._acik_pencereler.add(self)
         for tus, islem in (("Ctrl+N", self.yeni), ("Ctrl+O", self.ac_penceresi), ("Ctrl+S", self.kaydet),
-                           ("Ctrl+Shift+S", self.farkli_kaydet), ("F12", self.farkli_kaydet)):
+                           ("Ctrl+Shift+S", self.farkli_kaydet), ("F12", self.farkli_kaydet),
+                           ("Ctrl+P", self.yazdir_baslat)):
             QShortcut(QKeySequence(tus), self, activated=lambda f=islem: f(), context=Qt.WindowShortcut)
 
     def _bilgi_cubugu_olustur(self) -> QFrame:
@@ -75,6 +78,12 @@ class DosyaIslemleri:
         menu.addSeparator()
         menu.addAction("Kaydet\tCtrl+S", self.kaydet)
         menu.addAction("Farklı Kaydet…\tCtrl+Shift+S", self.farkli_kaydet)
+        menu.addSeparator()
+        menu.addAction("Sayfa Yapısı…", self.sayfa_yapisi_ac)
+        menu.addAction("Yazdırma Önizleme…", self.onizleme_ac)
+        menu.addAction("Yazdır…\tCtrl+P", self.yazdir_baslat)
+        menu.addAction("PDF Olarak Dışa Aktar (Etkin Sayfa)…", lambda: self.pdf_aktar(False))
+        menu.addAction("PDF Olarak Dışa Aktar (Tüm Sayfalar)…", lambda: self.pdf_aktar(True))
         menu.addSeparator()
         self.son_menusu = menu.addMenu("Son Kullanılanlar")
         self.son_menusu.aboutToShow.connect(self._son_menusu_hazirla)
@@ -283,3 +292,73 @@ class DosyaIslemleri:
         DosyaIslemleri._acik_pencereler.discard(self)
         if self in DosyaIslemleri._tutulan:
             DosyaIslemleri._tutulan.remove(self)
+
+    # ------------------------------------------------------------------ yazdırma / PDF (4d)
+    def sayfa_yapisi_ac(self) -> bool:
+        from .sayfa_yapisi_penceresi import SayfaYapisiPenceresi
+        sayfa = self.izgara().sayfa
+        d = SayfaYapisiPenceresi(sayfa.sayfa_yapisi, self)
+        if d.exec() != QDialog.Accepted or d.sonuc() is None:
+            return False
+        kmt = SayfaYapisiDegis(sayfa, d.sonuc())
+        if not kmt.bos_mu():
+            self.yigin.calistir(kmt)
+            self._baslik_guncelle()
+        return True
+
+    def _yazdirilacak(self, tum: bool = False):
+        return [self._izgaralar[s] for s in self.kitap.sayfalar] if tum else [self.izgara()]
+
+    def _yazdirilacak_yok(self) -> None:
+        QMessageBox.information(self, APP_NAME, "Yazdırılacak bir şey yok: sayfa boş.")
+
+    def pdf_aktar(self, tum: bool = False) -> bool:
+        from . import yazdir as yz
+        temel = os.path.splitext(self.yol or self.kaynak_yol or "Kitap1")[0] + ".pdf"
+        yol, _ = QFileDialog.getSaveFileName(self, "PDF Olarak Dışa Aktar", temel, PDF_FILTRESI)
+        if not yol:
+            return False
+        if not os.path.splitext(yol)[1]:
+            yol += ".pdf"
+        try:
+            ok = yz.pdf_yaz(self._yazdirilacak(tum), yol)
+        except PermissionError:
+            QMessageBox.critical(self, APP_NAME, "PDF yazılamadı: dosya başka bir uygulamada açık olabilir.")
+            return False
+        except OSError as e:
+            QMessageBox.critical(self, APP_NAME, f"PDF yazılamadı: {e.strerror or e}")
+            return False
+        if not ok:
+            self._yazdirilacak_yok()
+            return False
+        self.statusBar().showMessage("PDF olarak dışa aktarıldı", 4000)
+        return True
+
+    def yazdir_baslat(self) -> bool:
+        from PySide6.QtPrintSupport import QPrintDialog, QPrinter
+        from . import yazdir as yz
+        printer = QPrinter(QPrinter.HighResolution)
+        if QPrintDialog(printer, self).exec() != QPrintDialog.Accepted:
+            return False
+        try:
+            ok = yz.yazdir(printer, self._yazdirilacak(), self.belge_adi)
+        except OSError as e:
+            QMessageBox.critical(self, APP_NAME, f"Yazdırılamadı: {e}")
+            return False
+        if not ok:
+            self._yazdirilacak_yok()
+            return False
+        return True
+
+    def onizleme_ac(self) -> None:
+        from PySide6.QtPrintSupport import QPrintPreviewDialog, QPrinter
+        from . import yazdir as yz
+        printer = QPrinter(QPrinter.HighResolution)
+        d = QPrintPreviewDialog(printer, self)
+        def ciz(pr):
+            try:
+                yz.yazdir(pr, self._yazdirilacak(), self.belge_adi)
+            except OSError:
+                pass                                          # önizlemede hedef yok; sessiz
+        d.paintRequested.connect(ciz)
+        d.exec()

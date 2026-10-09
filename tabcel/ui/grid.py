@@ -282,6 +282,19 @@ class Izgara(QAbstractScrollArea):
         w = self.sayfa.genislik(sutun)
         return self._z(w) if w else 0
 
+    def yazdirma_yuksekligi(self, satir: int) -> float:
+        """Satır yüksekliği, 100% piksel (içeriğe göre otomatik uzayan satırlar dahil); gizli satır 0."""
+        h = self.sayfa.yukseklik(satir)
+        if not h:
+            return 0.0
+        if not self._oto_ok:
+            self._oto_hesapla()
+        if self._oto and satir not in self.sayfa.satir_yukseklik:
+            o = self._oto.get(satir)
+            if o:
+                return o / self.yakinlastirma
+        return float(h)
+
     def _yuk(self, satir: int) -> int:
         h = self.sayfa.yukseklik(satir)
         if not h:

@@ -27,6 +27,7 @@ from ..model import olcu
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
 from ..model.sayfa import CalismaKitabi, Hucre
+from ..model.sayfa_yapisi import SayfaYapisi
 from ..model.stil import Kenarlik, Stil
 
 # --- eşleme tabloları -------------------------------------------------------------------------
@@ -52,6 +53,10 @@ _XLFN_OKU = re.compile(r"_xlfn\.", re.IGNORECASE)
 
 # Varsayılan Office teması (belirsiz: yeni Excel 365 teması farklı olabilir — surec.md §8b)
 _TEMA = ["FFFFFF", "000000", "E7E6E6", "44546A", "4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5", "70AD47"]
+
+_KAGIT_KODU = {"Letter": 1, "Legal": 5, "A3": 8, "A4": 9, "A5": 11}
+_KAGIT_ADI = {v: k for k, v in _KAGIT_KODU.items()}
+CM_INC = 2.54
 
 VARSAYILAN_YAZI_TIPI = "Calibri"
 VARSAYILAN_BOYUT = 11.0
@@ -201,6 +206,61 @@ def _formul_oku(metin: str, kitap) -> str:
     return ceviri.iceri('"'.join(parcalar), kitap)
 
 
+# --- sayfa yapısı ----------------------------------------------------------------------------------
+def _yapi_yaz(ws, y: SayfaYapisi) -> None:
+    ws.page_setup.orientation = "landscape" if y.yon == "yatay" else "portrait"
+    ws.page_setup.paperSize = _KAGIT_KODU[y.kagit]
+    ws.page_setup.scale = None if y.sigdir_genislik else y.olcek
+    if y.sigdir_genislik:
+        ws.sheet_properties.pageSetUpPr.fitToPage = True
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 0
+    m = ws.page_margins
+    m.top, m.bottom, m.left, m.right = (round(v / CM_INC, 4) for v in (y.ust, y.alt, y.sol, y.sag))
+    ws.print_options.gridLines = y.kilavuz or None
+    ws.print_options.horizontalCentered = y.yatay_ortala or None
+    if y.alan is not None:
+        ws.print_area = f"{get_column_letter(y.alan.ilk_sutun)}{y.alan.ilk_satir}:" \
+                        f"{get_column_letter(y.alan.son_sutun)}{y.alan.son_satir}"
+    if y.baslik_satirlari is not None:
+        ws.print_title_rows = f"{y.baslik_satirlari[0]}:{y.baslik_satirlari[1]}"
+
+
+def _yapi_oku(ws) -> SayfaYapisi:
+    ps, m = ws.page_setup, ws.page_margins
+    kw = {}
+    if ps.orientation == "landscape":
+        kw["yon"] = "yatay"
+    kw["kagit"] = _KAGIT_ADI.get(ps.paperSize or 9, "A4")
+    fit = bool(ws.sheet_properties.pageSetUpPr and ws.sheet_properties.pageSetUpPr.fitToPage)
+    if fit:
+        kw["sigdir_genislik"] = True
+    elif ps.scale and 10 <= int(ps.scale) <= 400:
+        kw["olcek"] = int(ps.scale)
+    for ad, v in (("ust", m.top), ("alt", m.bottom), ("sol", m.left), ("sag", m.right)):
+        if v is not None and 0 <= v * CM_INC <= 10:
+            kw[ad] = round(v * CM_INC, 2)
+    kw["kilavuz"] = bool(ws.print_options.gridLines)
+    kw["yatay_ortala"] = bool(ws.print_options.horizontalCentered)
+    try:
+        pa = ws.print_area
+        if pa:
+            ilk = (pa if isinstance(pa, str) else pa[0]).split(",")[0].split("!")[-1].replace("$", "")
+            a, _, b = ilk.partition(":")
+            (s1, r1), (s2, r2) = coordinate_from_string(a), coordinate_from_string(b or a)
+            kw["alan"] = Aralik(r1, column_index_from_string(s1), r2, column_index_from_string(s2))
+        pt = ws.print_title_rows
+        if pt:
+            a, _, b = pt.split("!")[-1].replace("$", "").partition(":")
+            kw["baslik_satirlari"] = (int(a), int(b or a))
+    except Exception:
+        pass                                                # bozuk yazdırma alanı: yok sayılır
+    try:
+        return SayfaYapisi(**kw)
+    except ValueError:
+        return SayfaYapisi()
+
+
 # --- yazma ----------------------------------------------------------------------------------------
 def _hucre_degeri(h: Hucre, kitap):
     """(değer, formül mü) — değer openpyxl'e verilecek biçimde."""
@@ -265,6 +325,7 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         if sayfa.dondur:
             ws.freeze_panes = f"{get_column_letter(sayfa.dondur[1])}{sayfa.dondur[0]}"
         ws.sheet_view.showGridLines = sayfa.kilavuz
+        _yapi_yaz(ws, sayfa.sayfa_yapisi)
 
     gecici = f"{yol}.{os.getpid()}.tmp"
     try:
@@ -405,6 +466,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
             except Exception:
                 dondur = None
         s.gorunum_yaz(dondur=dondur, kilavuz=bool(ws.sheet_view.showGridLines is not False))
+        s.sayfa_yapisi = _yapi_oku(ws)
         tab = ws.sheet_properties.tabColor
         if tab is not None:
             s.sekme_rengi = _renk_oku(tab)

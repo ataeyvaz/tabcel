@@ -9,13 +9,13 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
-| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv | 🔄 4d–4g (§2 madde 9) |
+| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır | 🔄 4e–4g (§2 madde 9) |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1924 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1960 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -41,7 +41,7 @@ Testler: 1924 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
-9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d PDF/yazdır (sayfa yapısı, önizleme) · 4e otomatik kayıt + kurtarma kopyası · 4f büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
+9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e otomatik kayıt + kurtarma kopyası · 4f büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -552,6 +552,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1895 → **1924** (`test_csv_io.py` 21 Qt'siz, `test_csv_menu.py` 8; mevcut hiçbir test değişmedi)
 - **Bilerek eksik:** ayraç/kodlama seçimi **yazarken** yok (hep `;` + BOM); sütun bazlı tür seçimi (metin/tarih…) yok, yalnız hepsi-metin; 1.048.576 satırdan uzun dosya hata verir; çok büyük dosyada önizleme ilk 200 KB; `.txt/.tsv` açma süzgeci yok; hata veren formül metin kalır (uyarı yok)
 - Sıradaki: **4d** (PDF/yazdır)
+
+## [2026-10-09] — Faz 4 / 4d bitti (Sonnet 5.5)
+- Commit `6c7e9f5` (4c). **4d:** `model/sayfa_yapisi.py` (`SayfaYapisi`: yön, kağıt A3/A4/A5/Letter/Legal, kenar boşlukları cm, ölçek %10–400, genişliğe sığdır, yazdırma alanı, yinelenen başlık satırları, kılavuz yazdır, yatay ortala; Excel varsayılanları A4/dikey/%100/1,91-1,78 cm), `Sayfa.sayfa_yapisi`, `SayfaYapisiDegis` komutu; `model/sayfalama.py` (Qt'siz: önce aşağı sonra sağa, gizli satır/sütun atlanır, başlık satırları her sayfada, sığmayan öğe kendi sayfasında); `ui/yazdir.py` (`SayfaCizici`: dolgu/kenarlık/kılavuz/metin/taşan metin/birleşim/`####`/ölçek/ortalama; `yazdir`, `pdf_yaz` atomik); `ui/sayfa_yapisi_penceresi.py`; Dosya menüsü: Sayfa Yapısı…, Yazdırma Önizleme…, Yazdır… (Ctrl+P), PDF (etkin sayfa / tüm sayfalar); `Izgara.yazdirma_yuksekligi` (otomatik satır yüksekliği dahil); `.xlsx` gidiş-dönüşü yazdırma ayarlarını da taşır (yön, kağıt, ölçek/`fitToPage`, kenar boşlukları, yazdırma alanı, başlık satırları, kılavuz, ortalama)
+- Kararlar: sayfa yapısı değişikliği **geri alınabilir komut** (Excel'de geri alınamaz; bilerek fark — "değişti" işaretini doğru tutmak için); PDF'de çizim 96 dpi ızgara pikselinden yazıcı çözünürlüğüne ölçeklenir; "genişliğe sığdır" yalnız küçültür (en çok %100) ve alt sınırı %10; tüm sayfalar PDF'inde her sayfa kendi yön/kağıdıyla; sayı sığmazsa `####`; PDF Excel'in "Yayımla" seçenekleri yok
+- Testler 1924 → **1960** (`test_sayfalama.py` 19 Qt'siz + xlsx gidiş-dönüş, `test_yazdir.py` 17: piksel denetimi, PDF sayfa sayısı/MediaBox/yön, hata yolları, menü, pencere); mevcut hiçbir test değişmedi. Ekran görüntüsü incelendi (birleşik başlık, yeşil başlık şeridi, kılavuz, %/₺ hizası)
+- **Bilerek eksik:** üst/alt bilgi, sayfa numarası, el ile sayfa sonu, yazdırma başlığında sütun yineleme, sayfa sırası seçeneği (önce sağa), çift çizgi aralığı, döndürülmüş metin, birleşimin sayfa sınırında bölünmesi (sol üst hücre başka sayfadaysa o parça çizilmez), gerçek yazıcıda çıktı ve PDF'in başka okuyucularda görünümü **elle test bekliyor**, `####` ölçüsü yaklaşık
+- Sıradaki: **4e** (otomatik kayıt + kurtarma kopyası)
 
 *(Yeni girişler en alta eklenir.)*
 
