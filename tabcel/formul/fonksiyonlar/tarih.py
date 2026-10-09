@@ -2,46 +2,16 @@
 29.2.1900, seri 0 = 0.1.1900). Qt yok. Metin tarihleri (`"1.1.2026"`) Faz 3'te çözülür; şimdilik
 yalnız seri numaraları kabul edilir.
 """
-import calendar
 import datetime as dt
 import math
 
 from ...model import deger as D
 from ...model.deger import Hata
+# seri ⇄ tarih yardımcıları model/ altında ortak (sayı biçimi de kullanır); adlar burada da geçerli
+from ...model.tarihseri import (MAKS_SERI, TEMEL as _TEMEL, ay_gun_sayisi, ayin_ilki,  # noqa: F401
+                                haftanin_gunu0, seri_ymd, ymd_seri)
 from . import fonksiyon
 from .ortak import duz, skaler
-
-_TEMEL = dt.date(1899, 12, 30)
-MAKS_SERI = 2958465                       # 31.12.9999
-
-
-def ay_gun_sayisi(y: int, m: int) -> int:
-    if y == 1900 and m == 2:
-        return 29                         # Excel'in hatası
-    return calendar.monthrange(y, m)[1]
-
-
-def ayin_ilki(y: int, m: int) -> int:
-    """y/m/1 seri numarası (y ≥ 1900)."""
-    if y == 1900 and m == 1:
-        return 1
-    if y == 1900 and m == 2:
-        return 32
-    return (dt.date(y, m, 1) - _TEMEL).days
-
-
-def seri_ymd(n: int):
-    """Seri numarası → (yıl, ay, gün)."""
-    if n == 0:
-        return 1900, 1, 0
-    if n == 60:
-        return 1900, 2, 29
-    d = (dt.date(1899, 12, 31) + dt.timedelta(n)) if n < 60 else _TEMEL + dt.timedelta(n)
-    return d.year, d.month, d.day
-
-
-def ymd_seri(y: int, m: int, g: int) -> int:
-    return ayin_ilki(y, m) + g - 1
 
 
 def _tarih_nesnesi(n: int) -> dt.date:
@@ -58,11 +28,6 @@ def _seri_kontrol(x: float):
     if x < 0 or x >= MAKS_SERI + 1:
         return D.SAYI
     return int(math.floor(x))
-
-
-def haftanin_gunu0(n: int) -> int:
-    """0 = Pazar … 6 = Cumartesi (Excel'in seri→gün eşlemesi; seri 1 = Pazar)."""
-    return (n - 1) % 7
 
 
 @fonksiyon("TODAY", en_az=0, en_cok=0, degisken=True)

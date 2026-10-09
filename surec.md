@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 sıradaki: 3a–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1253 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1458 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,6 +40,7 @@ Testler: 1253 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f birleştirme · 3g akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -169,6 +170,21 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 27 | `=ZAMAN(1;-30;0)` (bizde #SAYI!), `=SAAT(0,99999999)`, `="(5)"+1` (Excel −4 verebilir; bizde #DEĞER!), `SERİAY(TARİH(1900;1;15);1)` = 60 mı | Yazılı davranış | ⏳ |
 | 28 | `ETARİHLİ`'nin sayfa başlığı "TARİHFARKI" (makine çevirisi), gövde/sözdizimi `ETARİHLİ` → **ETARİHLİ kullanıldı**; kalan 115 ad sözdizimi satırıyla yeniden tarandı | ✅ doğrulandı (2026-10-09) | ✅ |
 | 29 | Kopyalamada sayfa önekli başvuru sayfa dışına taşarsa Excel `Sayfa2!#BAŞV!` gösterir; bizde önek düşer (`=#BAŞV!`) | Yalnız görünüm | ⏳ |
+| 30 | Türkçe Excel'de özel biçim kodunda saat/dakika/saniye harfleri (tr-tr kılavuzu çelişkili: saat `s/ss`, dakika `a/aa` ya da `d/dd`, saniye `sn`) | Yerelde `h`, `m`, `s` (kanonik); yalnız gün `g`, ay `a` Türkçe | ⏳ |
+| 31 | `gg.aa.yyyy` ⇄ `dd.mm.yyyy` eşlemesi; `d`'nin yerelde de gün sayılması | Evet (kılavuz "g veya d") | ⏳ |
+| 32 | `AM/PM` Türkçe Excel'de `ÖÖ`/`ÖS` mi? Yerel kodda `ÖÖ/ÖS` yazılabilir mi? | `ÖÖ`/`ÖS` gösterilir; `ÖÖ/ÖS` girişi `AM/PM`'e çevrilir | ⏳ |
+| 33 | `mmm`/`ddd` kısaltmaları (Oca, Şub, Mar, Nis, May, Haz, Tem, Ağu, Eyl, Eki, Kas, Ara; Pzt, Sal, Çar, Per, Cum, Cmt, Paz) | Windows tr-TR kısaltmaları | ⏳ |
+| 34 | `[Renk10]` gibi Türkçe numaralı renk yazımı var mı? | Yalnız `[Color10]` tanınır | ⏳ |
+| 35 | Hazır biçimlerin kanonik kodları (Para Birimi, Muhasebe, Kısa/Uzun Tarih, Saat — Hücreleri Biçimlendir ▸ Özel'de görünen) | `"₺"#,##0.00`; `_-"₺"* #,##0.00_-;…`; `d.mm.yyyy`; `d mmmm yyyy dddd`; `hh:mm:ss` | ⏳ |
+| 36 | `-0,4` sayısı `0` biçiminde `-0` mı `0` mı | `-0` | ⏳ |
+| 37 | `1,005` sayısı `0,00` biçiminde `1,01` mi | `1,01` (15 basamak + yarım yukarı) | ⏳ |
+| 38 | Koşullu bölümlerde eksi işareti; hiçbir koşula uymayan sayı (`[>100]0;[<0]0` ile 50) | İşaret yazılır; uymayan sayı `####` | ⏳ |
+| 39 | `[Red]0` biçimli hücreye metin yazılınca metin kırmızı mı | Renk uygulanmaz | ⏳ |
+| 40 | Kesirde 0 ve tam sayılar: `0,75` → `" 3/4"`, `2` → `"2    "` boşluk/hizalama; `?/?` ile 0 | Uygulanan davranış (yalnız boşlukları sıkıştırılmış hali test edildi) | ⏳ |
+| 41 | METNEÇEVİR biçim argümanı Türkçe Excel'de yerel yazım mı (`"gg.aa.yyyy"`)? Kanonik kod da çalışır mı | Yerel yazım | ⏳ |
+| 42 | Doldurma: 3+ sayıda doğrusal eğilim mi? Aynı gün, farklı ay olan iki tarihte ay adımı mı | Evet / evet | ⏳ |
+| 43 | Akıllı giriş: `1.5` → 1 Mayıs mı (§8b-2)? `1/2` → tarih mi? `1.234,5` girilince otomatik `#,##0` biçimi uygulanır mı | Tasarım: tarih / tarih / doğrulanana dek uygulanmaz | ⏳ |
+| 44 | Türkçe Excel'de Kalın/İtalik/Altı çizili kısayolları | Sözcük'teki karar izlenecek | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -360,4 +376,20 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1236 → **1253**. Ölçüm §8. `test.md` §10'a rapor işlendi
 - **Faz 2 bitti.** Sıradaki: Faz 3 (biçimlendirme, sayı biçimleri, doldurma, dondurma; çizim yeniden yapımı + `TEXT`/METNEÇEVİR + metin tarihleri); plan.md → Faz 3. Girişte: Opus gözden geçirmesinin "incelenmedi" listesi (`arama/metin/finans/bilgi/istatistik` doğruluğu, ayrıştırıcı uç durumları) Faz 3 başında hafifçe gözden geçirilebilir
 
+## [2026-10-09] — Faz 3 çekirdeği (Opus 5.5, alt ajan)
+- Faz 2 düzeltmeleri commit `85d65a3`. Faz 3 çekirdeği Opus 5.5 alt ajanıyla (salt okunur olmayan, yalnız belirtilen dosyalar) yazıldı; **ben doğruladım:** 1432 test geçiyor (1253 + 179), `git status` yalnız beklenen 5 dosya, `model/` Qt ve `formul/` içe aktarmıyor
+- Yeni: `faz3_tasarim.md` (stil modeli, olay/geri al, birleştirme, dondurma, doldurma, akıllı giriş, çizim gereksinimleri, 3a–3l devir listesi, kararlar), `model/sayi_bicimi.py` (Genel, 0#?, binlik/ölçek, yüzde, bilimsel, kesir, `@`, 4 bölüm + koşullu, 8 renk (Siyah, Yeşil, Beyaz, Mavi, **Eflatun** (Macenta değil), Sarı, Camgöbeği, Kırmızı — tr-tr kılavuzundan), sabit metin, `_x`, `*x` (`BicimSonucu.dolgu`), tarih/saat/`[h]`, kanonik⇄yerel `yerele/kanonige`, `HAZIR`/`ad_kodu`, `ondalik_degistir`, `sigdir`/`doldur`, `lru_cache`), `model/tarihseri.py` (seri⇄tarih yardımcıları `formul/`'dan taşındı → kural 2 korunur; `tarih.py` oradan alır)
+- Hız (100.000 çağrı): Genel 2,8 µs; `0`/`#,##0.00`/`0.0%`/`"₺"#,##0.00` 6,5–8,6 µs; tarih 10,6; saat 9,1; bilimsel 30; kesir ~55 µs. Ekrandaki ~1.000 hücrenin soğuk biçimlemesi 7–10 ms → **3c'de satır önbelleği zorunlu**
+- Doğrulanamayanlar §8b 30–44'e yazıldı (ay/gün kısaltmaları, ÖÖ/ÖS, saat/dakika/saniye harfleri, `[Renk N]`, hazır biçim kodları…). `Genel` kod adı kabul ediliyor ama doğrulanmadı
+- Riskler: Türkçe saat harfleri yanlış çıkarsa yalnız `yerele/kanonige` tablosu değişir (saklama kanonik); Excel'in kesir yaklaşımı/`?` hizası birebir doğrulanmadı; Excel'in hazır biçim tablosu (numFmtId 0–49) Faz 4'te openpyxl'den alınmalı
+- Sıradaki: **3a** (Sonnet)
+
+## [2026-10-09] — Faz 3 / 3a bitti (Sonnet 5.5)
+- `model/stil.py` (`Stil`, `Kenarlik`, `StilYama`, `StilHavuzu`); `Sayfa` stil depoları (`_stil`, `satir_stil`, `sutun_stil`, `stil_kimligi/stil/ham_stil_kimligi`, `bicim_yaz` → tek `bicim` olayı, `stilleri_yaz/satir_stili_yaz/sutun_stili_yaz`, `havuza_gec`, `bicim_silinecek/bicim_geri_koy`, `kullanilan_aralik(bicim_dahil)`); `CalismaKitabi.stil_havuzu`; `komutlar.BicimDegis` + `bicim_komutu`; `ana_sayfa` BicimDegis'i tanır; `_SatirSutun` silinen stilleri saklar/geri koyar; `olay.py` belgesine `bicim`
+- Kararlar/ayrıntılar: hücre değeri 0 yalnız satır/sütun stili varken **açık** saklanır (Biçimleri temizle satır biçimliyken doğru çalışsın); tam sütun biçimlenince biçimli satırların kesişimine açık kayıt yazılır (son uygulanan kazanır; ≤200.000 kayıt); tek aralık ≤5.000.000 hücre (aşarsa `AdresHatasi`; UI tam satır/sütun önerir); satır/sütun ekleme üstteki/soldaki biçimi devralır, silme geri alınınca aynen döner (devralınan bant temizlenir); sayfa başka kitaba bağlanırken kimlikler çevrilir
+- Testler 1432 → **1458** (`test_stil.py` 26: interning, öncelik, tek olay, formül motoru tetiklenmez, geri al/yinele, tam satır/sütun, 100.000 hücre < 1,5 sn (hedef 0,3), ekle-sil + geri al, kitap/sayfa silme). Regresyon yok
+- Commit atılmadı (kullanıcı isteyince; Faz 3 çekirdeği + 3a birlikte)
+- Sıradaki: **3b** (pano biçim taşıma `PanoVerisi.stiller`, `HucreTasi` stil, Temizle menüsü, Delete biçimi korur)
+
 *(Yeni girişler en alta eklenir.)*
+

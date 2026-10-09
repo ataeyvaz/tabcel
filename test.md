@@ -82,7 +82,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 
 <!-- OTOMATIK:BASLA -->
 
-**Son çalıştırma: 2026-10-09 — ✅ 1253/1253 test geçti, 0 olumsuz** (süre ≈ 8.8 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
+**Son çalıştırma: 2026-10-09 — ✅ 1458/1458 test geçti, 0 olumsuz** (süre ≈ 10.6 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
 
 | Dosya | Kapsam | Test | ✅ Olumlu | ❌ Olumsuz |
 |---|---|---|---|---|
@@ -111,10 +111,12 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_pencere_sayfa.py` | Sayfa sekmeleri ve sayfa komutları arayüzde (ekle/sil/yeniden adlandır/taşı, geri al) | 16 | 16 | 0 |
 | `test_sayfa.py` | Veri modeli: seyrek sayfa, satır/sütun ekle-sil, geri al yığını, sayfa adı kuralları, gizleme, kullanılan aralık önbelleği | 33 | 33 | 0 |
 | `test_sayfa_komutlari.py` | Geri alınabilir sayfa komutları (K6) | 7 | 7 | 0 |
+| `test_sayi_bicimi.py` | Excel sayı biçimi kodu çözümleyici/biçimleyici (Faz 3 çekirdeği): Genel, 0#?, yüzde, bilimsel, kesir, bölümler, renk, tarih/saat, kanonik⇄yerel | 179 | 179 | 0 |
 | `test_senaryo_butce.py` | Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma) | 8 | 8 | 0 |
+| `test_stil.py` | Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al | 26 | 26 | 0 |
 | `test_toplu_ve_sonuc.py` | Toplu yazım ve girdi/sonuç ayrımı (K4) | 12 | 12 | 0 |
 | `test_yerellestirme.py` | TR ⇄ kanonik çeviri: ayırıcılar, fonksiyon/hata adları, sayfa başvuruları | 37 | 37 | 0 |
-| **Toplam** | | **1253** | **1253** | **0** |
+| **Toplam** | | **1458** | **1458** | **0** |
 
 ### `testler/test_adres.py` — 26/26 ✅
 *Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576)*
@@ -1412,6 +1414,189 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ sayfa komutlari sayfa olaylari yayar
 - ✅ silme geri al sayfa sirasi birden cok silmede
 
+### `testler/test_sayi_bicimi.py` — 179/179 ✅
+*Excel sayı biçimi kodu çözümleyici/biçimleyici (Faz 3 çekirdeği): Genel, 0#?, yüzde, bilimsel, kesir, bölümler, renk, tarih/saat, kanonik⇄yerel*
+
+- ✅ bos hucre bos metin `[genel]
+- ✅ bos hucre bos metin `[sayi]
+- ✅ bos hucre bos metin `[yuzde]
+- ✅ bos hucre bos metin `[bilimsel]
+- ✅ bos hucre bos metin `[kesir]
+- ✅ bos hucre bos metin `[tarih]
+- ✅ bos hucre bos metin `[saat]
+- ✅ bos hucre bos metin `[para]
+- ✅ bos hucre bos metin `[renkli]
+- ✅ bos hucre bos metin `[kosullu]
+- ✅ bos hucre bos metin `[metin_bolumlu]
+- ✅ hata degeri bicimlenmez ortalanir `[genel]
+- ✅ hata degeri bicimlenmez ortalanir `[sayi]
+- ✅ hata degeri bicimlenmez ortalanir `[yuzde]
+- ✅ hata degeri bicimlenmez ortalanir `[bilimsel]
+- ✅ hata degeri bicimlenmez ortalanir `[kesir]
+- ✅ hata degeri bicimlenmez ortalanir `[tarih]
+- ✅ hata degeri bicimlenmez ortalanir `[saat]
+- ✅ hata degeri bicimlenmez ortalanir `[para]
+- ✅ hata degeri bicimlenmez ortalanir `[renkli]
+- ✅ hata degeri bicimlenmez ortalanir `[kosullu]
+- ✅ hata degeri bicimlenmez ortalanir `[metin_bolumlu]
+- ✅ mantiksal bicimlenmez `[genel]
+- ✅ mantiksal bicimlenmez `[sayi]
+- ✅ mantiksal bicimlenmez `[yuzde]
+- ✅ mantiksal bicimlenmez `[bilimsel]
+- ✅ mantiksal bicimlenmez `[kesir]
+- ✅ mantiksal bicimlenmez `[tarih]
+- ✅ mantiksal bicimlenmez `[saat]
+- ✅ mantiksal bicimlenmez `[para]
+- ✅ mantiksal bicimlenmez `[renkli]
+- ✅ mantiksal bicimlenmez `[kosullu]
+- ✅ mantiksal bicimlenmez `[metin_bolumlu]
+- ✅ sayi gibi metin oldugu gibi sola `[General]
+- ✅ sayi gibi metin oldugu gibi sola `[#,##0.00]
+- ✅ sayi gibi metin oldugu gibi sola `[0.0%]
+- ✅ sayi gibi metin oldugu gibi sola `[0.00E+00]
+- ✅ sayi gibi metin oldugu gibi sola `[# ?/?]
+- ✅ sayi gibi metin oldugu gibi sola `[dd.mm.yyyy]
+- ✅ sayi gibi metin oldugu gibi sola `[hh:mm:ss]
+- ✅ sayi gibi metin oldugu gibi sola `["\u20ba"#,##0.00]
+- ✅ sayi gibi metin oldugu gibi sola `[[Red]0;[Blue]-0]
+- ✅ sayi gibi metin oldugu gibi sola `[[>100]0;0.0]
+- ✅ normal durum sayi saga `[General-1234.5-1234,5]
+- ✅ normal durum sayi saga `[#,##0.00-1234.567-1.234,57]
+- ✅ normal durum sayi saga `[0.0%-0.1234-12,3%]
+- ✅ normal durum sayi saga `[0.00E+00-12200000.0-1,22E+07]
+- ✅ normal durum sayi saga `[# ?/?-1.25-1 1/4]
+- ✅ normal durum sayi saga `[dd.mm.yyyy-46307.0-12.10.2026]
+- ✅ normal durum sayi saga `[hh:mm:ss-0.5-12:00:00]
+- ✅ normal durum sayi saga `["\u20ba"#,##0.00-1234.5-\u20ba1.234,50]
+- ✅ normal durum sayi saga `[[Red]0;[Blue]-0-5.0-5]
+- ✅ normal durum sayi saga `[[>100]0;0.0-150.0-150]
+- ✅ normal durum sayi saga `[0.00;-0.00;0;"Ad: "@-2.0-2,00]
+- ✅ genel gosterim ile ayni
+- ✅ genel yerel adi ve sabitle
+- ✅ genel sigdir gosterim ile tutarli
+- ✅ sayi ms ornekleri `[####.#-1234.59-1234,6]
+- ✅ sayi ms ornekleri `[#.000-8.9-8,900]
+- ✅ sayi ms ornekleri `[0.#-0.631-0,6]
+- ✅ sayi ms ornekleri `[#.0#-12.0-12,0]
+- ✅ sayi ms ornekleri `[#.0#-1234.568-1234,57]
+- ✅ sayi ms ornekleri `[#,###-12000.0-12.000]
+- ✅ sayi ms ornekleri `[#,-12000.0-12]
+- ✅ sayi ms ornekleri `[0.0,,-12200000.0-12,2]
+- ✅ sayi ms ornekleri `[#,##0-1234567.0-1.234.567]
+- ✅ sayi ms ornekleri `[0-2.5-3]
+- ✅ sayi ms ornekleri `[0--2.5--3]
+- ✅ sayi ms ornekleri `[0-0.0-0]
+- ✅ sayi ms ornekleri `[00000-123.0-00123]
+- ✅ sayi ms ornekleri `[000-00-0000-123456789.0-123-45-6789]
+- ✅ soru isareti hizalama `[44.398- 44,398]
+- ✅ soru isareti hizalama `[102.65-102,65 ]
+- ✅ soru isareti hizalama `[2.8-  2,8  ]
+- ✅ sayi hata ve karisik
+- ✅ yuzde
+- ✅ bilimsel
+- ✅ kesir `[# ?/?-1.25-1 1/4]
+- ✅ kesir `[# ???/???-5.25-5 1/4]
+- ✅ kesir `[# ???/???-5.3-5 3/10]
+- ✅ kesir `[# ?/8-1.3-1 2/8]
+- ✅ kesir `[?/?-5.25-21/4]
+- ✅ kesir `[# ??/100-0.37-37/100]
+- ✅ kesir dort vaka
+- ✅ dort bolum ms ornegi
+- ✅ iki bolum negatif isaretsiz
+- ✅ bos bolum gizler
+- ✅ metin bolumu tek basina
+- ✅ renk ms ornegi ve kosul
+- ✅ kosullu bolumler
+- ✅ renk adlari tr en `[Siyah-Black-#000000]
+- ✅ renk adlari tr en `[Ye\u015fil-Green-#00FF00]
+- ✅ renk adlari tr en `[Beyaz-White-#FFFFFF]
+- ✅ renk adlari tr en `[Mavi-Blue-#0000FF]
+- ✅ renk adlari tr en `[Eflatun-Magenta-#FF00FF]
+- ✅ renk adlari tr en `[Sar\u0131-Yellow-#FFFF00]
+- ✅ renk adlari tr en `[Camg\xf6be\u011fi-Cyan-#00FFFF]
+- ✅ renk adlari tr en `[K\u0131rm\u0131z\u0131-Red-#FF0000]
+- ✅ renk numarasi palet openpyxl ile ayni
+- ✅ sabitler
+- ✅ dolgu yildiz
+- ✅ tarih ms kodlari
+- ✅ ay adlari `[1]
+- ✅ ay adlari `[2]
+- ✅ ay adlari `[3]
+- ✅ ay adlari `[4]
+- ✅ ay adlari `[5]
+- ✅ ay adlari `[6]
+- ✅ ay adlari `[7]
+- ✅ ay adlari `[8]
+- ✅ ay adlari `[9]
+- ✅ ay adlari `[10]
+- ✅ ay adlari `[11]
+- ✅ ay adlari `[12]
+- ✅ tarih dort vaka ve 1900
+- ✅ negatif ya da cok buyuk tarih diyez
+- ✅ saat ve dakika ay ayrimi
+- ✅ gecen sure
+- ✅ kanonik yerel gidis donus `[#,##0.00-#.##0,00]
+- ✅ kanonik yerel gidis donus `[dd.mm.yyyy-gg.aa.yyyy]
+- ✅ kanonik yerel gidis donus `[d mmmm yyyy dddd-g aaaa yyyy gggg]
+- ✅ kanonik yerel gidis donus `[[Red]0.0%;[Blue]-0.0%-[K\u0131rm\u0131z\u0131]0,0%;[Mavi]-0,0%]
+- ✅ kanonik yerel gidis donus `[General-Genel]
+- ✅ kanonik yerel gidis donus `[0.00E+00-0,00E+00]
+- ✅ kanonik yerel gidis donus `[[>1.5]0.0;0-[>1,5]0,0;0]
+- ✅ kanonik yerel gidis donus `[hh:mm:ss.00-hh:mm:ss,00]
+- ✅ kanonik yerel gidis donus `[[h]:mm-[h]:mm]
+- ✅ kanonik yerel gidis donus `[#,##0.00 "\u20ba"-#.##0,00 "\u20ba"]
+- ✅ kanonik yerel gidis donus `[# ?/?-# ?/?]
+- ✅ kanonik yerel gidis donus `[@-@]
+- ✅ hazir ve ornek kodlar gidis donus `[General]
+- ✅ hazir ve ornek kodlar gidis donus `[0.00]
+- ✅ hazir ve ornek kodlar gidis donus `[#,##0.00]
+- ✅ hazir ve ornek kodlar gidis donus `["\u20ba"#,##0.00]
+- ✅ hazir ve ornek kodlar gidis donus `["$"#,##0.00]
+- ✅ hazir ve ornek kodlar gidis donus `[#,##0.00 "\u20ac"]
+- ✅ hazir ve ornek kodlar gidis donus `[_-"\u20ba"* #,##0.00_-;-"\u20ba"* #,##0.00_-;_-"\u20ba"* "-"??_-;_-@_-]
+- ✅ hazir ve ornek kodlar gidis donus `[d.mm.yyyy]
+- ✅ hazir ve ornek kodlar gidis donus `[d mmmm yyyy dddd]
+- ✅ hazir ve ornek kodlar gidis donus `[hh:mm:ss]
+- ✅ hazir ve ornek kodlar gidis donus `[0.00%]
+- ✅ hazir ve ornek kodlar gidis donus `[# ?/?]
+- ✅ hazir ve ornek kodlar gidis donus `[0.00E+00]
+- ✅ hazir ve ornek kodlar gidis donus `[@]
+- ✅ hazir ve ornek kodlar gidis donus `[[Blue]#,##0.00_);[Red](#,##0.00);0.00;"sales "@]
+- ✅ hazir ve ornek kodlar gidis donus `[000-00-0000]
+- ✅ hazir ve ornek kodlar gidis donus `[0\\-0]
+- ✅ hazir ve ornek kodlar gidis donus `[*-0]
+- ✅ yerel tarih harfleri
+- ✅ gecersiz kod `["abc]
+- ✅ gecersiz kod `[[Foo]0]
+- ✅ gecersiz kod `[0;0;0;0;0]
+- ✅ gecersiz kod `[0x]
+- ✅ gecersiz kod `[[Color0]0]
+- ✅ gecersiz kod `[0_]
+- ✅ gecersiz kod `[[>a]0]
+- ✅ gecersiz kod `[0;@;0]
+- ✅ gecersiz kod `[# ?/]
+- ✅ sigdir sayi bicimi kisaltilmaz
+- ✅ hazir bicimler
+- ✅ ondalik artir azalt `[0-1-0.0]
+- ✅ ondalik artir azalt `[#,##0.00-1-#,##0.000]
+- ✅ ondalik artir azalt `[0.00--1-0.0]
+- ✅ ondalik artir azalt `[0.0--1-0]
+- ✅ ondalik artir azalt `[0%-1-0.0%]
+- ✅ ondalik artir azalt `["\u20ba"#,##0.00--2-"\u20ba"#,##0]
+- ✅ ondalik artir azalt `[0.00;(0.00)-1-0.000;(0.000)]
+- ✅ ondalik genel degerden baslar
+- ✅ hizli yol genel yolla ayni `[0]
+- ✅ hizli yol genel yolla ayni `[#,##0.00]
+- ✅ hizli yol genel yolla ayni `[0.0%]
+- ✅ hizli yol genel yolla ayni `["\u20ba"#,##0.00]
+- ✅ hizli yol genel yolla ayni `[#,##0,]
+- ✅ hizli yol genel yolla ayni `[0.000]
+- ✅ hizli yol genel yolla ayni `[#]
+- ✅ hizli yol genel yolla ayni `[.00]
+- ✅ hizli yol genel yolla ayni `[00000]
+- ✅ hizli yol genel yolla ayni `[_-* #,##0.00_-]
+- ✅ basarim kaba
+
 ### `testler/test_senaryo_butce.py` — 8/8 ✅
 *Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma)*
 
@@ -1423,6 +1608,36 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ sifira bolme ve hata yayilimi
 - ✅ dongu senaryosu uyari ve cozum
 - ✅ kes yapistir sutunu tasiyinca basvurular izler
+
+### `testler/test_stil.py` — 26/26 ✅
+*Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al*
+
+- ✅ stil varsayilanlari excel gibi
+- ✅ stil dogrulama ve renk normallestirme
+- ✅ stil yama kismi ve kenar birlestirme
+- ✅ stil yama hash ve esitlik
+- ✅ havuz interning ve yama onbellegi
+- ✅ etkin stil hucre satir sutun sirasi
+- ✅ acik varsayilan hucre satir stilini ezer
+- ✅ bicim yaz aralik disi hata
+- ✅ toplu bicim tek olay ve degismeyen olay yok
+- ✅ bicim olayi formul motorunu ve hucre olayini tetiklemez
+- ✅ bicim degis komutu geri al yinele
+- ✅ bicim komutu aralik ve coklu secim
+- ✅ bicim komutu kismi yama mevcut stili korur
+- ✅ bicim komutu tam satir ve sutun stile yazilir
+- ✅ bicim komutu tam satir acik kayitli hucreye de uygular
+- ✅ bicim komutu asiri buyuk aralik reddedilir
+- ✅ 100000 hucreye yama hizli
+- ✅ satir ekle ustteki biclimi devralir ve alttakiler kayar
+- ✅ ilk satira ekleme devralmaz
+- ✅ satir stili ekle sil ile kayar ve devralinir
+- ✅ satir sil stilleri kaydirir ve geri alinca aynen doner
+- ✅ sutun ekle sil stil
+- ✅ ekleme sayfa sonuna iterse stil kaybolur degil kayit atilir
+- ✅ kullanilan aralik bicim dahil
+- ✅ sayfa baska kitaba baglaninca kimlikler cevrilir
+- ✅ sayfa silinip geri gelince stilleri korur
 
 ### `testler/test_toplu_ve_sonuc.py` — 12/12 ✅
 *Toplu yazım ve girdi/sonuç ayrımı (K4)*

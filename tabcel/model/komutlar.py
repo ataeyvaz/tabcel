@@ -4,8 +4,9 @@ Aralık işlemleri tek adımdır: tek komut ya da `Grup`.
 """
 from typing import Dict, List, Optional, Protocol
 
-from .adres import Aralik
+from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 from .sayfa import Anahtar, Hucre, Sayfa
+from .stil import StilYama
 
 
 class Komut(Protocol):
@@ -40,6 +41,7 @@ class _SatirSutun:
         self.sayfa, self.nerede, self.adet, self.ekle = sayfa, nerede, adet, ekle
         self._silinen: Dict[Anahtar, Hucre] = {}
         self._olcu_once = None
+        self._bicim_silinen = None       # silinen bandın ham stil kayıtları (silmeyi geri almak için)
         self._duzeltmeler = {}           # {Sayfa: {anahtar: (eski formül, yeni formül)}}
 
     def _formulleri_duzelt(self) -> None:
@@ -66,6 +68,7 @@ class _SatirSutun:
         if self.ekle:
             self._ekle()
         else:
+            self._bicim_silinen = self.sayfa.bicim_silinecek(self.eksen, self.nerede, self.adet)
             self._silinen = self._sil()
         self._formulleri_duzelt()
 
@@ -77,6 +80,7 @@ class _SatirSutun:
             self._ekle()
             for (s, c), h in self._silinen.items():
                 self.sayfa.ata(s, c, h)
+            self.sayfa.bicim_geri_koy(self.eksen, self.nerede, self.adet, self._bicim_silinen)
         self.sayfa.boyut_durumu_yukle(self._olcu_once)
 
 
@@ -144,6 +148,79 @@ class HucreTasi:
     def geri_al(self) -> None:
         for s, eski in reversed(self._eski):
             s.toplu_yaz(eski)
+
+
+class BicimDegis:
+    """Hücre/satır/sütun biçimini tek adımda değiştirir (K4: girdiye dokunmaz, formül yeniden hesaplanmaz).
+    `hucreler`/`satirlar`/`sutunlar`: yeni HAM stil kayıtları ({anahtar: kimlik | None}); eski kayıtlar
+    saklanır, geri al yükler. Genelde `bicim_komutu` ile kurulur."""
+
+    def __init__(self, sayfa: Sayfa, hucreler=None, satirlar=None, sutunlar=None):
+        self.sayfa = sayfa
+        self.hucreler = dict(hucreler or {})
+        self.satirlar = dict(satirlar or {})
+        self.sutunlar = dict(sutunlar or {})
+        self._eski = ({}, {}, {})
+
+    def bos_mu(self) -> bool:
+        return not (self.hucreler or self.satirlar or self.sutunlar)
+
+    def yap(self) -> None:
+        self._eski = self.sayfa.bicim_yaz(self.hucreler, self.satirlar, self.sutunlar)
+
+    def geri_al(self) -> None:
+        self.sayfa.bicim_yaz(*self._eski)
+
+
+BICIM_ALAN_SINIRI = 5_000_000        # tam satır/sütun olmayan tek aralıkta en çok hücre
+BICIM_KESISIM_SINIRI = 200_000       # tam sütun × biçimli satır kesişimi için en çok açık hücre kaydı
+
+
+def bicim_komutu(sayfa: Sayfa, araliklar, yama: StilYama) -> BicimDegis:
+    """Seçimdeki (çoklu aralık dahil) her hücreye `yama`yı uygulayan komut.
+
+    - Tam satır seçimi satır stiline, tam sütun seçimi sütun stiline yazılır (1 milyon hücre değil);
+      aralıkta zaten açık stil kaydı olan hücrelere de yama uygulanır (Excel gibi).
+    - Tam sütun seçiminde, biçimli satırların kesişimleri satır stilini ezmesin diye o hücrelere açık
+      kayıt yazılır (son uygulanan kazanır). Tüm sayfa seçimi sütun yolunu kullanır.
+    - Sıradan aralık: yalnız etkin stili DEĞİŞEN hücreler yazılır.
+    """
+    havuz = sayfa.havuz
+    hucre: Dict[Anahtar, Optional[int]] = {}
+    satir: Dict[int, Optional[int]] = {}
+    sutun: Dict[int, Optional[int]] = {}
+    for ar in araliklar:
+        r1, c1, r2, c2 = ar.ilk_satir, ar.ilk_sutun, ar.son_satir, ar.son_sutun
+        tam_sutun = r1 == 1 and r2 == MAX_ROW
+        tam_satir = c1 == 1 and c2 == MAX_COL
+        if tam_sutun:
+            for c in range(c1, c2 + 1):
+                sutun[c] = havuz.yama_uygula(sayfa.sutun_stil.get(c, 0), yama)
+            for (r, c), k in sayfa._stil.items():
+                if c1 <= c <= c2:
+                    hucre[(r, c)] = havuz.yama_uygula(k, yama)
+            if len(sayfa.satir_stil) * (c2 - c1 + 1) <= BICIM_KESISIM_SINIRI:
+                for r in sayfa.satir_stil:
+                    for c in range(c1, c2 + 1):
+                        if (r, c) not in hucre:
+                            hucre[(r, c)] = havuz.yama_uygula(sayfa.stil_kimligi(r, c), yama)
+        elif tam_satir:
+            for r in range(r1, r2 + 1):
+                satir[r] = havuz.yama_uygula(sayfa.satir_stil.get(r, 0), yama)
+            for (r, c), k in sayfa._stil.items():
+                if r1 <= r <= r2:
+                    hucre[(r, c)] = havuz.yama_uygula(k, yama)
+        else:
+            if (r2 - r1 + 1) * (c2 - c1 + 1) > BICIM_ALAN_SINIRI:
+                raise AdresHatasi("Seçim biçimlendirme için çok büyük; tam satır/sütun seçin")
+            stil_kimligi, yama_uygula = sayfa.stil_kimligi, havuz.yama_uygula
+            for r in range(r1, r2 + 1):
+                for c in range(c1, c2 + 1):
+                    k = stil_kimligi(r, c)
+                    yeni = yama_uygula(k, yama)
+                    if yeni != k:
+                        hucre[(r, c)] = yeni
+    return BicimDegis(sayfa, hucre, satir, sutun)
 
 
 class OlcuDegis:
@@ -256,7 +333,7 @@ def ana_sayfa(komut, geri_al: bool = False):
                 return s
         return None
     return getattr(komut, "sayfa", None) if isinstance(
-        komut, (HucrelerDegis, _SatirSutun, OlcuDegis)) else None
+        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis)) else None
 
 
 class GeriAlYigini:

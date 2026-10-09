@@ -44,6 +44,8 @@ DOSYA_ACIKLAMALARI = {
     "test_isaretleme_arayuz.py": "İşaretleme modu arayüzde (6d): tıklama/ok, F4, odak kaybı, formül çubuğu, sekmeler arası, Alt+=, öneri listesi, renkli metin",
     "test_dongu_arayuz.py": "Döngüsel başvuru uyarısı (6e): durum çubuğu etiketi, tek uyarı",
     "test_gecmis_sayfa_gecisi.py": "Geri al/yinele sayfa geçişi (6f): yalnız asıl değişikliğin sayfasına",
+    "test_sayi_bicimi.py": "Excel sayı biçimi kodu çözümleyici/biçimleyici (Faz 3 çekirdeği): Genel, 0#?, yüzde, bilimsel, kesir, bölümler, renk, tarih/saat, kanonik⇄yerel",
+    "test_stil.py": "Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al",
     "test_senaryo_butce.py": "Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma)",
 }
 

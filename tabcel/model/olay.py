@@ -10,6 +10,10 @@ Türler ve `ayrinti` anahtarları:
 - ``sonuc``  : `degisiklikler` {(satır, sütun): değer} — formül sonuçları yazıldı (geri al yığınına
   girmez; motor toplu yazar: TEK olay). Tek hücrelik `sonuc_ata` ayrıca `anahtar`, `deger` verir
 - ``yapi``   : `eksen` ('satir'|'sutun'), `nerede`, `fark` (+ekleme / −silme), `silinen` {anahtar: Hucre}
+- ``bicim``  : stil (biçim) kayıtları değişti: `degisiklikler` {(satır, sütun): (eski kimlik|None, yeni
+  kimlik|None)}, `satir` {satır: (eski, yeni)}, `sutun` {sütun: (eski, yeni)} — yalnız gerçekten değişenler;
+  toplu işlem TEK olay. Kimlikler `Sayfa.havuz`daki stillerin numaralarıdır (None = kayıt yok). Formül
+  motoru yok sayar; ızgara ilgili satırları yeniden çizer
 - ``boyut``  : sütun genişliği / satır yüksekliği / gizleme değişti
 - ``sayfa``  : `islem` ('ekle'|'sil'|'ad'|'tasi'), `indeks`; 'ad' için `eski_ad`, 'tasi' için `eski_indeks`
   (bu tür olaylarda `sayfa` ilgili sayfadır; kitap düzeyinde olduğundan tüm dinleyicilere gider)

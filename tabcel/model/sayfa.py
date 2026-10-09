@@ -9,6 +9,7 @@ from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 from .deger import Deger
 from .olay import Olay
+from .stil import Stil, StilHavuzu
 
 Anahtar = Tuple[int, int]
 
@@ -49,8 +50,12 @@ class Sayfa:
     VARSAYILAN_SUTUN_GENISLIGI = 64   # px, 100% yakınlaştırmada
     VARSAYILAN_SATIR_YUKSEKLIGI = 20
 
-    def __init__(self, ad: str):
+    def __init__(self, ad: str, havuz: Optional[StilHavuzu] = None):
         self.ad = ad
+        self.havuz: StilHavuzu = havuz if havuz is not None else StilHavuzu()
+        self._stil: Dict[Anahtar, int] = {}          # hücre → stil kimliği (açık kayıt; 0 yalnız satır/sütun stilini ezmek için)
+        self.satir_stil: Dict[int, int] = {}         # tam satır biçimi
+        self.sutun_stil: Dict[int, int] = {}         # tam sütun biçimi
         self.kitap: Optional["CalismaKitabi"] = None   # bağlı olduğu kitap (olaylar buradan yayılır)
         self.kimlik: int = 0                         # kitapta benzersiz, yeniden adlandırma/taşımayla değişmez
         self._hucreler: Dict[Anahtar, Hucre] = {}
@@ -204,8 +209,120 @@ class Sayfa:
                 if r1 <= r <= r2 and c1 <= c <= c2:
                     yield r, c, h
 
-    def kullanilan_aralik(self) -> Optional[Tuple[int, int, int, int]]:
-        """(ilk_satir, ilk_sutun, son_satir, son_sutun) ya da sayfa boşsa None."""
+    # --- stil (biçim) ---
+    def ham_stil_kimligi(self, satir: int, sutun: int) -> Optional[int]:
+        """Hücrenin KENDİ stil kaydı (satır/sütun stiline düşmeden); kayıt yoksa None."""
+        return self._stil.get((satir, sutun))
+
+    def stil_kimligi(self, satir: int, sutun: int) -> int:
+        """Etkin stil kimliği: hücre → satır → sütun → 0 (varsayılan)."""
+        k = self._stil.get((satir, sutun))
+        if k is not None:
+            return k
+        k = self.satir_stil.get(satir)
+        if k is not None:
+            return k
+        return self.sutun_stil.get(sutun, 0)
+
+    def stil(self, satir: int, sutun: int) -> Stil:
+        return self.havuz.stil(self.stil_kimligi(satir, sutun))
+
+    def bicim_yaz(self, hucreler: Optional[Dict[Anahtar, Optional[int]]] = None,
+                  satirlar: Optional[Dict[int, Optional[int]]] = None,
+                  sutunlar: Optional[Dict[int, Optional[int]]] = None):
+        """Ham stil kayıtlarını yazar ve değişen varsa TEK `bicim` olayı yayar. Değer None = kaydı sil.
+        Satır/sütun değeri 0 ya da None kaydı siler; hücre değeri 0 yalnız bir satır/sütun stili varsa
+        açıkça saklanır (varsayılana dönmek için), yoksa kayıt silinir. Döner: (eski_hucreler,
+        eski_satirlar, eski_sutunlar) — verilen her anahtar için eski ham kayıt (None = yoktu); aynen
+        `bicim_yaz(*eskiler)` ile geri yüklenir."""
+        eski_s: Dict[int, Optional[int]] = {}
+        eski_su: Dict[int, Optional[int]] = {}
+        eski_h: Dict[Anahtar, Optional[int]] = {}
+        olay_s, olay_su, olay_h = {}, {}, {}
+        for depo, yeni, eski, olay, sinir in ((self.satir_stil, satirlar, eski_s, olay_s, MAX_ROW),
+                                              (self.sutun_stil, sutunlar, eski_su, olay_su, MAX_COL)):
+            for k, v in (yeni or {}).items():
+                if not 1 <= k <= sinir:
+                    raise AdresHatasi(f"Satır/sütun aralık dışı: {k}")
+                eski[k] = depo.get(k)
+                v = v or None
+                if v is None:
+                    depo.pop(k, None)
+                else:
+                    depo[k] = v
+                if eski[k] != v:
+                    olay[k] = (eski[k], v)
+        for anahtar, v in (hucreler or {}).items():
+            r, c = anahtar
+            if not (1 <= r <= MAX_ROW and 1 <= c <= MAX_COL):
+                raise AdresHatasi(f"Hücre aralık dışı: ({r}, {c})")
+            eski_h[anahtar] = e = self._stil.get(anahtar)
+            if v == 0 and r not in self.satir_stil and c not in self.sutun_stil:
+                v = None
+            if v is None:
+                self._stil.pop(anahtar, None)
+            else:
+                self._stil[anahtar] = v
+            if e != v:
+                olay_h[anahtar] = (e, v)
+        if olay_h or olay_s or olay_su:
+            self._bildir("bicim", degisiklikler=olay_h, satir=olay_s, sutun=olay_su)
+        return eski_h, eski_s, eski_su
+
+    def stilleri_yaz(self, yeni: Dict[Anahtar, Optional[int]]) -> Dict[Anahtar, Optional[int]]:
+        return self.bicim_yaz(hucreler=yeni)[0]
+
+    def satir_stili_yaz(self, yeni: Dict[int, Optional[int]]) -> Dict[int, Optional[int]]:
+        return self.bicim_yaz(satirlar=yeni)[1]
+
+    def sutun_stili_yaz(self, yeni: Dict[int, Optional[int]]) -> Dict[int, Optional[int]]:
+        return self.bicim_yaz(sutunlar=yeni)[2]
+
+    def havuza_gec(self, havuz: StilHavuzu) -> None:
+        """Sayfa başka bir kitaba bağlanırken stil kimliklerini yeni havuza çevirir."""
+        if havuz is self.havuz:
+            return
+        eski = self.havuz
+        self._stil = {k: havuz.aktar(eski, v) for k, v in self._stil.items()}
+        self.satir_stil = {k: havuz.aktar(eski, v) for k, v in self.satir_stil.items()}
+        self.sutun_stil = {k: havuz.aktar(eski, v) for k, v in self.sutun_stil.items()}
+        self.havuz = havuz
+
+    def bicim_silinecek(self, eksen: int, nerede: int, adet: int):
+        """Silinecek bantta (`nerede`…`nerede+adet-1`) kalan ham stil kayıtları (silmeyi geri almak için):
+        ({anahtar: kimlik}, {satır: kimlik}, {sütun: kimlik}). Önce çağrılır, sonra silinir."""
+        son = nerede + adet - 1
+        hucre = {k: v for k, v in self._stil.items() if nerede <= k[eksen] <= son}
+        satir = {k: v for k, v in self.satir_stil.items() if eksen == 0 and nerede <= k <= son}
+        sutun = {k: v for k, v in self.sutun_stil.items() if eksen == 1 and nerede <= k <= son}
+        return hucre, satir, sutun
+
+    def bicim_geri_koy(self, eksen: int, nerede: int, adet: int, durum) -> None:
+        """Silmeyi geri alırken: boş açılan bandın (ekleme sırasında üstten devralınan) stillerini temizler,
+        silinen stilleri aynen geri yazar. TEK `bicim` olayı."""
+        son = nerede + adet - 1
+        hucre, satir, sutun = durum
+        yeni_h = {k: None for k in self._stil if nerede <= k[eksen] <= son}
+        yeni_h.update(hucre)
+        yeni_s = {k: None for k in self.satir_stil if eksen == 0 and nerede <= k <= son}
+        yeni_s.update(satir)
+        yeni_su = {k: None for k in self.sutun_stil if eksen == 1 and nerede <= k <= son}
+        yeni_su.update(sutun)
+        self.bicim_yaz(yeni_h, yeni_s, yeni_su)
+
+    def kullanilan_aralik(self, bicim_dahil: bool = False) -> Optional[Tuple[int, int, int, int]]:
+        """(ilk_satir, ilk_sutun, son_satir, son_sutun) ya da sayfa boşsa None. `bicim_dahil=True`:
+        biçimli boş hücreler de sayılır (Ctrl+End, yazdırma, .xlsx boyutu); tam satır/sütun stilleri
+        sayılmaz (sayfayı sonsuza uzatırdı). Varsayılan (içerik tabanlı) önbelleklidir."""
+        if bicim_dahil and self._stil:
+            icerik = self.kullanilan_aralik()
+            satirlar = [k[0] for k in self._stil]
+            sutunlar = [k[1] for k in self._stil]
+            kutu = (min(satirlar), min(sutunlar), max(satirlar), max(sutunlar))
+            if icerik is None:
+                return kutu
+            return (min(icerik[0], kutu[0]), min(icerik[1], kutu[1]),
+                    max(icerik[2], kutu[2]), max(icerik[3], kutu[3]))
         if not self._hucreler:
             return None
         if self._kul is None:
@@ -285,6 +402,7 @@ class Sayfa:
             if k is not None:
                 yeni_sonuc[(k, c) if eksen == 0 else (s, k)] = v
         self._sonuc = yeni_sonuc
+        self._stilleri_kaydir(eksen, nerede, fark, sinir)
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():
@@ -301,6 +419,33 @@ class Sayfa:
         self._bildir("yapi", eksen="sutun" if eksen else "satir", nerede=nerede, fark=fark,
                      silinen=silinen)
         return silinen
+
+    def _stilleri_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
+        """Ekle-sil sonrası stil kayıtlarını kaydırır. Ekleme: yeni satır/sütun hemen üstündeki
+        (solundaki) satırın/sütunun biçimini alır (Excel varsayılanı)."""
+        yeni = {}
+        for (s, c), v in self._stil.items():
+            k = self._kaydir_indeks((s, c)[eksen], nerede, fark, sinir)
+            if k is not None:
+                yeni[(k, c) if eksen == 0 else (s, k)] = v
+        self._stil = yeni
+        eksen_depo = self.sutun_stil if eksen else self.satir_stil
+        yeni_e = {}
+        for k, v in eksen_depo.items():
+            k2 = self._kaydir_indeks(k, nerede, fark, sinir)
+            if k2 is not None:
+                yeni_e[k2] = v
+        eksen_depo.clear()
+        eksen_depo.update(yeni_e)
+        kaynak = nerede - 1
+        if fark > 0 and kaynak >= 1:
+            yeni_satirlar = [k for k in range(nerede, nerede + fark) if k <= sinir]
+            if kaynak in eksen_depo:
+                for k in yeni_satirlar:
+                    eksen_depo[k] = eksen_depo[kaynak]
+            for anahtar, v in [(a, v) for a, v in self._stil.items() if a[eksen] == kaynak]:
+                for k in yeni_satirlar:
+                    self._stil[(k, anahtar[1]) if eksen == 0 else (anahtar[0], k)] = v
 
     @staticmethod
     def _kaydir_indeks(k: int, nerede: int, fark: int, sinir: int) -> Optional[int]:
@@ -340,6 +485,7 @@ class CalismaKitabi:
 
     def __init__(self):
         self.sayfalar: List[Sayfa] = []
+        self.stil_havuzu = StilHavuzu()
         self._dinleyiciler: List[Callable[[Olay], None]] = []
         self._sonraki_kimlik = 1
         self._baglan(Sayfa("Sayfa1"))
@@ -360,6 +506,7 @@ class CalismaKitabi:
 
     # --- sayfalar ---
     def _baglan(self, sayfa: Sayfa, indeks: Optional[int] = None) -> None:
+        sayfa.havuza_gec(self.stil_havuzu)
         sayfa.kitap = self
         if not sayfa.kimlik:
             sayfa.kimlik = self._sonraki_kimlik
