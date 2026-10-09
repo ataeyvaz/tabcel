@@ -258,10 +258,18 @@ class Pencere(QMainWindow):
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
         g.uzakOnay.connect(self._uzak_onayla)
+        g.veri_kaybi_onayi = self._birlestirme_onayi
         g.gecmisIslemi.connect(self._gecmis_islemi_ayarla)
         self._izgaralar[sayfa] = g
         self.izgara_yigini.addWidget(g)
         return g
+
+    def _birlestirme_onayi(self) -> bool:
+        """Excel'deki uyarı: birleştirmede yalnız sol üst hücrenin değeri kalır."""
+        c = QMessageBox.warning(
+            self, APP_NAME, "Hücreleri birleştirmek yalnızca sol üstteki değeri korur ve diğer "
+            "değerleri siler. Devam edilsin mi?", QMessageBox.Ok | QMessageBox.Cancel, QMessageBox.Ok)
+        return c == QMessageBox.Ok
 
     def _gecmis_islemi_ayarla(self, basladi: bool):
         self._gecmis_islemi = basladi

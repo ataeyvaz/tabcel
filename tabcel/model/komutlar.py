@@ -65,6 +65,7 @@ class _SatirSutun:
 
     def yap(self) -> None:
         self._olcu_once = self.sayfa.boyut_durumu()
+        self._birlesim_once = self.sayfa.birlesim_durumu()
         if self.ekle:
             self._ekle()
         else:
@@ -82,6 +83,7 @@ class _SatirSutun:
                 self.sayfa.ata(s, c, h)
             self.sayfa.bicim_geri_koy(self.eksen, self.nerede, self.adet, self._bicim_silinen)
         self.sayfa.boyut_durumu_yukle(self._olcu_once)
+        self.sayfa.birlesim_yukle(self._birlesim_once)
 
 
 class SatirEkleSil(_SatirSutun):
@@ -102,6 +104,7 @@ class HucreTasi:
         self.kaynak, self.kutu, self.hedef, self.hedef_konum = kaynak, tuple(kutu), hedef, hedef_konum
         self._eski: List = []            # [(Sayfa, {anahtar: eski Hucre})] uygulama sırasıyla
         self._eski_bicim: List = []      # [(Sayfa, bicim_yaz'ın eski kayıtları)] uygulama sırasıyla
+        self._eski_birlesim: List = []   # [(Sayfa, birleşim listesi)] geri almak için
 
     def _plan(self) -> Dict[Sayfa, Dict[Anahtar, Optional[Hucre]]]:
         from ..formul.kaydir import tasi                  # model → formul yalnız burada
@@ -162,8 +165,32 @@ class HucreTasi:
     def yap(self) -> None:
         self._eski = [(s, s.toplu_yaz(yeni)) for s, yeni in self._plan().items()]
         self._eski_bicim = [(s, s.bicim_yaz(hucreler=yeni)) for s, yeni in self._bicim_plani()]
+        self._birlesimleri_tasi()
+
+    def _birlesimleri_tasi(self) -> None:
+        """Kutuya tamamen giren birleşimler hedefe taşınır; hedef bölgeyle kesişen eski birleşimler kalkar."""
+        k, h = self.kaynak, self.hedef
+        r1, c1, r2, c2 = self.kutu
+        dr, dc = self.hedef_konum[0] - r1, self.hedef_konum[1] - c1
+        kutu = Aralik(r1, c1, r2, c2)
+        tasinan = [b for b in k.birlesimler if kutu.ilk_satir <= b.ilk_satir and b.son_satir <= kutu.son_satir
+                   and kutu.ilk_sutun <= b.ilk_sutun and b.son_sutun <= kutu.son_sutun]
+        hedef_bolge = Aralik(r1 + dr, c1 + dc, r2 + dr, c2 + dc)
+        ezilen = h.birlesim_kesisen(hedef_bolge)
+        if not tasinan and not ezilen:
+            return
+        self._eski_birlesim = [(k, k.birlesim_durumu())] + ([(h, h.birlesim_durumu())] if h is not k else [])
+        yeni = [Aralik(b.ilk_satir + dr, b.ilk_sutun + dc, b.son_satir + dr, b.son_sutun + dc) for b in tasinan]
+        if h is k:
+            k.birlesimleri_yaz(yeni, list(dict.fromkeys(tasinan + ezilen)))
+        else:
+            k.birlesimleri_yaz([], tasinan)
+            h.birlesimleri_yaz(yeni, ezilen)
 
     def geri_al(self) -> None:
+        for s, eski in reversed(self._eski_birlesim):
+            s.birlesim_yukle(eski)
+        self._eski_birlesim = []
         for s, eski in reversed(self._eski_bicim):
             s.bicim_yaz(*eski)
         for s, eski in reversed(self._eski):
@@ -248,6 +275,88 @@ def bicim_komutu(sayfa: Sayfa, araliklar, yama: Optional[StilYama] = None, sifir
                     if yeni != k:
                         hucre[(r, c)] = yeni
     return BicimDegis(sayfa, hucre, satir, sutun)
+
+
+class BirlesimDegis:
+    """Birleşim ekler/kaldırır (tek adım). Hücre içeriği ve biçimine dokunmaz; genelde `birlesim_komutu`."""
+
+    def __init__(self, sayfa: Sayfa, ekle, kaldir):
+        self.sayfa, self.ekle, self.kaldir = sayfa, list(ekle), list(kaldir)
+
+    def bos_mu(self) -> bool:
+        return not (self.ekle or self.kaldir)
+
+    def yap(self) -> None:
+        self.sayfa.birlesimleri_yaz(self.ekle, self.kaldir)
+
+    def geri_al(self) -> None:
+        self.sayfa.birlesimleri_yaz(self.kaldir, self.ekle)
+
+
+BIRLESIM_TURLERI = ("birlestir", "ortala", "satirlar", "coz")
+
+
+def birlesim_hedefleri(aralik: Aralik, tur: str) -> List[Aralik]:
+    """Birleştirilecek aralıklar: `satirlar` her satırı ayrı birleştirir; tek hücreli sonuç atlanır."""
+    if tur == "satirlar":
+        hedefler = [Aralik(r, aralik.ilk_sutun, r, aralik.son_sutun)
+                    for r in range(aralik.ilk_satir, aralik.son_satir + 1)]
+    else:
+        hedefler = [aralik]
+    return [h for h in hedefler if h.ilk_satir != h.son_satir or h.ilk_sutun != h.son_sutun]
+
+
+def birlesim_veri_kaybi(sayfa: Sayfa, aralik: Aralik, tur: str) -> bool:
+    """Birleştirme sol üst dışında dolu hücre silecek mi (arayüz Excel'deki gibi uyarır)?"""
+    for h in birlesim_hedefleri(aralik, tur):
+        for r, c, hu in sayfa.aralikta(h):
+            if (r, c) != (h.ilk_satir, h.ilk_sutun) and not hu.bos_mu():
+                return True
+    return False
+
+
+def birlesim_komutu(sayfa: Sayfa, araliklar, tur: str):
+    """Seçimden birleştirme komutu; yapılacak iş yoksa None.
+
+    - `birlestir`: seçimi tek hücre yapar; `ortala`: + sol üst hücre yatay ortalanır; `satirlar`: her
+      satırı ayrı birleştirir; `coz`: seçimle kesişen tüm birleşimleri kaldırır.
+    - Sol üst dışındaki hücrelerin içeriği silinir (biçimleri kalır); hedef içinde tamamen kalan eski
+      birleşimler çözülür. Hedefi kısmen kesen birleşim ValueError (arayüz seçimi önce genişletir).
+    - Çoklu aralıkta birleştirilmez (Excel de reddeder).
+    """
+    if tur not in BIRLESIM_TURLERI:
+        raise ValueError(f"Bilinmeyen birleştirme türü: {tur!r}")
+    if tur == "coz":
+        kaldir = []
+        for ar in araliklar:
+            for b in sayfa.birlesim_kesisen(ar):
+                if b not in kaldir:
+                    kaldir.append(b)
+        return Grup([BirlesimDegis(sayfa, [], kaldir)]) if kaldir else None
+    if len(araliklar) != 1:
+        raise ValueError("Birden çok aralık birleştirilemez")
+    hedefler = birlesim_hedefleri(araliklar[0], tur)
+    if not hedefler:
+        return None
+    kaldir, silinecek = [], {}
+    for h in hedefler:
+        for b in sayfa.birlesim_kesisen(h):
+            if not (h.ilk_satir <= b.ilk_satir and b.son_satir <= h.son_satir
+                    and h.ilk_sutun <= b.ilk_sutun and b.son_sutun <= h.son_sutun):
+                raise ValueError("Seçim, birleşik bir hücreyi kısmen kapsıyor")
+            if b not in kaldir:
+                kaldir.append(b)
+        for r, c, _ in sayfa.aralikta(h):
+            if (r, c) != (h.ilk_satir, h.ilk_sutun):
+                silinecek[(r, c)] = None
+    komutlar = []
+    if silinecek:
+        komutlar.append(HucrelerDegis(sayfa, silinecek))
+    if tur == "ortala":
+        ust_sol = [Aralik(h.ilk_satir, h.ilk_sutun, h.ilk_satir, h.ilk_sutun) for h in hedefler]
+        komutlar.append(bicim_komutu(sayfa, ust_sol, StilYama(yatay="orta")))
+    komutlar.append(BirlesimDegis(sayfa, hedefler, kaldir))
+    return Grup(komutlar)
 
 
 class BicimPlani:
@@ -387,7 +496,7 @@ def ana_sayfa(komut, geri_al: bool = False):
                 return s
         return None
     return getattr(komut, "sayfa", None) if isinstance(
-        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani)) else None
+        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis)) else None
 
 
 class GeriAlYigini:

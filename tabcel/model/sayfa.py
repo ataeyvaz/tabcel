@@ -66,6 +66,8 @@ class Sayfa:
         self.sekme_rengi: Optional[str] = None     # '#rrggbb' ya da None
         self._kul: Optional[Tuple[int, int, int, int]] = None   # kullanılan aralık önbelleği
         self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
+        self.birlesimler: List[Aralik] = []        # birleştirilmiş hücre aralıkları (çakışmaz, ≥ 2 hücre)
+        self._birlesim_idx: Dict[Anahtar, Aralik] = {}   # birleşimin kapsadığı her hücre → aralığı
 
     # --- okuma / yazma ---
     def hucre(self, satir: int, sutun: int) -> Optional[Hucre]:
@@ -354,6 +356,95 @@ class Sayfa:
         self.gizli_sutun, self.gizli_satir = set(gs), set(gr)
         self._bildir("boyut")
 
+    # --- birleştirilmiş hücreler (faz3_tasarim.md §3) ---
+    def birlesim(self, satir: int, sutun: int) -> Optional[Aralik]:
+        """Hücreyi kapsayan birleşim (sol üst hücre dahil); yoksa None."""
+        return self._birlesim_idx.get((satir, sutun)) if self._birlesim_idx else None
+
+    def birlesim_kesisen(self, ar: Aralik) -> List[Aralik]:
+        """`ar` ile kesişen birleşimler."""
+        return [b for b in self.birlesimler
+                if b.ilk_satir <= ar.son_satir and b.son_satir >= ar.ilk_satir
+                and b.ilk_sutun <= ar.son_sutun and b.son_sutun >= ar.ilk_sutun]
+
+    def _birlesim_kur(self, liste: List[Aralik]) -> None:
+        self.birlesimler = list(liste)
+        idx: Dict[Anahtar, Aralik] = {}
+        for b in self.birlesimler:
+            for r in range(b.ilk_satir, b.son_satir + 1):
+                for c in range(b.ilk_sutun, b.son_sutun + 1):
+                    idx[(r, c)] = b
+        self._birlesim_idx = idx
+
+    def birlesimleri_yaz(self, ekle: List[Aralik], kaldir: List[Aralik]) -> None:
+        """Birleşimleri kaldırır ve ekler (TEK `bicim` olayı, `birlesim=(ekle, kaldir)`). Eklenen birleşim
+        en az 2 hücre olmalı, sayfa sınırları içinde kalmalı, kalan birleşimlerle ya da birbiriyle
+        çakışmamalı; kaldırılan birleşim var olmalı. Hatada ValueError, sayfa değişmez."""
+        mevcut = list(self.birlesimler)
+        for k in kaldir:
+            if k not in mevcut:
+                raise ValueError(f"Böyle bir birleşim yok: {k}")
+            mevcut.remove(k)
+        for e in ekle:
+            if not (1 <= e.ilk_satir <= e.son_satir <= MAX_ROW and 1 <= e.ilk_sutun <= e.son_sutun <= MAX_COL):
+                raise AdresHatasi(f"Birleşim sayfa dışında: {e}")
+            if e.ilk_satir == e.son_satir and e.ilk_sutun == e.son_sutun:
+                raise ValueError("Birleşim en az iki hücre olmalı")
+            for m in mevcut:
+                if (m.ilk_satir <= e.son_satir and m.son_satir >= e.ilk_satir
+                        and m.ilk_sutun <= e.son_sutun and m.son_sutun >= e.ilk_sutun):
+                    raise ValueError("Birleşim başka bir birleşimle çakışıyor")
+            mevcut.append(e)
+        if not ekle and not kaldir:
+            return
+        self._birlesim_kur(mevcut)
+        self._bildir("bicim", degisiklikler={}, satir={}, sutun={},
+                     birlesim=(list(ekle), list(kaldir)))
+
+    def birlesim_durumu(self) -> List[Aralik]:
+        return list(self.birlesimler)
+
+    def birlesim_yukle(self, liste: List[Aralik]) -> None:
+        """Birleşim listesini aynen yükler (satır/sütun ekle-sil geri alınırken)."""
+        eski = list(self.birlesimler)
+        if eski == list(liste):
+            return
+        self._birlesim_kur(liste)
+        self._bildir("bicim", degisiklikler={}, satir={}, sutun={},
+                     birlesim=([b for b in liste if b not in eski], [b for b in eski if b not in liste]))
+
+    def _birlesimleri_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
+        """Ekle-sil sonrası birleşimler: birleşimin içine ekleme büyütür, silme küçültür, tamamen silinen
+        (ya da tek hücreye inen) kalkar (Excel gibi)."""
+        if not self.birlesimler:
+            return
+        yeni = []
+        for b in self.birlesimler:
+            a, z = (b.ilk_sutun, b.son_sutun) if eksen else (b.ilk_satir, b.son_satir)
+            if fark > 0:
+                if nerede <= a:
+                    a, z = a + fark, z + fark
+                elif nerede <= z:
+                    z += fark
+            else:
+                n = -fark
+                bas, son = nerede, nerede + n - 1
+                once = max(0, min(a - 1, son) - bas + 1) if bas < a else 0
+                icinde = max(0, min(z, son) - max(a, bas) + 1)
+                kalan = z - a + 1 - icinde
+                if kalan <= 0:
+                    continue
+                a = a - once
+                z = a + kalan - 1
+            if a > sinir:
+                continue
+            z = min(z, sinir)
+            ar = Aralik(b.ilk_satir, a, b.son_satir, z) if eksen else Aralik(a, b.ilk_sutun, z, b.son_sutun)
+            if ar.ilk_satir == ar.son_satir and ar.ilk_sutun == ar.son_sutun:
+                continue
+            yeni.append(ar)
+        self._birlesim_kur(yeni)
+
     def boyut_degisti(self) -> None:
         """Boyut sözlükleri doğrudan değiştirildiyse (örn. `OlcuDegis`) olay yayar."""
         self._bildir("boyut")
@@ -403,6 +494,7 @@ class Sayfa:
                 yeni_sonuc[(k, c) if eksen == 0 else (s, k)] = v
         self._sonuc = yeni_sonuc
         self._stilleri_kaydir(eksen, nerede, fark, sinir)
+        self._birlesimleri_kaydir(eksen, nerede, fark, sinir)
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():

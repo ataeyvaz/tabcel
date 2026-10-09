@@ -24,7 +24,8 @@ from ..model import sayi_bicimi
 from ..model.sayi_bicimi import BicimSonucu
 from ..model.stil import VARSAYILAN, Stil, StilYama
 from ..model.komutlar import (
-    BicimDegis, BicimPlani, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, SatirEkleSil, SutunEkleSil,
+    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
+    SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
 from ..model.sayfa import Hucre, Sayfa
@@ -221,6 +222,7 @@ class Izgara(QAbstractScrollArea):
         self._isaret_capa: Optional[Tuple[int, int]] = None  # işaret aralığının sabit / hareketli ucu
         self._isaret_ucu: Optional[Tuple[int, int]] = None
         self._isaret_yaziyor = False
+        self.veri_kaybi_onayi = None                       # () -> bool: birleştirme veri silecekse pencere sorar
         self.uzak_sayfa: Optional[Sayfa] = None            # formül başka sayfadan yazılıyorsa asıl sayfa
         self.dis_duzenleyici: Optional[QLineEdit] = None   # formül çubuğu (pencere verir): aynı işaretleme modu
         self._ekler: List[Aralik] = []         # Ctrl ile eklenen önceki aralıklar (birincil aralık hariç)
@@ -288,7 +290,11 @@ class Izgara(QAbstractScrollArea):
             r += 1
 
     def hucre_dikdortgeni(self, satir: int, sutun: int) -> Optional[QRect]:
-        """Hücrenin viewport içindeki dikdörtgeni; görünmüyorsa None."""
+        """Hücrenin viewport içindeki dikdörtgeni; görünmüyorsa None. Birleşimin sol üst hücresi için
+        birleşimin tamamı."""
+        b = self.sayfa.birlesim(satir, sutun)
+        if b is not None and (b.ilk_satir, b.ilk_sutun) == (satir, sutun):
+            return self._birlesim_dikdortgeni(b)
         x = y = None
         w = h = 0
         for c, cx, cg in self._gorunen_sutunlar():
@@ -354,6 +360,8 @@ class Izgara(QAbstractScrollArea):
         self._aktif = (min(max(aktif[0], 1), MAX_ROW), min(max(aktif[1], 1), MAX_COL))
         uc = uc or self._aktif
         self._uc = (min(max(uc[0], 1), MAX_ROW), min(max(uc[1], 1), MAX_COL))
+        if self.sayfa.birlesimler:
+            self._birlesime_uydur()
         if kaydir:
             self._gorunur_yap(self._uc if uc != self._aktif else self._aktif)
         self._secim_boya(eski_ekler + [eski_secim], eski_aktif)
@@ -361,6 +369,29 @@ class Izgara(QAbstractScrollArea):
             self.aktifDegisti.emit(*self._aktif)
         if self.secim != eski_secim or self._ekler != eski_ekler:
             self.secimDegisti.emit(self.secim)
+
+    def _birlesime_uydur(self) -> None:
+        """Birleşik hücreler tek hücre gibi seçilir (Excel): etkin hücre birleşimin sol üstüne gider,
+        seçim kestiği tüm birleşimleri kapsayacak kadar genişler."""
+        sayfa = self.sayfa
+        tek = self._aktif == self._uc
+        b = sayfa.birlesim(*self._aktif)
+        if b is not None:
+            self._aktif = (b.ilk_satir, b.ilk_sutun)
+        (ar, ac), (ur, uc_) = self._aktif, self._uc
+        r1, r2, c1, c2 = min(ar, ur), max(ar, ur), min(ac, uc_), max(ac, uc_)
+        degisti = True
+        while degisti:
+            degisti = False
+            for m in sayfa.birlesim_kesisen(Aralik(r1, c1, r2, c2)):
+                if m.ilk_satir < r1 or m.son_satir > r2 or m.ilk_sutun < c1 or m.son_sutun > c2:
+                    r1, r2 = min(r1, m.ilk_satir), max(r2, m.son_satir)
+                    c1, c2 = min(c1, m.ilk_sutun), max(c2, m.son_sutun)
+                    degisti = True
+        if tek:
+            self._uc = (r2, c2)                              # tek tıklama: birleşimin tamamı
+        else:                                                # uç, genişleyen alanın yön korunan köşesi
+            self._uc = (r2 if ur >= ar else r1, c2 if uc_ >= ac else c1)
 
     def _secim_boya(self, eski_aralik_listesi, eski_aktif) -> None:
         """Seçim değişince tüm viewport yerine yalnızca eski + yeni seçimin (ve ilgili başlıkların)
@@ -486,7 +517,7 @@ class Izgara(QAbstractScrollArea):
             c = self._renk_onb[renk] = QColor(renk)
         return c
 
-    def _yerlesim(self, sutunlar, satirlar, olcer, pad, kirp_x=None):
+    def _yerlesim(self, sutunlar, satirlar, olcer, pad, kirp_x=None, _birlesim_ciz=False):
         """Görünen hücrelerin metin yerleşimi.
 
         Döner: (metinler, tasma). metinler: (kırpma dikdörtgeni, metin dikdörtgeni, hizalama, metin,
@@ -514,10 +545,13 @@ class Izgara(QAbstractScrollArea):
         yatay_bayrak = _YATAY_BAYRAK
         metinler, tasma, stilli = [], set(), []
         self._stilli = stilli
+        bir = sayfa._birlesim_idx if (sayfa.birlesimler and not _birlesim_ciz) else None
         for r, y, h in satirlar:
             for i, (c, x, g) in enumerate(sutunlar):
                 if x2 is not None and x > x2:
                     break                                   # sağdakiler bölgeye değmez; taşma sağa gider
+                if bir and (r, c) in bir:
+                    continue                                # birleşik hücreyi `_birlesimleri_ciz` çizer
                 hucre = hucre_al(r, c)
                 if hucre is None:
                     v = None
@@ -568,7 +602,7 @@ class Izgara(QAbstractScrollArea):
                         while not stil.kaydir and toplam < gerek and j + 1 < len(sutunlar):
                             c2, _, g2 = sutunlar[j + 1]
                             komsu = hucre_al(r, c2)
-                            if komsu is not None and not komsu.bos_mu():
+                            if (komsu is not None and not komsu.bos_mu()) or (bir and (r, c2) in bir):
                                 break
                             tasma.add((r, sutunlar[j][0]))
                             toplam += g2
@@ -739,6 +773,73 @@ class Izgara(QAbstractScrollArea):
             self._dolgu_ciz(p, self._stilli, kirp)
             self._kenar_ciz(p, self._stilli, kirp)
 
+        self._metinleri_ciz(p, metinler, kirp)
+        if self.sayfa.birlesimler:
+            self._birlesimleri_ciz(p, kirp, pad)
+        p.setFont(self._yazi_tipi())
+
+        # seçim
+        dolgu = QColor(theme.SELECTION_FILL)
+        dolgu.setAlpha(36)
+        tum = self.secimler
+        bir = self.sayfa._birlesim_idx
+        aktif_birlesim = self.sayfa.birlesim(*self._aktif)
+        for a in tum:
+            for c, x, g in sutunlar_k:
+                if a.ilk_sutun <= c <= a.son_sutun:
+                    for r, y, h in satirlar:
+                        if (a.ilk_satir <= r <= a.son_satir and (r, c) != self._aktif
+                                and not (bir and (r, c) in bir)):
+                            p.fillRect(x, y, g - 1, h - 1, dolgu)
+            if bir:
+                for b in self.sayfa.birlesim_kesisen(a):
+                    if b == aktif_birlesim:
+                        continue                            # etkin birleşim Excel'de boyanmaz
+                    dik = self._birlesim_dikdortgeni(b)
+                    if dik is not None:
+                        p.fillRect(dik.x(), dik.y(), dik.width() - 1, dik.height() - 1, dolgu)
+        if sutunlar and tum_satirlar:
+            for a in self._ekler:
+                self._secim_cercevesi(p, a, sutunlar, tum_satirlar, tek_hucre=True)
+            self._secim_cercevesi(p, sec, sutunlar, tum_satirlar)
+        d = Izgara._pano_durumu
+        if d and d["sayfa"] is self.sayfa and sutunlar and tum_satirlar:
+            self._secim_cercevesi(p, d["aralik"], sutunlar, tum_satirlar,
+                                  QPen(QColor(theme.ACCENT), 2, Qt.DashLine), tek_hucre=True)
+        ar = self.hucre_dikdortgeni(*self._aktif)
+        if ar:
+            p.setPen(QPen(QColor(theme.ACCENT), 2))
+            p.drawRect(ar.adjusted(0, 0, -2, -2))
+        self._basvuru_vurgulari_ciz(p, sutunlar, tum_satirlar)
+
+        # başlıklar
+        # (yalnızca açığa çıkan bölgeye değenler: artımlı kaydırmada sütun başlıkları yeniden çizilmez)
+        p.setClipRect(kirp)
+        genislik, yukseklik_vp = self.viewport().width(), self.viewport().height()
+        baslik_zemin = QColor(theme.HEADER_BG)
+        sutun_basligi_gerek = kirp.top() < bh
+        if sutun_basligi_gerek:
+            p.fillRect(QRect(0, 0, genislik, bh).intersected(kirp), baslik_zemin)
+        if kirp.left() < bg:
+            p.fillRect(QRect(0, 0, bg, yukseklik_vp).intersected(kirp), baslik_zemin)
+        p.setPen(izgara)
+        if sutun_basligi_gerek:
+            p.drawLine(0, bh - 1, genislik, bh - 1)
+        if kirp.left() < bg:
+            p.drawLine(bg - 1, max(0, kirp.top()), bg - 1, min(yukseklik_vp, kirp.bottom()))
+        if sutun_basligi_gerek:
+            for c, x, g in sutunlar_k:
+                self._baslik_ciz(p, QRect(x, 0, g, bh), sutun_harfe(c),
+                                 any(a.ilk_sutun <= c <= a.son_sutun for a in tum), izgara)
+        if kirp.left() < bg:
+            for r, y, h in satirlar:
+                if y + h <= kirp.top() or y > kirp.bottom():
+                    continue
+                self._baslik_ciz(p, QRect(0, y, bg, h), str(r),
+                                 any(a.ilk_satir <= r <= a.son_satir for a in tum), izgara)
+
+    def _metinleri_ciz(self, p: QPainter, metinler, kirp: QRect) -> None:
+        """`_yerlesim` çıktısındaki metinleri çizer (bölge dışı olanlar atlanır)."""
         onceki = None
         varsayilan_renk = QColor(theme.TEXT)
         p.setPen(varsayilan_renk)
@@ -782,55 +883,52 @@ class Izgara(QAbstractScrollArea):
                 p.setClipRect(kirp)
         p.setFont(self._yazi_tipi())
 
-        # seçim
-        dolgu = QColor(theme.SELECTION_FILL)
-        dolgu.setAlpha(36)
-        tum = self.secimler
-        for a in tum:
-            for c, x, g in sutunlar_k:
-                if a.ilk_sutun <= c <= a.son_sutun:
-                    for r, y, h in satirlar:
-                        if a.ilk_satir <= r <= a.son_satir and (r, c) != self._aktif:
-                            p.fillRect(x, y, g - 1, h - 1, dolgu)
-        if sutunlar and tum_satirlar:
-            for a in self._ekler:
-                self._secim_cercevesi(p, a, sutunlar, tum_satirlar, tek_hucre=True)
-            self._secim_cercevesi(p, sec, sutunlar, tum_satirlar)
-        d = Izgara._pano_durumu
-        if d and d["sayfa"] is self.sayfa and sutunlar and tum_satirlar:
-            self._secim_cercevesi(p, d["aralik"], sutunlar, tum_satirlar,
-                                  QPen(QColor(theme.ACCENT), 2, Qt.DashLine), tek_hucre=True)
-        ar = self.hucre_dikdortgeni(*self._aktif)
-        if ar:
-            p.setPen(QPen(QColor(theme.ACCENT), 2))
-            p.drawRect(ar.adjusted(0, 0, -2, -2))
-        self._basvuru_vurgulari_ciz(p, sutunlar, tum_satirlar)
+    def _birlesim_dikdortgeni(self, b: Aralik) -> Optional[QRect]:
+        """Birleşimin viewport koordinatlarındaki TAM dikdörtgeni (kısmen ekran dışında olabilir);
+        hiç görünmüyorsa None. Gizli satır/sütunlar 0 genişlik sayılır."""
+        ic, ir = self.ilk_sutun, self.ilk_satir
+        if b.son_sutun < ic or b.son_satir < ir:
+            return None
+        bg, bh = self._baslik_g(), self._baslik_y()
+        if b.ilk_sutun >= ic:
+            x = bg + sum(self._gen(c) for c in range(ic, b.ilk_sutun))
+        else:
+            x = bg - sum(self._gen(c) for c in range(b.ilk_sutun, ic))
+        if b.ilk_satir >= ir:
+            y = bh + sum(self._yuk(r) for r in range(ir, b.ilk_satir))
+        else:
+            y = bh - sum(self._yuk(r) for r in range(b.ilk_satir, ir))
+        w = sum(self._gen(c) for c in range(b.ilk_sutun, b.son_sutun + 1))
+        h = sum(self._yuk(r) for r in range(b.ilk_satir, b.son_satir + 1))
+        vp = self.viewport()
+        if not w or not h or x >= vp.width() or y >= vp.height():
+            return None
+        return QRect(x, y, w, h)
 
-        # başlıklar
-        # (yalnızca açığa çıkan bölgeye değenler: artımlı kaydırmada sütun başlıkları yeniden çizilmez)
-        p.setClipRect(kirp)
-        genislik, yukseklik_vp = self.viewport().width(), self.viewport().height()
-        baslik_zemin = QColor(theme.HEADER_BG)
-        sutun_basligi_gerek = kirp.top() < bh
-        if sutun_basligi_gerek:
-            p.fillRect(QRect(0, 0, genislik, bh).intersected(kirp), baslik_zemin)
-        if kirp.left() < bg:
-            p.fillRect(QRect(0, 0, bg, yukseklik_vp).intersected(kirp), baslik_zemin)
-        p.setPen(izgara)
-        if sutun_basligi_gerek:
-            p.drawLine(0, bh - 1, genislik, bh - 1)
-        if kirp.left() < bg:
-            p.drawLine(bg - 1, max(0, kirp.top()), bg - 1, min(yukseklik_vp, kirp.bottom()))
-        if sutun_basligi_gerek:
-            for c, x, g in sutunlar_k:
-                self._baslik_ciz(p, QRect(x, 0, g, bh), sutun_harfe(c),
-                                 any(a.ilk_sutun <= c <= a.son_sutun for a in tum), izgara)
-        if kirp.left() < bg:
-            for r, y, h in satirlar:
-                if y + h <= kirp.top() or y > kirp.bottom():
-                    continue
-                self._baslik_ciz(p, QRect(0, y, bg, h), str(r),
-                                 any(a.ilk_satir <= r <= a.son_satir for a in tum), izgara)
+    def _birlesimleri_ciz(self, p: QPainter, kirp: QRect, pad: int) -> None:
+        """Birleşik hücreler: iç çizgileri örten zemin, sol üst hücrenin dolgusu/kenarlığı/metni tüm alanda.
+        (`_yerlesim` birleşik hücreleri atlar; burada tek hücre gibi yerleştirilir.)"""
+        sayfa, havuz = self.sayfa, self.sayfa.havuz
+        for b in sayfa.birlesimler:
+            dik = self._birlesim_dikdortgeni(b)
+            if dik is None or not dik.adjusted(-3, -3, 3, 3).intersects(kirp):
+                continue
+            k = sayfa.stil_kimligi(b.ilk_satir, b.ilk_sutun)
+            stil = havuz.stil(k)
+            fe = self._font_girdisi(k, stil)
+            p.setClipRect(kirp)
+            p.fillRect(QRect(dik.x(), dik.y(), dik.width() - 1, dik.height() - 1),
+                       self._renk(stil.dolgu) if stil.dolgu else QColor(theme.SURFACE))
+            if fe.kenarli:
+                self._kenar_ciz(p, [(dik.x(), dik.y(), dik.width(), dik.height(), stil, fe)], kirp)
+            eski_stilli = self._stilli
+            metinler, _ = self._yerlesim([(b.ilk_sutun, dik.x(), dik.width())],
+                                         [(b.ilk_satir, dik.y(), dik.height())], p.fontMetrics(), pad,
+                                         _birlesim_ciz=True)
+            self._stilli = eski_stilli
+            p.setClipRect(kirp.intersected(dik.adjusted(0, 0, -1, -1)))
+            self._metinleri_ciz(p, metinler, kirp.intersected(dik))
+            p.setClipRect(kirp)
 
     def _yazi_tipi(self) -> QFont:
         yazi = QFont(self.font())
@@ -1045,7 +1143,8 @@ class Izgara(QAbstractScrollArea):
             if ctrl:
                 hedef = self._atla(kaynak, yon)
             else:
-                hedef = self._gizlileri_atla((kaynak[0] + yon[0], kaynak[1] + yon[1]), yon) or kaynak
+                kb = self._birlesim_kaynagi(kaynak, yon)
+                hedef = self._gizlileri_atla((kb[0] + yon[0], kb[1] + yon[1]), yon) or kaynak
             self._git(hedef, shift)
         elif k in (Qt.Key_PageDown, Qt.Key_PageUp):
             kaynak = self._uc if shift else self._aktif
@@ -1070,10 +1169,12 @@ class Izgara(QAbstractScrollArea):
         elif k in (Qt.Key_Tab, Qt.Key_Backtab):
             geri = k == Qt.Key_Backtab or shift
             yon = (0, -1 if geri else 1)
-            self.sec(self._gizlileri_atla((self._aktif[0], self._aktif[1] + yon[1]), yon) or self._aktif)
+            kb = self._birlesim_kaynagi(self._aktif, yon)
+            self.sec(self._gizlileri_atla((kb[0], kb[1] + yon[1]), yon) or self._aktif)
         elif k in (Qt.Key_Return, Qt.Key_Enter):
             yon = (-1 if shift else 1, 0)
-            self.sec(self._gizlileri_atla((self._aktif[0] + yon[0], self._aktif[1]), yon) or self._aktif)
+            kb = self._birlesim_kaynagi(self._aktif, yon)
+            self.sec(self._gizlileri_atla((kb[0] + yon[0], kb[1]), yon) or self._aktif)
         elif k == Qt.Key_F2:
             self.duzenle_baslat(None)
         elif k == Qt.Key_Delete and not shift:
@@ -1111,6 +1212,18 @@ class Izgara(QAbstractScrollArea):
             self.duzenle_baslat(olay.text())
         else:
             super().keyPressEvent(olay)
+
+    def _birlesim_kaynagi(self, konum: Tuple[int, int], yon: Tuple[int, int]) -> Tuple[int, int]:
+        """Birleşik hücreden `yon` yönünde adım atılırken başlangıç: birleşimin o yöndeki kenarı."""
+        b = self.sayfa.birlesim(*konum)
+        if b is None:
+            return konum
+        r, c = konum
+        if yon[0]:
+            r = b.son_satir if yon[0] > 0 else b.ilk_satir
+        if yon[1]:
+            c = b.son_sutun if yon[1] > 0 else b.ilk_sutun
+        return r, c
 
     # --- pano ---
     def kopyala(self) -> None:
@@ -1215,6 +1328,10 @@ class Izgara(QAbstractScrollArea):
             if r0 + veri.satir_sayisi - 1 > MAX_ROW or c0 + veri.sutun_sayisi - 1 > MAX_COL:
                 self.uyari.emit("Yapıştırılan veri sayfa sınırlarını aşıyor.")
                 return
+            if pano.birlesim_kismen_kesiyor(self.sayfa, Aralik(
+                    r0, c0, r0 + veri.satir_sayisi - 1, c0 + veri.sutun_sayisi - 1)):
+                self.uyari.emit("Yapıştırma alanı birleşik bir hücreyi kısmen kapsıyor.")
+                return
             self.yigin.calistir(HucreTasi(d["sayfa"], kutu, self.sayfa, (r0, c0)))
             Izgara._pano_durumu = None       # kesilen yalnızca bir kez yapıştırılır
             plan = {(r0, c0): None, (r0 + veri.satir_sayisi - 1, c0 + veri.sutun_sayisi - 1): None}
@@ -1226,6 +1343,16 @@ class Izgara(QAbstractScrollArea):
                 return
             komutlar = [HucrelerDegis(self.sayfa, plan)]
             s = self.sayfa
+            if veri.kaynak_satir is not None:
+                hedef = Aralik(min(k[0] for k in plan), min(k[1] for k in plan),
+                               max(k[0] for k in plan), max(k[1] for k in plan))
+                if pano.birlesim_kismen_kesiyor(s, hedef):
+                    self.uyari.emit("Yapıştırma alanı birleşik bir hücreyi kısmen kapsıyor.")
+                    return
+                ekle = pano.yapistirma_birlesimleri(veri, sec.ilk_satir, sec.ilk_sutun, sec)
+                kaldir = s.birlesim_kesisen(hedef)
+                if ekle or kaldir:                      # Excel "Tümü": birleşim de yapışır / eskisi kalkar
+                    komutlar.append(BirlesimDegis(s, ekle, kaldir))
             if veri.kaynak_satir is not None and (veri.stiller or s._stil or s.satir_stil or s.sutun_stil):
                 # kendi biçimimiz: içerik + biçim (Excel "Tümü"); dışarıdan gelen metin biçime dokunmaz
                 komutlar.append(BicimDegis(s, hucreler=pano.yapistirma_stilleri(
@@ -1864,6 +1991,30 @@ class Izgara(QAbstractScrollArea):
         if kmt.bos_mu():
             return False
         self.yigin.calistir(kmt)
+        self._guncelle()
+        return True
+
+    def birlestir(self, tur: str = "ortala", onayli: bool = False) -> bool:
+        """Seçimi birleştirir (`birlestir`/`ortala`/`satirlar`) ya da birleşimi çözer (`coz`); tek geri al
+        adımı. Sol üst dışında dolu hücre silinecekse `veri_kaybi_onayi` (varsa) sorulur. Kısa yol:
+        seçim zaten tam bir birleşimse `ortala` onu çözer (Excel'in aç/kapa düğmesi)."""
+        if self.duzenleniyor():
+            return False
+        if tur == "ortala" and len(self.secimler) == 1 and self.sayfa.birlesim(*self._aktif) == self.secim:
+            tur = "coz"
+        try:
+            if tur not in ("coz",) and len(self.secimler) == 1:
+                if birlesim_veri_kaybi(self.sayfa, self.secim, tur) and not onayli:
+                    if self.veri_kaybi_onayi is not None and not self.veri_kaybi_onayi():
+                        return False
+            kmt = birlesim_komutu(self.sayfa, self.secimler, tur)
+        except ValueError as h:
+            self.uyari.emit(str(h))
+            return False
+        if kmt is None:
+            return False
+        self.yigin.calistir(kmt)
+        self._birlesime_uydur()
         self._guncelle()
         return True
 

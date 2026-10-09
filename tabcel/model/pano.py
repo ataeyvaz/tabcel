@@ -41,6 +41,8 @@ class PanoVerisi:
     # (satır farkı, sütun farkı) → Stil: yalnız varsayılandan farklı etkin stiller (Stil nesnesi, kimlik
     # değil: başka kitap/oturuma güvenli). Boş ama biçimli hücreler de burada olur
     stiller: Dict[Tuple[int, int], Stil] = field(default_factory=dict, compare=False)
+    # birleşik hücreler: (satır farkı, sütun farkı, yükseklik, genişlik) — yalnız tamamı kopyalanan birleşimler
+    birlesimler: List[Tuple[int, int, int, int]] = field(default_factory=list, compare=False)
 
     def json_yaz(self) -> str:
         return json.dumps({
@@ -49,6 +51,7 @@ class PanoVerisi:
             "h": [[dr, dc, h.deger, h.formul, self.en_formul.get((dr, dc))]
                   for (dr, dc), h in sorted(self.hucreler.items())],
             "st": [[dr, dc, stil_sozluk(st)] for (dr, dc), st in sorted(self.stiller.items())],
+            "b": [list(b) for b in self.birlesimler],
         })
 
     @staticmethod
@@ -62,17 +65,21 @@ class PanoVerisi:
                 v.en_formul[(dr, dc)] = ek[0]
         for dr, dc, sozluk in d.get("st", []):
             v.stiller[(dr, dc)] = stil_sozlukten(sozluk)
+        v.birlesimler = [tuple(b) for b in d.get("b", [])]
         return v
 
 
 def pano_araligi(sayfa: Sayfa, secim: Aralik) -> Aralik:
     """Seçimi kullanılan alanla sınırlar (tam satır/sütun seçimi 1 milyon boş satır kopyalamasın)."""
     kul = sayfa.kullanilan_aralik(bicim_dahil=True)      # biçimli boş hücreler de kopyalanır
-    if kul is None:
-        return Aralik(secim.ilk_satir, secim.ilk_sutun, secim.ilk_satir, secim.ilk_sutun)
-    return Aralik(secim.ilk_satir, secim.ilk_sutun,
-                  max(secim.ilk_satir, min(secim.son_satir, kul[2])),
-                  max(secim.ilk_sutun, min(secim.son_sutun, kul[3])))
+    son_s, son_c = secim.ilk_satir, secim.ilk_sutun
+    if kul is not None:
+        son_s = max(secim.ilk_satir, min(secim.son_satir, kul[2]))
+        son_c = max(secim.ilk_sutun, min(secim.son_sutun, kul[3]))
+    for b in sayfa.birlesim_kesisen(secim):               # boş birleşim de kırpılmasın
+        if b.son_satir <= secim.son_satir and b.son_sutun <= secim.son_sutun:
+            son_s, son_c = max(son_s, b.son_satir), max(son_c, b.son_sutun)
+    return Aralik(secim.ilk_satir, secim.ilk_sutun, son_s, son_c)
 
 
 def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
@@ -91,6 +98,11 @@ def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
                 k = stil_kimligi(r, c)
                 if k:
                     v.stiller[(r - ar.ilk_satir, c - ar.ilk_sutun)] = havuz.stil(k)
+    for b in sayfa.birlesim_kesisen(ar):
+        if (ar.ilk_satir <= b.ilk_satir and b.son_satir <= ar.son_satir
+                and ar.ilk_sutun <= b.ilk_sutun and b.son_sutun <= ar.son_sutun):
+            v.birlesimler.append((b.ilk_satir - ar.ilk_satir, b.ilk_sutun - ar.ilk_sutun,
+                                  b.son_satir - b.ilk_satir + 1, b.son_sutun - b.ilk_sutun + 1))
     return v
 
 
@@ -306,6 +318,29 @@ def yapistirma_stilleri(veri: PanoVerisi, satir: int, sutun: int, secim: Optiona
     döner; çağıran hedefte biçim yoksa atlayabilir."""
     kimlikler = {anahtar: havuz.kimlik(st) for anahtar, st in veri.stiller.items()}
     return {(r, c): kimlikler.get((dr, dc), 0) for r, c, dr, dc in _yerlestir(veri, satir, sutun, secim)}
+
+
+def yapistirma_birlesimleri(veri: PanoVerisi, satir: int, sutun: int,
+                            secim: Optional[Aralik] = None) -> List[Aralik]:
+    """Yapıştırmanın oluşturacağı birleşimler (seçim deseni yinelerse her yinelemede)."""
+    if not veri.birlesimler:
+        return []
+    ust_sol = {(dr, dc): (y, g) for dr, dc, y, g in veri.birlesimler}
+    sonuc = []
+    for r, c, dr, dc in _yerlestir(veri, satir, sutun, secim):
+        if (dr, dc) in ust_sol:
+            y, g = ust_sol[(dr, dc)]
+            sonuc.append(Aralik(r, c, r + y - 1, c + g - 1))
+    return sonuc
+
+
+def birlesim_kismen_kesiyor(sayfa: Sayfa, bolge: Aralik) -> bool:
+    """Hedef bölge, bölgenin dışına taşan bir birleşimi kesiyor mu (yapıştırma/taşıma reddedilir)."""
+    for b in sayfa.birlesim_kesisen(bolge):
+        if not (bolge.ilk_satir <= b.ilk_satir and b.son_satir <= bolge.son_satir
+                and bolge.ilk_sutun <= b.ilk_sutun and b.son_sutun <= bolge.son_sutun):
+            return True
+    return False
 
 
 def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,

@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a, 3b, 3c, 3d, 3e ✅; sıradaki: 3f–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3f ✅; sıradaki: 3g–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1561 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1606 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1561 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f birleştirme · 3g akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -97,6 +97,12 @@ Testler: 1561 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - Hücreleri Biçimlendir etkin hücrenin stiliyle açılır; Tamam'da **yalnız kullanıcının değiştirdiği alanlar** seçime uygulanır (çok hücreli seçimde dokunulmayan alanlar hücrelerde kalır). Kenarlık sekmesi: işaretli/kaldırılan her **dış kenar** seçimin dış çerçevesine, "İç çizgiler" tüm hücre kenarlarına uygulanır (önce iç, sonra dış); çizgi stili/rengi tek (hepsine aynı)
   - Sayı: kategori + seçenek → kanonik kod (`model/bicim_kodlari.py`), Özel alanında Türkçe yazım; geçersiz kod/boyutta Excel gibi uyarı, pencere açık kalır. Tarih/Saat/Kesir türleri sabit kısa listeler (§8b-35'teki varsayımlı kodlar); Excel'in tüm yerel/ülke seçenekleri yok
   - Ctrl+1 + çubuğun sağ ucundaki düğme + sayı biçimi listesinde "Özel" pencereyi açar (**mevcut test değişti:** "Özel seçmek biçimi bozmaz" testi artık pencereyi açtığı için `exec` yamalanıp iptal denendi)
+- 2026-10-09 (Faz 3 / 3f):
+  - Birleşim `Sayfa.birlesimler` + `_birlesim_idx`; model çakışmayı/tek hücreyi reddeder. Birleştirme komutu sol üst dışındaki **içeriği siler, biçimini bırakır**; arayüz veri silinecekse Excel gibi uyarır. "Birleştir ve Ortala" aynı birleşimde tekrar basılınca **çözer** (Excel gibi). Çoklu aralıkta birleştirme reddedilir; seçim birleşimi kısmen kesiyorsa seçim **genişler** (komut kısmen kesişimi ValueError ile reddeder)
+  - Seçim/gezinme: kapsanan hücreye tıklama etkin hücreyi sol üste taşır ve birleşimin tamamını seçer; oklar/Enter/Tab birleşimin kenarından adım atar; Shift+ok birleşimi atlamaz kapsar. Etkin birleşim Excel gibi tonlanmaz
+  - Çizim: `_yerlesim` birleşik hücreleri atlar, `_birlesimleri_ciz` iç çizgileri örter, sol üst hücrenin dolgu/kenarlık/metnini tüm alanda çizer (kısmen ekran dışı, gizli sütunlu da); birleşim yokken ek maliyet yalnız bir boş-liste denetimi. Soldaki metin kapsanan hücrelere taşmaz
+  - Ekle-sil: içine ekleme büyütür, silme küçültür, tamamen silinen ya da tek hücreye inen kalkar; geri al listeyi aynen yükler. Pano: tamamen kopyalanan birleşim göreli yapışır (desen yinelenirse her yinelemede), hedefteki eski birleşim kalkar (Excel "Tümü"); hedef bir birleşimi **kısmen** keserse yapıştırma/taşıma reddedilir ("kısmen kapsıyor" uyarısı — Excel'in kendi iletisi farklı). Kes-yapıştır birleşimi taşır, geri alınır
+  - Biçim çubuğu daraltıldı (yazı tipi/sayı kutuları 128 px) ki Birleştir düğmesi eklenince 1100 px'te tek satır kalsın
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -453,6 +459,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1543 → **1561** (`test_bicim_kodlari.py` 6, `test_bicim_penceresi.py` 12: başlangıç değerleri, yalnız değişenler, kategoriler, Özel kanonik/yerel, geçersiz kod/boyut uyarısı, kenarlık planı, Ctrl+1 uçtan uca + tek geri al, iptal, çok hücreli korunma). Ekran görüntüleri incelendi (Sayı, Kenarlık). Kural 12: yalnız yukarıdaki tek test değişti (gerekçe Kararlar'da)
 - **Bilerek eksik:** Excel'deki kenarlık önizleme kutusu/çapraz çizgiler, yazı tipi önizlemesi, "Koruma" sekmesi, Özel kod listesi (hazır örnekler), kategoriye göre negatif sayı seçenekleri (kırmızı/parantez); Metin kaydır çizimi 3j'de
 - Sıradaki: **3f** (birleştirme)
+
+## [2026-10-09] — Faz 3 / 3f bitti (Sonnet 5.5)
+- Commit `de98078` (3e). **3f:** `Sayfa` birleşim deposu + `birlesimleri_yaz/birlesim_yukle/_birlesimleri_kaydir`, `komutlar.BirlesimDegis` + `birlesim_komutu/birlesim_veri_kaybi`, `_SatirSutun` ve `HucreTasi` birleşimi korur, `PanoVerisi.birlesimler` (+ eski JSON okunur), `Izgara` seçim/gezinme/çizim/`birlestir`, çubukta Birleştir düğmesi + menü (Birleştir ve Ortala, Hücreleri Birleştir, Satırlar Boyunca, Birleştirmeyi Kaldır), `Pencere._birlestirme_onayi`
+- Testler 1561 → **1606** (`test_birlesim.py` 16 Qt'siz, `test_birlesim_arayuz.py` 17: seçim/gezinme/piksel/dolgu/uyarı/düğme, `test_birlesim_pano.py` 12). Ekran görüntüsü incelendi (birleşik başlık dolgulu+ortalı+kenarlıklı, etkin birleşim çerçevesi). Regresyon yok, hiçbir test değiştirilmedi
+- **Bilerek eksik / bilinen sınır:** Ctrl+ok veri bloğu atlaması birleşimleri tanımaz; sütun/satır kenarından sürükleyerek boyutlandırmada birleşim yalnız yeniden çizilir; birleşik hücre içinde sıralama/filtre kuralları Faz 5; .xlsx `mergeCells` Faz 4; Excel'in "birleşik hücrelerde sırala" gibi uyarıları yok; birleşimin etkin hücresine dışarıdan yazılırken (örn. kapsanan hücreye formül girişi) engel yok
+- Sıradaki: **3g** (akıllı giriş + METNEÇEVİR)
 
 *(Yeni girişler en alta eklenir.)*
 

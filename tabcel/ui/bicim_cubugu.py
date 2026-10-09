@@ -50,7 +50,7 @@ class BicimCubugu(QWidget):
 
         # yazı tipi + boyut
         self.yazi_tipi = QFontComboBox()
-        self.yazi_tipi.setFixedWidth(150)
+        self.yazi_tipi.setFixedWidth(128)
         self.yazi_tipi.setToolTip("Yazı Tipi")
         self.yazi_tipi.activated.connect(self._yazi_tipi_secildi)
         self.boyut = QComboBox()
@@ -104,17 +104,32 @@ class BicimCubugu(QWidget):
             "orta": self._dugme("align_center", "Ortala", lambda: self._yatay("orta"), True),
             "sag": self._dugme("align_right", "Sağa Hizala", lambda: self._yatay("sag"), True),
         }
+        self.birlestir = QToolButton()
+        self.birlestir.setIcon(icons.icon("merge"))
+        self.birlestir.setIconSize(QSize(20, 20))
+        self.birlestir.setToolTip("Birleştir ve Ortala")
+        self.birlestir.setCheckable(True)
+        self.birlestir.setFocusPolicy(Qt.NoFocus)
+        self.birlestir.setPopupMode(QToolButton.MenuButtonPopup)
+        self.birlestir.clicked.connect(lambda _=False: self.birlestir_uygula("ortala"))
+        bm = QMenu(self.birlestir)
+        self.birlestir_eylemleri = {}
+        for anahtar, metin in (("ortala", "Birleştir ve Ortala"), ("birlestir", "Hücreleri Birleştir"),
+                               ("satirlar", "Satırlar Boyunca Birleştir"), ("coz", "Birleştirmeyi Kaldır")):
+            self.birlestir_eylemleri[anahtar] = bm.addAction(
+                metin, lambda a=anahtar: self.birlestir_uygula(a))
+        self.birlestir.setMenu(bm)
         self.kaydir = self._dugme("wrap", "Metni Kaydır", lambda: self._degistir(bi.kaydir_yamasi), True)
         self.girinti_azalt = self._dugme("outdent", "Girintiyi Azalt", lambda: self._girinti(-1))
         self.girinti_artir = self._dugme("indent", "Girintiyi Artır", lambda: self._girinti(+1))
-        for w in (*self.dikey.values(), *self.yatay.values(), self.kaydir,
+        for w in (*self.dikey.values(), *self.yatay.values(), self.kaydir, self.birlestir,
                   self.girinti_azalt, self.girinti_artir):
             h.addWidget(w)
         h.addWidget(_Ayirac())
 
         # sayı
         self.sayi_bicimi = QComboBox()
-        self.sayi_bicimi.setFixedWidth(150)
+        self.sayi_bicimi.setFixedWidth(128)
         self.sayi_bicimi.setToolTip("Sayı Biçimi")
         self.sayi_bicimi.addItems(list(HAZIR))
         self.sayi_bicimi.addItem("Özel")
@@ -212,6 +227,14 @@ class BicimCubugu(QWidget):
         if yama is not None:
             self._uygula(yama)
 
+    def birlestir_uygula(self, tur: str) -> None:
+        g = self._g()
+        g.birlestir(tur)
+        odak = QApplication.focusWidget()
+        if odak is None or self.isAncestorOf(odak):
+            g.setFocus()
+        self.guncelle()
+
     def _sayi_kodu(self, kod: str) -> None:
         self._uygula(bi.sayi_bicimi_yamasi(kod))
 
@@ -266,6 +289,8 @@ class BicimCubugu(QWidget):
             self.italik.setChecked(s.italik)
             self.altcizili.setChecked(s.alti_cizili != "yok")
             self.kaydir.setChecked(s.kaydir)
+            g = self._g()
+            self.birlestir.setChecked(g.sayfa.birlesim(*g.aktif) is not None)
             for ad, d in self.yatay.items():
                 d.setChecked(s.yatay == ad)
             for ad, d in self.dikey.items():
