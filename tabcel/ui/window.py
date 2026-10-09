@@ -249,6 +249,7 @@ class Pencere(QMainWindow):
         g.suruklemeBitti.connect(self._arayuzu_guncelle)
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
+        g.uzakOnay.connect(self._uzak_onayla)
         g.gecmisIslemi.connect(self._gecmis_islemi_ayarla)
         self._izgaralar[sayfa] = g
         self.izgara_yigini.addWidget(g)
@@ -419,6 +420,12 @@ class Pencere(QMainWindow):
         g.duzenlemeyi_bitir(False)
         self._mod_degisti("Gir")
         self.mod_etiketi.setText("Gir")
+
+    def _uzak_onayla(self):
+        """Devredilen düzenleme sürerken işaret dışı tıklama: formül ilk hücreye onaylanır (Enter gibi);
+        hatalıysa uyarı verilir ve düzenleme açık kalır."""
+        if self._uzak is not None:
+            self._formul_onayla(self.formul.text())
 
     def _uzak_baglan(self, g: Izgara):
         for x in self._izgaralar.values():

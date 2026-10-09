@@ -7,7 +7,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 |---|---|---|---|
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
-| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **6a–6f bitti (Sonnet)**; sıradaki: 6g (§2 madde 6) |
+| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1228 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1253 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -39,7 +39,7 @@ Testler: 1228 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6d. ✅ (2026-10-09) K7 işaretleme modu + odak kaybında onaylamama + renkli başvuru vurgusu + F4 + otomatik tamamlama/ipucu + Otomatik Toplam (Alt+=) — `faz2_tasarim.md` §6
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
-   - 6g. Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
+   - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -129,6 +129,13 @@ Yapılan: metin/sayı/`QStaticText` önbelleği, sığan metne kırpma yok, dike
 | Aynı çizelgede A1 değişti | **43 sn** | **0,14 sn** |
 Yapılan: topolojik sıralama yerine okurken erteleme (O(n²) kenar çıkarma kalktı), tur boyunca tek sütunlu aralıklar için önek toplam önbelleği (toplama sırası aynı → sonuç birebir aynı), sözcükleyicide yerel başına düzenli ifade önbelleği.
 
+**2026-10-09 — Opus gözden geçirmesi sonrası** (`testler/test_motor.py`, `test_opus_faz2.py`)
+| Ölçüm | Önce | Sonra |
+|---|---|---|
+| 4.000 satır: satır `TOPLA` + yürüyen bakiye, A1 değişti | **19,9 sn** (karesel) | **0,1 sn** |
+| `=TOPLA(A:A)` giriş / düzenleme (A1:A10 dolu) | 0,42 / 0,38 sn | 0,5 / 0,1 ms |
+Yapılan: aralık bağımlılıkları sütuna göre indekslendi (geniş >8 sütun kutular ayrı liste), kirli formüller her düzeyde yeniden taranmaz; `toplam()` kullanılan alana kırpılır.
+
 ## 8b. Excel web'de doğrulanacaklar (kullanıcı doğrular; sonra teste dönüşür)
 Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel ayara ayarlıyken denenecek. Her satır "belirsiz" — doğrulanana dek kodda varsayım olarak işaretli.
 | # | Soru | Şu anki varsayım (kodda) | Sonuç |
@@ -155,6 +162,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 20 | `RANK` ve `MODE` Türkçe sürümde ad: RANK/ENÇOK_OLAN sayfaları var; `RANK.EŞİT` / `MODE.SNGL` ekleri yazılmadı | Yalnız eski adlar | ⏳ |
 | 21 | `COUNTBLANK`/`COUNTIF(…;"")` tam sütunda (A:A) 1.048.576'ya kadar boşları sayar; biz yalnız kullanılan alan (COUNTIF) / tüm satırlar (COUNTBLANK) | Kullanılan alan | ⏳ |
 | 22 | Excel'in Türkçe sürümünde fonksiyon ipucundaki argüman adları (`sayı1`, `aranan_değer`…) ve döngüsel başvuru uyarı metni | İpucunda `arg1; [arg2]`; uyarı metni kendi sözcüklerimiz | ⏳ |
+| 23 | `ETARİHLİ` birimleri Türkçe sürümde: Microsoft tr-tr örnekleri `"Y"`, `"G"`, `"YG"` kullanıyor (kabul edildi); `"M"`, `"YM"`, `"MD"` Türkçe karşılıkları (örn. `"AG"`?) ve `"Y"` / `"YD"` uç davranışı: `ETARİHLİ(29.2.2020;28.2.2021;"Y")` ve `"YD"` | `"G"`→D, `"YG"`→YD takma adı var; diğerleri İngilizce harfle; 29.2.2020→28.2.2021 için Y=0, YD=0 (çelişkili görünüyor) | ⏳ |
+| 24 | `EĞERSAY(…;"=")`: yalnız gerçekten boş hücreleri mi sayar, `""` ile aynı mı? `"<>"`? | `"="` ≡ `""` (boş + boş metin) | ⏳ |
+| 25 | `EĞERSAY(C1;0,3)` C1=`=0,1+0,2` iken 15 basamak karşılaştırma uygulanır mı (`=C1=0,3` DOĞRU verir) | Ölçütte tam `==` (0 döner) | ⏳ |
+| 26 | Türkçe büyük/küçük harf: `="I"="i"`, `="ı"="I"`, `EĞERSAY(…;"istanbul")` "ISTANBUL"ı eşler mi | `tr_kucuk` (I→ı) kuralı | ⏳ |
+| 27 | `=ZAMAN(1;-30;0)` (bizde #SAYI!), `=SAAT(0,99999999)`, `="(5)"+1` (Excel −4 verebilir; bizde #DEĞER!), `SERİAY(TARİH(1900;1;15);1)` = 60 mı | Yazılı davranış | ⏳ |
+| 28 | `ETARİHLİ`'nin sayfa başlığı "TARİHFARKI" (makine çevirisi), gövde/sözdizimi `ETARİHLİ` → **ETARİHLİ kullanıldı**; kalan 115 ad sözdizimi satırıyla yeniden tarandı | ✅ doğrulandı (2026-10-09) | ✅ |
+| 29 | Kopyalamada sayfa önekli başvuru sayfa dışına taşarsa Excel `Sayfa2!#BAŞV!` gösterir; bizde önek düşer (`=#BAŞV!`) | Yalnız görünüm | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -331,5 +345,19 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Sorun: geri al/yinele sırasında pencere, ilk gelen olayın sayfasına geçiyordu; başka sayfalardaki formül düzeltmeleri (satır ekle-sil, taşıma yan etkisi) yanlış sayfaya götürebilirdi
 - Çözüm: `komutlar.ana_sayfa(komut, geri_al)` asıl değişikliğin sayfasını verir (taşımada geri alırken kaynak, yinelerken hedef; `Grup` ilk alt komut; sayfa işlemleri None), `GeriAlYigini.son_komut/son_geri_al`; `Pencere._gecmis_islemi_ayarla(False)` işlem bitince o sayfaya geçer. `_kitap_olayi`'ndaki olay tabanlı geçiş kaldırıldı
 - Testler 1224 → **1228** (`test_gecmis_sayfa_gecisi.py`). Sonraki: 6g
+
+## [2026-10-09] — Faz 2 Opus gözden geçirmesi: bulgular ve düzeltmeler (Sonnet 5.5)
+- Opus 5.5 (salt okunur alt ajan) raporu: tavsiye **koşullu** (1, 2, 3 düzelt; 6, 7 küçük; 4, 5 Faz 3 başı). Her bulgu önce **yeniden üretildi**, sonra düzeltildi; ayrıntı `test.md` §10. Tamamı `testler/test_opus_faz2.py` + `test_motor.py` + `test_isaretleme_arayuz.py`
+- **1 (KRİTİK) karesel yeniden hesap → düzeltildi:** aralık bağımlılıkları sütun indeksli (`motor._aralik_sutun/_aralik_genis`), `_bagimlilar` kirli formülleri atlar. 4000 satırlı yürüyen bakiyede 19,9 sn → 0,1 sn
+- **2 (KRİTİK) `TOPLA(A:A)` 1.048.576 satır geziyordu → düzeltildi:** `AralikDeger.toplam` kullanılan alana kırpar (0,42 sn → 0,5 ms)
+- **3 (KRİTİK) EĞER dizi üzerinde öğe öğe çalışmıyordu → düzeltildi:** `temel.dizi_sec` (yayma + #YOK doldurma + hata öğesi); EĞER ve ÇOKEĞER. `=TOPLA(EĞER(A1:A3>1;A1:A3;0))` artık 5 (önce 0)
+- **4 ölçüt dizi/aralık → düzeltildi:** `ortak.olcut_yayar` dekoratörü (EĞERSAY/ÇOKEĞERSAY/ETOPLA/ÇOKETOPLA/EĞERORTALAMA/ÇOKEĞERORTALAMA/ÇOKEĞERMAK/MIN); benzersiz sayma deyimi çalışıyor
+- **5 ölçütte Türkçe hata adı → düzeltildi** (`#BÖL/0!`, `#YOK`; kanonik adlar da çalışır)
+- **6 (kural 4 ihlali) DATEDIF adı yanlıştı → düzeltildi:** `TARİHFARKI` değil **`ETARİHLİ`** (Microsoft sayfasının başlığı makine çevirisi, sözdizimi satırı ETARİHLİ). **Tüm 116 ad** sözdizimi/örnek satırına karşı betikle yeniden tarandı: 105 sayfadan, ROW/INDIRECT/OFFSET (403 sonrası yeniden), IS* ailesi "E işlevleri" sayfasından, EĞERSAY ve BUL ilgili tr-tr sayfalarından doğrulandı → başka hata yok. Microsoft örneklerindeki birimler `"G"`, `"YG"` takma ad olarak eklendi
+- **7 başka sayfadan formül yazarken yarım kalan düzenleme → düzeltildi:** devredilen düzenleme sürerken işaret dışı tıklama formülü ilk hücreye **onaylar** (hatalıysa açık kalır); `Izgara.uzakOnay` sinyali. Karar: Excel'in tam davranışı doğrulanmadı; Enter ile aynı sonucu veriyor (asıl sayfaya dönüş)
+- **Yan bulgu (testle çıktı): `NA()` fonksiyonu yoktu → eklendi** (`YOKSAY`, tr-tr NA sayfasının sözdizimi satırıyla doğrulandı). Fonksiyon sayısı 116
+- **Bilerek değiştirilmedi (Excel davranışı doğrulanmadan tahmin yok, §8b 23–29):** 8 ölçütte 15 basamak eşitlik, 9 ETARİHLİ "Y"/"YD", 10 `"="` ölçütü, 11 sayfa önekli başvuru taşması görünümü
+- Testler 1236 → **1253**. Ölçüm §8. `test.md` §10'a rapor işlendi
+- **Faz 2 bitti.** Sıradaki: Faz 3 (biçimlendirme, sayı biçimleri, doldurma, dondurma; çizim yeniden yapımı + `TEXT`/METNEÇEVİR + metin tarihleri); plan.md → Faz 3. Girişte: Opus gözden geçirmesinin "incelenmedi" listesi (`arama/metin/finans/bilgi/istatistik` doğruluğu, ayrıştırıcı uç durumları) Faz 3 başında hafifçe gözden geçirilebilir
 
 *(Yeni girişler en alta eklenir.)*

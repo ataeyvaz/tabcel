@@ -171,6 +171,7 @@ class Izgara(QAbstractScrollArea):
     gecmisIslemi = Signal(bool)           # geri al/yinele başladı (True) / bitti (False)
     yakinlastirmaDegisti = Signal(float)
     uyari = Signal(str)                   # kullanıcıya gösterilecek iletiler
+    uzakOnay = Signal()                   # devredilen (başka sayfadan) formül düzenlemesi sürerken işaret dışı tıklama
 
     TOPLU_SINIR = 20000                   # tek işlemde en çok satır/sütun (gizle, boyutlandır)
     MIME_HUCRELER = "application/x-tabcel-hucreler"
@@ -631,6 +632,9 @@ class Izgara(QAbstractScrollArea):
             if satir is not None and sutun is not None:
                 self._isaret_tikla(satir, sutun, bool(olay.modifiers() & Qt.ShiftModifier))
                 return
+        if self.uzak_sayfa is not None:        # devredilen düzenleme: işaret dışı tıklama onaylar
+            self.uzakOnay.emit()
+            return
         self.duzenlemeyi_bitir()
         if self.duzenleniyor():
             return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır

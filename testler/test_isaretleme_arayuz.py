@@ -350,3 +350,42 @@ def test_renkli_metin_cizimi_hata_vermez_ve_boyar(pencere):
     from tabcel.formul import isaretleme
     paleti = {r.lower() for r in isaretleme.RENKLER[:2]}
     assert paleti & renkler                          # ilk iki başvurunun renkleri yazıda görünür
+
+
+# ---------------------------------------------------------------- Opus bulgusu 7: devredilen düzenleme tıklamada bitmeli
+def test_devredilen_duzenleme_isaret_disi_tiklamada_onaylanir(pencere):
+    k = pencere.kitap
+    pencere.sayfa_ekle()
+    s2 = k.sayfalar[1]
+    s2.ata(2, 2, Hucre(7.0))
+    pencere.sekmeler.setCurrentIndex(0)
+    g1 = pencere.izgara()
+    g1.sec((1, 4))
+    yaz(g1, "=")
+    pencere.sekmeler.setCurrentIndex(1)
+    g2 = pencere.izgara()
+    tikla(g2, 2, 2)
+    pencere.formul.setCursorPosition(len(pencere.formul.text()))
+    QTest.keyClicks(pencere.formul, "5")                # işaret konumu bitti: "=Sayfa2!B25"
+    assert pencere.formul.text() == f"={s2.ad}!B25"
+    tikla(g2, 3, 3)                                     # işaret modu dışında bir hücreye tıklandı
+    assert pencere._uzak is None                        # düzenleme kapandı
+    assert g1.sayfa.hucre(1, 4).formul == f"=[{s2.kimlik}]!B25"      # ilk hücreye onaylandı
+    assert pencere.izgara() is g1 and g2.sayfa.hucre(3, 3) is None   # asıl sayfaya dönüldü; tıklanan hücreye yazılmadı
+    assert g1.uzak_sayfa is None and g2.uzak_sayfa is None
+
+
+def test_devredilen_hatali_formul_tiklamada_acik_kalir(pencere, monkeypatch):
+    pencere.sayfa_ekle()
+    pencere.sekmeler.setCurrentIndex(0)
+    g1 = pencere.izgara()
+    g1.sec((1, 4))
+    yaz(g1, "=")
+    pencere.sekmeler.setCurrentIndex(1)
+    g2 = pencere.izgara()
+    pencere.formul.setText("=TOPLA(")                   # hatalı formül
+    pencere.formul.setCursorPosition(4)
+    tikla(g2, 3, 3)
+    assert pencere._uzak is not None and g1.sayfa.hucre(1, 4) is None   # onaylanamadı: düzenleme sürer
+    QTest.keyClick(pencere.formul, Qt.Key_Escape)
+    assert pencere._uzak is None

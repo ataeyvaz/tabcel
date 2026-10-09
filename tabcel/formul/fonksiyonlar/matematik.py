@@ -8,7 +8,7 @@ from ...model.deger import Hata
 from ..degerler import BOS_ARG, AralikDeger, _boyut
 from ..donustur import onbes_basamak, sayi_sonucu
 from . import fonksiyon
-from .ortak import hizala, kriter, matris, skaler
+from .ortak import hizala, kriter, matris, olcut_yayar, skaler
 from .temel import sayilar
 
 _BAGLAM = Context(prec=80)
@@ -206,6 +206,7 @@ def _tek_olcut_konumlari(aralik, olcut, toplam_araligi):
 
 
 @fonksiyon("SUMIF", en_az=2, en_cok=3)
+@olcut_yayar(lambda n: range(1, 2))
 def _sumif(b, aralik, olcut, toplam=None):
     if toplam is BOS_ARG:
         toplam = None
@@ -217,6 +218,7 @@ def _sumif(b, aralik, olcut, toplam=None):
 
 
 @fonksiyon("SUMIFS", en_az=3, en_cok=255)
+@olcut_yayar(lambda n: range(2, n, 2))
 def _sumifs(b, toplam, *cift):
     if len(cift) % 2:
         return D.DEGER_HATASI

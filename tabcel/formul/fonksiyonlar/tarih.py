@@ -226,7 +226,9 @@ def _datedif(b, bas, son, birim):
         return D.SAYI
     y1, m1, g1 = seri_ymd(n1)
     y2, m2, g2 = seri_ymd(n2)
-    birim = birim.upper()
+    # Türkçe belge örnekleri birimi "G" (gün) ve "YG" (yıl yok sayılarak gün) yazıyor
+    # (support.microsoft.com/tr-tr/excel/functions/datedif-function); "AG" (MD) doğrulanmadı → §8b-23
+    birim = {"G": "D", "YG": "YD"}.get(birim.upper(), birim.upper())
     ay_farki = (y2 - y1) * 12 + (m2 - m1) - (1 if g2 < g1 else 0)
     if birim == "Y":
         return float(ay_farki // 12)

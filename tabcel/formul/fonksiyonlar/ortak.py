@@ -3,6 +3,7 @@
 `skaler(...)` ile kaydedilen fonksiyon her argümanı tek değer bekler; aralık/dizi gelirse Excel 365
 gibi öğe öğe uygulanır (`=YUVARLA(A1:A3;0)` → dizi). Tek hücreli aralık değerine indirilir.
 """
+import functools
 import re
 from typing import Callable, List, Optional, Tuple
 
@@ -137,6 +138,34 @@ def metin_deseni(desen: str) -> Callable[[str], bool]:
     return lambda s: r.match(tr_kucuk(s)) is not None
 
 
+def olcut_yayar(konumlar: Callable[[int], range]):
+    """Ölçütlü fonksiyon (EĞERSAY/ETOPLA/…) için Excel 365 yayması: bir ölçüt argümanı çok hücreli
+    aralık/dizi ise her öğe için ayrı hesaplanıp dizi döner (`=TOPLA.ÇARPIM(1/EĞERSAY(A1:A9;A1:A9))`
+    benzersiz sayma deyimi). `konumlar(argüman_sayısı)`: ölçüt argümanlarının indeksleri."""
+    def dekor(f):
+        @functools.wraps(f)
+        def sar(b, *args):
+            idx = [i for i in konumlar(len(args)) if i < len(args)]
+            cok = [i for i in idx if (bt := _boyut(args[i])) is not None and bt != (1, 1)]
+            if not cok:
+                return f(b, *args)
+            R = max(_boyut(args[i])[0] for i in cok)
+            C = max(_boyut(args[i])[1] for i in cok)
+            okuyucular = {i: _yay(_okuyucu(args[i]), _boyut(args[i]), R, C) for i in cok}
+            satirlar = []
+            for i in range(R):
+                satir = []
+                for j in range(C):
+                    yeni = list(args)
+                    for k, oku in okuyucular.items():
+                        yeni[k] = oku(i, j)
+                    satir.append(f(b, *yeni))
+                satirlar.append(satir)
+            return Dizi(satirlar)
+        return sar
+    return dekor
+
+
 def kriter(olcut) -> Callable[[object], bool]:
     """Ölçüt değerinden hücre sınama işlevi üretir (Excel EĞERSAY kuralları)."""
     olcut = ham(olcut)
@@ -166,7 +195,7 @@ def kriter(olcut) -> Callable[[object], bool]:
         if op == "<>":
             return lambda v: not bos(v)
         return lambda v: False
-    hata = D.hata_bul(geri) if geri.startswith("#") else None
+    hata = _hata_adindan(geri) if geri.startswith("#") else None
     if hata is not None and op in ("=", "<>"):
         return (lambda v: v == hata) if op == "=" else (lambda v: v != hata)
     if hedef_sayi is not None:
@@ -188,6 +217,19 @@ def kriter(olcut) -> Callable[[object], bool]:
     k = {"<": lambda a, c: a < c, ">": lambda a, c: a > c,
          "<=": lambda a, c: a <= c, ">=": lambda a, c: a >= c}[op]
     return lambda v: isinstance(v, str) and k(tr_kucuk(v), h)
+
+
+def _hata_adindan(metin: str):
+    """Ölçütteki hata adı: kanonik (`#DIV/0!`) ya da Türkçe görünümü (`#BÖL/0!`)."""
+    from ...model.gosterim import HATA_TR
+    h = D.hata_bul(metin)
+    if h is not None:
+        return h
+    ust = tr_kucuk(metin.strip())
+    for kod, tr in HATA_TR.items():
+        if tr_kucuk(tr) == ust:
+            return D.hata_bul(kod)
+    return None
 
 
 def _sayi_esit(v, hedef: float) -> bool:

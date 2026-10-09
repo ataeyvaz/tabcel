@@ -133,29 +133,33 @@ class AralikDeger:
         """(sayıların toplamı, sayı adedi, ilk hata | None). Tek sütunlu uzun aralıkta, hesap turu
         sırasında önek önbelleği kullanılır (birikimli toplam deseni `=TOPLA($D$1:D5000)` O(n²)
         yerine O(n)). Toplama sırası doğrudan toplamla aynıdır → sonuç birebir aynı."""
+        kul = self.sayfa.kullanilan_aralik()           # tam sütun (A:A) 1 milyon satırı gezmesin
+        if kul is None or self.r1 > kul[2]:
+            return 0.0, 0, None
+        r2 = min(self.r2, kul[2])
         onb = ONEK_ONBELLEGI.get("etkin")
-        if onb is not None and self.c1 == self.c2 and self.r2 - self.r1 >= 32:
-            return self._onekten(onb)
+        if onb is not None and self.c1 == self.c2 and r2 - self.r1 >= 32:
+            return self._onekten(onb, r2)
         liste, hata = self.sayilar()
         t = 0.0
         for v in liste:
             t += v
         return t, len(liste), hata
 
-    def _onekten(self, onb):
+    def _onekten(self, onb, r2: int):
         anahtar = (id(self.sayfa), self.c1, self.r1)
         kayit = onb.get(anahtar)
         if kayit is None:
             kayit = onb[anahtar] = [self.r1 - 1, [], [], []]   # son satır, toplamlar, adetler, hatalar
         son, toplamlar, adetler, hatalar = kayit
-        if son < self.r2:
+        if son < r2:
             hucreler, sonuc = self.sayfa._hucreler, self.sayfa._sonuc
             get = hucreler.get
             c = self.c1
             t = toplamlar[-1] if toplamlar else 0.0
             n = adetler[-1] if adetler else 0
             hata = hatalar[-1] if hatalar else None
-            for r in range(son + 1, self.r2 + 1):
+            for r in range(son + 1, r2 + 1):
                 k = (r, c)
                 h = get(k)
                 if h is not None:
@@ -172,8 +176,8 @@ class AralikDeger:
                 toplamlar.append(t)
                 adetler.append(n)
                 hatalar.append(hata)
-            kayit[0] = self.r2
-        i = self.r2 - self.r1
+            kayit[0] = r2
+        i = r2 - self.r1
         return toplamlar[i], adetler[i], hatalar[i]
 
     def sayilar(self):

@@ -8,7 +8,7 @@ from ..degerler import BOS_ARG, AralikDeger, Dizi
 from ..donustur import sayi_metninden
 from . import fonksiyon
 from .matematik import eslesen_konumlar, sayilari_topla
-from .ortak import kriter
+from .ortak import kriter, olcut_yayar
 from .temel import sayilar
 
 
@@ -191,6 +191,7 @@ def _countblank(b, aralik):
 
 
 @fonksiyon("COUNTIF", en_az=2, en_cok=2)
+@olcut_yayar(lambda n: range(1, 2))
 def _countif(b, aralik, olcut):
     if not isinstance(aralik, AralikDeger):
         return D.DEGER_HATASI
@@ -202,6 +203,7 @@ def _countif(b, aralik, olcut):
 
 
 @fonksiyon("COUNTIFS", en_az=2, en_cok=254)
+@olcut_yayar(lambda n: range(1, n, 2))
 def _countifs(b, *cift):
     if len(cift) % 2:
         return D.DEGER_HATASI
@@ -210,6 +212,7 @@ def _countifs(b, *cift):
 
 
 @fonksiyon("AVERAGEIF", en_az=2, en_cok=3)
+@olcut_yayar(lambda n: range(1, 2))
 def _averageif(b, aralik, olcut, ortalama=None):
     if ortalama is BOS_ARG:
         ortalama = None
@@ -226,6 +229,7 @@ def _averageif(b, aralik, olcut, ortalama=None):
 
 
 @fonksiyon("AVERAGEIFS", en_az=3, en_cok=255)
+@olcut_yayar(lambda n: range(2, n, 2))
 def _averageifs(b, ortalama, *cift):
     if len(cift) % 2:
         return D.DEGER_HATASI
@@ -240,6 +244,7 @@ def _averageifs(b, ortalama, *cift):
 
 def _ifs_uc(ad, islev):
     @fonksiyon(ad, en_az=3, en_cok=255)
+    @olcut_yayar(lambda n: range(2, n, 2))
     def _f(b, hedef, *cift):
         if len(cift) % 2:
             return D.DEGER_HATASI

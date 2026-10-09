@@ -1,6 +1,7 @@
 """Bilgi fonksiyonları (E… işlevleri). Qt yok."""
 from ...model import deger as D
 from ...model.deger import Hata
+from . import fonksiyon
 from .ortak import skaler
 
 
@@ -22,6 +23,11 @@ def _isblank(b, v):
 @skaler("ISERROR", "h")
 def _iserror(b, v):
     return isinstance(v, Hata)
+
+
+@fonksiyon("NA", en_az=0, en_cok=0)
+def _na(b):
+    return D.YOK
 
 
 @skaler("ISNA", "h")

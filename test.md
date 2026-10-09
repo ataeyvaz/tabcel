@@ -82,7 +82,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 
 <!-- OTOMATIK:BASLA -->
 
-**Son çalıştırma: 2026-10-09 — ✅ 1236/1236 test geçti, 0 olumsuz** (süre ≈ 9.1 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
+**Son çalıştırma: 2026-10-09 — ✅ 1253/1253 test geçti, 0 olumsuz** (süre ≈ 8.8 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
 
 | Dosya | Kapsam | Test | ✅ Olumlu | ❌ Olumsuz |
 |---|---|---|---|---|
@@ -97,13 +97,14 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_girdi.py` | Girdi çözümleyici: yazılan metin → sayı/mantıksal/formül/metin (Türkçe yerel ayar) | 42 | 42 | 0 |
 | `test_gosterim.py` | Genel sayı biçimi ve sığdırma (####, bilimsel) | 8 | 8 | 0 |
 | `test_isaretleme.py` | İşaretleme mantığı (Qt'siz): ekleme konumu, renkler, F4, öneriler, ipucu | 27 | 27 | 0 |
-| `test_isaretleme_arayuz.py` | İşaretleme modu arayüzde (6d): tıklama/ok, F4, odak kaybı, formül çubuğu, sekmeler arası, Alt+=, öneri listesi, renkli metin | 26 | 26 | 0 |
+| `test_isaretleme_arayuz.py` | İşaretleme modu arayüzde (6d): tıklama/ok, F4, odak kaybı, formül çubuğu, sekmeler arası, Alt+=, öneri listesi, renkli metin | 28 | 28 | 0 |
 | `test_iskelet.py` | Proje iskeleti: ad/sürüm sabiti, kaynak klasörü, model/formül paketlerinin Qt'siz olması | 3 | 3 | 0 |
 | `test_izgara.py` | Izgara arayüzü: çizim, gezinme, seçim, düzenleme, boyutlandırma, gizleme, pano, taşan metin, çoklu aralık, artımlı kaydırma | 108 | 108 | 0 |
 | `test_kaydir.py` | Başvuru kaydırma: kopyala, ekle-sil, taşı ($'lılar, #BAŞV!) | 33 | 33 | 0 |
-| `test_motor.py` | Hesaplayıcı: bağımlılık, yeniden hesaplama, döngü, sayfa işlemleri | 16 | 16 | 0 |
+| `test_motor.py` | Hesaplayıcı: bağımlılık, yeniden hesaplama, döngü, sayfa işlemleri | 20 | 20 | 0 |
 | `test_olay.py` | Olay katmanı (K5): hücre/sonuç/yapı/boyut/sayfa olayları, toplu işlem tek olay | 18 | 18 | 0 |
 | `test_olcu.py` | Excel ölçü birimleri: karakter/punto ⇄ piksel | 3 | 3 | 0 |
+| `test_opus_faz2.py` |  | 11 | 11 | 0 |
 | `test_pano.py` | Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı | 25 | 25 | 0 |
 | `test_pano_formul.py` | Pano ve formül (6c): kopyada başvuru kayması, kes-yapıştır taşıma, dış formül çevirisi | 6 | 6 | 0 |
 | `test_pencere.py` | Ana pencere: ad kutusu, formül çubuğu, durum çubuğu, sayfa sekmeleri, yakınlaştırma | 21 | 21 | 0 |
@@ -113,7 +114,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_senaryo_butce.py` | Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma) | 8 | 8 | 0 |
 | `test_toplu_ve_sonuc.py` | Toplu yazım ve girdi/sonuç ayrımı (K4) | 12 | 12 | 0 |
 | `test_yerellestirme.py` | TR ⇄ kanonik çeviri: ayırıcılar, fonksiyon/hata adları, sayfa başvuruları | 37 | 37 | 0 |
-| **Toplam** | | **1236** | **1236** | **0** |
+| **Toplam** | | **1253** | **1253** | **0** |
 
 ### `testler/test_adres.py` — 26/26 ✅
 *Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576)*
@@ -1023,7 +1024,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ oneriler turkce ad ve sirali
 - ✅ ipucu
 
-### `testler/test_isaretleme_arayuz.py` — 26/26 ✅
+### `testler/test_isaretleme_arayuz.py` — 28/28 ✅
 *İşaretleme modu arayüzde (6d): tıklama/ok, F4, odak kaybı, formül çubuğu, sekmeler arası, Alt+=, öneri listesi, renkli metin*
 
 - ✅ tiklama basvuru ekler onaylamaz
@@ -1052,6 +1053,8 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ otomatik toplam cok satirli secim altina yazar
 - ✅ otomatik toplam tek satirli secim sagina yazar
 - ✅ renkli metin cizimi hata vermez ve boyar
+- ✅ devredilen duzenleme isaret disi tiklamada onaylanir
+- ✅ devredilen hatali formul tiklamada acik kalir
 
 ### `testler/test_iskelet.py` — 3/3 ✅
 *Proje iskeleti: ad/sürüm sabiti, kaynak klasörü, model/formül paketlerinin Qt'siz olması*
@@ -1209,7 +1212,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ hucre tasi
 - ✅ hucre tasi baska sayfaya
 
-### `testler/test_motor.py` — 16/16 ✅
+### `testler/test_motor.py` — 20/20 ✅
 *Hesaplayıcı: bağımlılık, yeniden hesaplama, döngü, sayfa işlemleri*
 
 - ✅ ilk kurulumda hesaplar
@@ -1228,6 +1231,10 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ bozuk formul ad hatasi
 - ✅ uzun zincir — Özyineleme sınırına takılmadan uzun zincir (topolojik sıra).
 - ✅ kapat dinlemeyi birakir
+- ✅ bakiye zinciri dogrusal surede yeniden hesaplanir — Satır TOPLA + yürüyen bakiye: A1 değişince 4000 satır (eskiden ~20 sn, karesel). Sınır geniş
+- ✅ hareketli ortalama zinciri
+- ✅ tam sutun toplami kullanilan alanla sinirli — =TOPLA(A:A) 1.048.576 satırı gezmez (eskiden her turda ~0,4 sn); sonuç doğru kalır.
+- ✅ bos sayfada tam sutun toplami sifir
 
 ### `testler/test_olay.py` — 18/18 ✅
 *Olay katmanı (K5): hücre/sonuç/yapı/boyut/sayfa olayları, toplu işlem tek olay*
@@ -1257,6 +1264,21 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ excel varsayilanlari
 - ✅ gidis donus
 - ✅ sinirlar
+
+### `testler/test_opus_faz2.py` — 11/11 ✅
+**
+
+- ✅ if dizi kosulu ogeye ogeye
+- ✅ if dizi bos hucre ve hata ve metin
+- ✅ if dizi kosul sabit dalli ve yayma
+- ✅ if skaler davranis degismedi
+- ✅ ifs dizi
+- ✅ etarihli turkce ad ve microsoft ornekleri — Microsoft tr-tr ETARİHLİ sayfasının örnekleri: 1.1.2001–1.1.2003 "Y" = 2; 1.6.2001–15.8.2002
+- ✅ eski yanlis ad tanimsiz
+- ✅ eğersay olcut araligi benzersiz sayma deyimi
+- ✅ etopla ve cokolcutlu olcut dizisi
+- ✅ olcutte turkce hata adi
+- ✅ na fonksiyonu yoksay — NA() → #YOK; Türkçe adı YOKSAY (Microsoft tr-tr NA sayfası sözdizimi satırı: YOKSAY()).
 
 ### `testler/test_pano.py` — 25/25 ✅
 *Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı*
@@ -1627,4 +1649,31 @@ Gerçek ekran görüntüsü ile sıfırdan çizilen görüntü karşılaştırı
 | 4 | Alt+= ve otomatik tamamlama | Sayı sütununun altında Alt+=; `=TOP` yaz → liste, Tab | ⏳ |
 | 5 | Excel'den formüllü aralık yapıştırma | Excel'de formüllü aralığı kopyala → burada yapıştır (şu an değer/metin gelir) | ⏳ |
 | 6 | Bütçe çizelgesini Excel web'de kur | `test_senaryo_butce.py`'deki veri ve formüllerle; sonuçları karşılaştır | ⏳ |
+
+---
+
+## 10. Faz 2 gözden geçirmesi (Opus 5.5) — 2026-10-09
+
+Salt okunur Opus 5.5 alt ajanı (70 araç çağrısı, çalıştırarak doğrulama; rastgele işlem dizileriyle 600 özellik testi dahil). **Tavsiye: koşullu evet** (1, 2, 3 önce; 6, 7 küçük; 4, 5 Faz 3 başında). Her bulgu bizde yeniden üretildi, düzeltildi ve gerileme testi yazıldı.
+
+| # | Önem | Bulgu | Sonuç |
+|---|---|---|---|
+| 1 | KRİTİK | Yeniden hesap karesel: 4000 satırlı satır-TOPLA + yürüyen bakiye, A1 değişince 19,9 sn | ✅ düzeltildi → 0,1 sn (`test_motor`: bakiye zinciri, hareketli ortalama) |
+| 2 | KRİTİK | `=TOPLA(A:A)` her turda 1.048.576 satır geziyor (0,4 sn, ~200 MB) | ✅ kullanılan alana kırpıldı → 0,5 ms |
+| 3 | KRİTİK | EĞER/ÇOKEĞER dizi koşulunda öğe öğe çalışmıyor; `=TOPLA(EĞER(A1:A3>1;A1:A3;0))` 0 (Excel 365: 5), sessiz yanlış | ✅ `dizi_sec` (5 test) |
+| 4 | ORTA | Ölçüt aralık/dizi olunca EĞERSAY/ETOPLA 0 (benzersiz sayma deyimi bozuk) | ✅ `olcut_yayar` (8 fonksiyon; 2 test) |
+| 5 | ORTA | Ölçütte Türkçe hata adı (`"#BÖL/0!"`) tanınmıyor | ✅ |
+| 6 | ORTA | **Kural 4 ihlali:** DATEDIF Türkçe adı `TARİHFARKI` yanlış; doğrusu `ETARİHLİ` | ✅ düzeltildi; **116 adın tamamı sözdizimi satırına karşı yeniden tarandı, başka hata yok**; `"G"`, `"YG"` birimleri eklendi |
+| 7 | ORTA | Başka sayfadan formül yazarken işaret dışı tıklama düzenlemeyi ne onaylıyor ne iptal ediyor; sonraki giriş yanlış hücreye gidiyor | ✅ tıklama formülü ilk hücreye onaylar (2 test) |
+| 8 | DÜŞÜK | Ölçütte eşitlik 15 basamakla karşılaştırılmıyor | ➖ Excel davranışı doğrulanacak (§8b-25) |
+| 9 | DÜŞÜK | ETARİHLİ `"Y"` / `"YD"` çelişkisi (29.2.2020→28.2.2021) | ➖ doğrulanacak (§8b-23) |
+| 10 | DÜŞÜK | `"="` ölçütü `""` ile aynı işleniyor | ➖ doğrulanacak (§8b-24) |
+| 11 | DÜŞÜK | Kopyada sayfa önekli başvuru taşarsa önek düşüyor (`=#BAŞV!`) | ➖ yalnız görünüm (§8b-29) |
+| + | (bizim) | `NA()` fonksiyonu yoktu (testle çıktı) | ✅ eklendi: `YOKSAY` (tr-tr sayfasıyla doğrulandı) |
+
+**Temiz çıkanlar:** motor + geri al/yinele rastgele dizilerle (hücre yaz, satır/sütun ekle-sil, taşıma, sayfa ekle/sil) bağımsız tam hesapla birebir; DOLAYLI/KAYDIR, sayfa yeniden adlandırma, sayfa sil-geri al, döngü; tarih uç değerleri (1900, 0/60, EDATE/EOMONTH, WEEKNUM, NETWORKDAYS); `-2^2`, `%`, `&`, hata sırası, #YOK doldurma, kesişim; kural 2 (model/formul Qt içe aktarmıyor).
+
+**İncelenmeyenler (Faz 3 başında hafifçe gözden geçirilebilir):** `arama/metin/finans/bilgi/istatistik` fonksiyonlarının tek tek doğruluğu (ölçütlüler dışında), `sozcuk.py`/`agac.py` ayrıştırıcı uç durumları, pano/otomatik tamamlama/odak kaybının gerçek pencerede davranışı (elle test), kural 11 sayımı ve test kalitesi taraması.
+
+**Ders:** Microsoft tr-tr işlev sayfalarının **başlığı** (makine çevirisi) güvenilmez; ad yalnızca **sözdizimi/örnek satırından** doğrulanmalı (`araclar`'a taşınabilir: toplu doğrulama betiği `araclar/adlar_dogrula.py`).
 

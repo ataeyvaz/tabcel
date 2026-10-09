@@ -5,6 +5,7 @@ from ..degerler import BOS_ARG, AralikDeger, Dizi
 from ..donustur import karsilastir, mantiga
 from . import fonksiyon
 from .ortak import ham, matris, skaler
+from .temel import cok_hucreli, dizi_sec
 
 
 def _mantiklar(args):
@@ -69,7 +70,14 @@ def _ifs(b, *args):
     if len(args) % 2:
         return D.YOK
     for i in range(0, len(args), 2):
-        k = mantiga(ham(args[i]()))
+        kv = args[i]()
+        if cok_hucreli(kv):                        # dizi koşulu: kalan çiftlerle öğe öğe (Excel 365)
+            kosullar, degerler = [kv], [args[i + 1]()]
+            for j in range(i + 2, len(args), 2):
+                kosullar.append(args[j]())
+                degerler.append(args[j + 1]())
+            return dizi_sec(kosullar, degerler, D.YOK)
+        k = mantiga(ham(kv))
         if isinstance(k, Hata):
             return k
         if k:

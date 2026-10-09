@@ -21,6 +21,7 @@ from .sozcuk import FormulHatasi
 
 Anahtar = Tuple[int, int, int]                  # (sayfa kimliği, satır, sütun)
 Kutu = Tuple[int, int, int, int]                # (r1, c1, r2, c2)
+GENIS_SUTUN = 8                                 # bundan geniş aralık kutuları sütun indeksine girmez
 
 
 class _Kayit:
@@ -104,7 +105,11 @@ class Hesaplayici:
         self._agac_onb: Dict[str, Optional[Dugum]] = {}
         self._kayit: Dict[Anahtar, _Kayit] = {}
         self._hucre_bag: Dict[Anahtar, Set[Anahtar]] = defaultdict(set)
-        self._aralik_bag: Dict[int, Dict[Anahtar, List[Kutu]]] = defaultdict(dict)
+        # aralık bağımlılıkları: dar kutular (≤ GENIS_SUTUN sütun) sütuna göre indekslenir; yeniden
+        # hesapta yalnız değişen sütunlara değen kutular taranır (satır sayısı × düzey karesi yok)
+        self._aralik_sutun: Dict[int, Dict[int, Dict[Anahtar, List[Kutu]]]] = defaultdict(
+            lambda: defaultdict(dict))
+        self._aralik_genis: Dict[int, Dict[Anahtar, List[Kutu]]] = defaultdict(dict)
         self._degisken: Set[Anahtar] = set()
         self._sayfalar: Dict[int, object] = {}
         self._yaziyor = False
@@ -135,8 +140,13 @@ class Hesaplayici:
                 bag.discard(anahtar)
                 if not bag:
                     del self._hucre_bag[h]
-        for kimlik, _ in k.araliklar:
-            self._aralik_bag[kimlik].pop(anahtar, None)
+        for kimlik, (_, c1, _, c2) in k.araliklar:
+            if c2 - c1 + 1 > GENIS_SUTUN:
+                self._aralik_genis[kimlik].pop(anahtar, None)
+            else:
+                sutunlar = self._aralik_sutun[kimlik]
+                for c in range(c1, c2 + 1):
+                    sutunlar[c].pop(anahtar, None)
         self._degisken.discard(anahtar)
 
     def _kaydet(self, anahtar: Anahtar, formul: str) -> None:
@@ -149,7 +159,13 @@ class Hesaplayici:
         for h in hucreler:
             self._hucre_bag[h].add(anahtar)
         for kimlik, kutu in araliklar:
-            self._aralik_bag[kimlik].setdefault(anahtar, []).append(kutu)
+            c1, c2 = kutu[1], kutu[3]
+            if c2 - c1 + 1 > GENIS_SUTUN:
+                self._aralik_genis[kimlik].setdefault(anahtar, []).append(kutu)
+            else:
+                sutunlar = self._aralik_sutun[kimlik]
+                for c in range(c1, c2 + 1):
+                    sutunlar[c].setdefault(anahtar, []).append(kutu)
         if degisken:
             self._degisken.add(anahtar)
 
@@ -163,7 +179,8 @@ class Hesaplayici:
     def _grafigi_kur(self) -> None:
         self._kayit.clear()
         self._hucre_bag.clear()
-        self._aralik_bag.clear()
+        self._aralik_sutun.clear()
+        self._aralik_genis.clear()
         self._degisken.clear()
         self._sayfalar = {s.kimlik: s for s in self.kitap.sayfalar}
         for s in self.kitap.sayfalar:
@@ -197,27 +214,40 @@ class Hesaplayici:
         self._grafigi_kur()
         self._hesapla(set(self._kayit))
 
-    def _bagimlilar(self, oncu: Set[Anahtar]) -> Set[Anahtar]:
-        """`oncu` kümesindeki hücrelere (doğrudan) bağlı formül hücreleri."""
+    def _bagimlilar(self, oncu: Set[Anahtar], kirli: Set[Anahtar]) -> Set[Anahtar]:
+        """`oncu` kümesindeki hücrelere (doğrudan) bağlı formül hücreleri; `kirli`dekiler atlanır."""
         sonuc: Set[Anahtar] = set()
         hb = self._hucre_bag
         for a in oncu:
             bag = hb.get(a)
             if bag:
                 sonuc |= bag
-        if self._aralik_bag:
+        if self._aralik_sutun or self._aralik_genis:
             for kimlik, sutunlar in _sutun_satirlari(oncu).items():
-                bag = self._aralik_bag.get(kimlik)
-                if not bag:
-                    continue
-                sira = sorted(sutunlar)
-                for bagimli, kutular in bag.items():
-                    if bagimli in sonuc:
-                        continue
-                    for kutu in kutular:
-                        if _kutuda_var_mi(sutunlar, sira, kutu):
-                            sonuc.add(bagimli)
-                            break
+                dar = self._aralik_sutun.get(kimlik)
+                if dar:
+                    for c, satirlar in sutunlar.items():
+                        kayitlar = dar.get(c)
+                        if not kayitlar:
+                            continue
+                        for bagimli, kutular in kayitlar.items():
+                            if bagimli in sonuc or bagimli in kirli:
+                                continue
+                            for r1, _, r2, _ in kutular:
+                                j = bisect_left(satirlar, r1)
+                                if j < len(satirlar) and satirlar[j] <= r2:
+                                    sonuc.add(bagimli)
+                                    break
+                genis = self._aralik_genis.get(kimlik)
+                if genis:
+                    sira = sorted(sutunlar)
+                    for bagimli, kutular in genis.items():
+                        if bagimli in sonuc or bagimli in kirli:
+                            continue
+                        for kutu in kutular:
+                            if _kutuda_var_mi(sutunlar, sira, kutu):
+                                sonuc.add(bagimli)
+                                break
         return sonuc
 
     def _yeniden_hesapla(self, degisen: List[Anahtar]) -> None:
@@ -225,7 +255,7 @@ class Hesaplayici:
         kirli = {a for a in tohum if a in self._kayit}
         sinir = tohum
         while sinir:
-            yeni = self._bagimlilar(sinir) - kirli
+            yeni = self._bagimlilar(sinir, kirli) - kirli
             kirli |= yeni
             sinir = yeni
         # değişen ama artık formül olmayan hücrelerin eski döngü işareti kalkar
