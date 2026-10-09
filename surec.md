@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3i ✅; sıradaki: 3j–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3j ✅; sıradaki: 3k–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1766 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1787 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1766 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -117,6 +117,11 @@ Testler: 1766 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - "Bölmeleri Dondur" Excel gibi **etkin hücrenin üstü ve solu**; ama **sayfanın başından** dondurur (Excel kaydırılmış pencerenin üstünden dondurur — bilerek fark). (1,1)'de dondurma olmaz. Dondurulan bölme pencereyi (≈ −80/−60 px) dolduruyorsa reddedilir
   - Kılavuz kapalıyken yalnız hücre çizgileri kalkar; dolgu, kenarlık, başlık çizgileri durur. Taşan metin dondurma çizgisini geçmez. Dondurma çizgisi koyu gri `#7f7f7f` 1 px
   - Arayüz: başlık şeridine **Görünüm** menüsü (Bölmeleri Dondur, Üst Satırı Dondur, İlk Sütunu Dondur, Dondurmayı Kaldır, ☑ Kılavuz Çizgileri); durum sayfaya özel
+- 2026-10-09 (Faz 3 / 3j):
+  - **Metni kaydır** yalnız **metin** hücresini sarar (sayı/mantıksal/hata sarmaz; sayı kısaltma/`####` kuralı sürer). Kelime sınırında bölünür, kelime hücreden uzunsa her yerde (Excel gibi); `\n` satır sonu olur; yatay hiza satır satır uygulanır; dikey hiza üst/orta/alt, sığmayan metin alt hizada alttan kırpılır (Excel gibi). Çizim `QTextLayout` (stil+genişlik+hiza anahtarlı önbellek, `_FontGirdisi.sar`); çift altı çizgi ve girintili ortalama sarılmış metinde yok
+  - **Otomatik satır yüksekliği:** elle yüksekliği ayarlanmamış satır (`satir_yukseklik`'te kaydı yok) içeriğe göre uzar: kaydırılmış metnin satır sayısı ve 11 punto üstü biçimli hücre. Hesap **ızgarada** (model Qt'siz kalsın diye), mevcut yakınlaştırma pikseliyle yapılır (`_oto`, tembel; içerik/biçim/genişlik/yakınlaştırma/sonuç olayında geçersiz kılınır, yalnız kaydırma ya da büyük yazı stili varken çalışır). Yakınlaştırmada sarma tam ölçekli değil (çizim ve ölçüm aynı pikselde, fark yok ama yazı tipi ipuçlaması farklı olabilir). Birleşik ve gizli satır katılmaz; üst sınır 409 px
+  - Elle yükseklik kazanır; **"Otomatik sığdır"** (satır başlığı çift tık/menü) elle değeri siler → otomatik. Kaydırma kapanınca/metin kısalınca/sütun genişleyince satır geri küçülür (geri al da)
+  - **Alt+Enter** ile girilen çok satırlı metin hücrenin kaydırmasını kendiliğinden açar (metin + biçim tek geri al adımı; yalnız hücre zaten kaydırmalı değilse)
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -201,7 +206,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 8 | 1900 artık yıl hatası: `=TARİH(1900;2;29)`, `=HAFTANINGÜNÜ(1)`, `=HAFTANINGÜNÜ(59)`, `=GÜN(60)` ve `AY(60)` sonuçları | 60 = 29.2.1900 kabul | ⏳ |
 | 9 | Çok hücreli seçimde Enter, seçim içinde mi gezer? | Gezmez, aktif hücre bir aşağı (basitleştirme) | ⏳ |
 | 10 | Kopyalanan aralık, seçilen hedefin katı olmadığında (ör. 1×2 kaynak, 2×3 seçim) Excel ne yapar? Hata verir mi, sol üst köşeye mi yapıştırır? | Sol üst köşeye yapıştırır (`yapistirma_plani`) | ⏳ |
-| 11 | Alt+Enter'lı hücre kaydırma kapalıyken tek satırda nasıl görünür (satır sonu hiç yok mu, boşluk mu)? Genel biçimde dar sütunda sayı yuvarlama/bilimsel geçiş eşiği nedir? | Satır sonu görünmez; 0,01 altı bilimsele geçer | ⏳ |
+| 11 | Alt+Enter'lı hücre kaydırma kapalıyken tek satırda nasıl görünür (satır sonu hiç yok mu, boşluk mu)? Genel biçimde dar sütunda sayı yuvarlama/bilimsel geçiş eşiği nedir? | Satır sonu kaydırma kapalıyken görünmez, kaydırma açıkken satır sonu çizilir (3j); 0,01 altı bilimsele geçer | ⏳ |
 | 12 | Sayının metne dönüşümü (`=1/3&""`, `=0,00001&""`, `=1E+20&""`): kaç basamak, bilimsel gösterime hangi eşikte geçer? | 15 anlamlı basamak, Python `%.15g` eşiği (1E-05'ten küçükte bilimsel) — `donustur.sayi_metni` | ⏳ |
 | 13 | Döngüsel başvuru: `A1: =B1+1`, `B1: =A1+1` yazınca hücrelerde ne görünür (0 mı, son değer mi)? Döngüye bağlı `C1: =A1*10`? | Döngü üyeleri 0; bağlı hücreler bu 0 ile hesaplanır | ⏳ |
 | 14 | `="1.5"+1`, `="1.1.2026"+1` (tarih metni) Türkçe Excel'de ne verir? | `="1.5"+1` ve `="1.1.2026"+1` tarih + 1 (3g: `donustur.sayi_metninden` akıllı çözümleyiciyi kullanır) | ⏳ |
@@ -498,6 +503,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1744 → **1766** (`test_dondurma.py` 22: model + olay, kaydırma/gezinme, nokta↔hücre eşlemesi, pano, piksel: dondurma çizgisi, sabit satır kaymaz, kılavuz gizle/göster, dolgu+kenarlık görünür, artımlı = tam çizim, taşma, menü, sayfaya özel, açılışta uygulama). Ekran görüntüsü incelendi (A,B | F… ve 1,2 | 16…). Regresyon yok, hiçbir test değişmedi
 - **Bilerek eksik / bilinen sınır:** dondurma çizgisini kesen birleşik hücrelerde çizim konumu yaklaşık; sürükleyerek bölme çubuğu (split) yok; kayan bölgeye taşıyan Ctrl+Home davranışı Excel'den farklı olabilir (A1'e gider); dondurma/kılavuz .xlsx'e yazılması Faz 4; yazdırmada kılavuz seçeneği Faz 4
 - Sıradaki: **3j** (metni kaydır + otomatik satır yüksekliği)
+
+## [2026-10-09] — Faz 3 / 3j bitti (Sonnet 5.5)
+- Commit `bcc237a` (3i). **3j:** `Izgara._sar/_Sar` (sarılmış yerleşim), `_yerlesim` kaydırılmış metin dalı + `_metinleri_ciz` satır çizimi, `_oto_hesapla/_oto_gecersiz` + `_yuk` otomatik yükseklik, `hucre_gir` Alt+Enter→kaydır, `Pencere` sonuç olayında geçersiz kılma
+- Testler 1766 → **1787** (`test_kaydir_metin.py` 21: otomatik yükseklik (içerik/genişlik/elle/otomatik sığdır/kapama/metin değişimi/Alt+Enter/sayı/formül sonucu/satır stili/gizli+birleşik/büyük yazı/yakınlaştırma), çizim (satırlara bölme, komşuya taşmama, uzun kelime, açık satır sonu, dikey/yatay hiza, birleşik, renk+dolgu)). Ekran görüntüsü incelendi (çok satırlı hücre, sayı alt hizalı, satır sonları). Regresyon yok, hiçbir test değişmedi
+- **Bilerek eksik:** `Izgara` içi düzenleyici kaydırılmış metni çok satırlı göstermez (tek satır `QLineEdit`; Alt+Enter metne satır sonu ekler ama kutuda görünmez); "Otomatik Sığdır Sütun Genişliği" kaydırılmış metni hesaba katmaz; sarmada Excel'in kelime bölme ayrıntıları (tire, Unicode kuralları) Qt'ninki; `doldur`/`iki_yana`/`secim_ortasi` hizaları hâlâ yaklaşık (3c notu)
+- Sıradaki: **3k** (biçim boyacısı)
 
 *(Yeni girişler en alta eklenir.)*
 

@@ -352,6 +352,8 @@ class Pencere(QMainWindow):
         if olay.tur == "sonuc":
             g = self._izgaralar.get(olay.sayfa)
             if g is not None and olay.sayfa is self._secili_sayfa:
+                g._oto_gecersiz()              # metin sonucu değiştiyse kaydırılmış satır yüksekliği de
+                g._sayfa_adimlari()
                 g.viewport().update()          # başka hücreden tetiklenen yeniden hesaplama
             self._dongu_etiketi_guncelle()
             return

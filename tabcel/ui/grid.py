@@ -3,11 +3,14 @@
 Bu aşamada: çizim, kaydırma, seçim, gezinme. Düzenleme sonraki adımda.
 Kaydırma çubukları hücre sırasıyla çalışır (değer = ilk görünen satır/sütun − 1), Excel gibi.
 """
+import math
 import uuid
 from typing import Dict, Iterator, List, Optional, Tuple
 
-from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen, QRegion, QStaticText
+from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRect, Qt, Signal
+from PySide6.QtGui import (
+    QColor, QFont, QFontMetrics, QPainter, QPen, QRegion, QStaticText, QTextLayout, QTextOption,
+)
 from PySide6.QtWidgets import (
     QAbstractScrollArea, QApplication, QInputDialog, QLineEdit, QListWidget, QMenu, QToolTip,
 )
@@ -41,9 +44,17 @@ _HIZA_BAYRAK = {"sol": Qt.AlignLeft, "orta": Qt.AlignHCenter, "sag": Qt.AlignRig
 _CIZGI_KALINLIK = {"ince": 1, "orta": 2, "kalin": 3, "kesikli": 1, "noktali": 1, "cift": 3, "sac": 1}
 
 
+class _Sar:
+    """Kaydırılmış (sarılmış) metnin yerleşimi: `QTextLayout` + toplam yükseklik (piksel)."""
+    __slots__ = ("layout", "h")
+
+    def __init__(self, layout, h: int):
+        self.layout, self.h = layout, h
+
+
 class _FontGirdisi:
     """Bir stilin yazı tipi + ölçüm/çizim önbellekleri (metin genişliği, QStaticText, sığdırılmış sayı)."""
-    __slots__ = ("font", "olcer", "yukseklik", "gen", "statik", "sayilar", "dolgu", "kenarli")
+    __slots__ = ("font", "olcer", "yukseklik", "gen", "statik", "sayilar", "dolgu", "kenarli", "sar")
 
     def __init__(self, font: QFont, stil: Stil):
         self.dolgu = stil.dolgu                       # hücre dolgusu / kenarlığı var mı (her çizimde sorulmasın)
@@ -54,6 +65,7 @@ class _FontGirdisi:
         self.gen: Dict[str, int] = {}
         self.statik: Dict[str, QStaticText] = {}
         self.sayilar: Dict[tuple, tuple] = {}
+        self.sar: Dict[tuple, _Sar] = {}              # (metin, genişlik, hizalama) → sarılmış yerleşim
 
 
 class _Duzenleyici(QLineEdit):
@@ -226,6 +238,8 @@ class Izgara(QAbstractScrollArea):
         self._isaret_capa: Optional[Tuple[int, int]] = None  # işaret aralığının sabit / hareketli ucu
         self._isaret_ucu: Optional[Tuple[int, int]] = None
         self._isaret_yaziyor = False
+        self._oto: Dict[int, int] = {}                       # satır → otomatik yükseklik (piksel, yakınlaştırılmış)
+        self._oto_ok = False                                 # otomatik yükseklikler güncel mi
         self._doldur: Optional[dict] = None                # doldurma tutamacı sürüklemesi: {kaynak, hedef}
         self.veri_kaybi_onayi = None                       # () -> bool: birleştirme veri silecekse pencere sorar
         self.uzak_sayfa: Optional[Sayfa] = None            # formül başka sayfadan yazılıyorsa asıl sayfa
@@ -266,7 +280,98 @@ class Izgara(QAbstractScrollArea):
 
     def _yuk(self, satir: int) -> int:
         h = self.sayfa.yukseklik(satir)
-        return self._z(h) if h else 0
+        if not h:
+            return 0
+        if not self._oto_ok:
+            self._oto_hesapla()
+        if self._oto and satir not in self.sayfa.satir_yukseklik:
+            o = self._oto.get(satir)
+            if o:
+                return o                        # elle ayarlanmamış satır içeriğe göre uzar (Excel)
+        return self._z(h)
+
+    def _oto_gecersiz(self) -> None:
+        """İçerik/biçim/genişlik/yakınlaştırma değişti: otomatik satır yükseklikleri bir sonraki
+        kullanımda yeniden hesaplanır."""
+        self._oto_ok = False
+
+    def _sar(self, fe: "_FontGirdisi", metin: str, genislik: int, hiza) -> _Sar:
+        """Metni `genislik` pikselde sarar (kelime sınırında, uzun kelime gerekirse her yerde; \\n satır sonu)."""
+        anahtar = (metin, genislik, int(hiza.value) if hasattr(hiza, "value") else int(hiza))
+        sar = fe.sar.get(anahtar)
+        if sar is None:
+            lay = QTextLayout(metin.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\u2028"), fe.font)
+            opt = QTextOption()
+            opt.setWrapMode(QTextOption.WrapAtWordBoundaryOrAnywhere)
+            opt.setAlignment(hiza)
+            lay.setTextOption(opt)
+            lay.beginLayout()
+            y = 0.0
+            while True:
+                satir = lay.createLine()
+                if not satir.isValid():
+                    break
+                satir.setLineWidth(max(1, genislik))
+                satir.setPosition(QPointF(0, y))
+                y += satir.height()
+            lay.endLayout()
+            sar = fe.sar[anahtar] = _Sar(lay, int(math.ceil(y)))
+        return sar
+
+    def _oto_hesapla(self) -> None:
+        """Elle yüksekliği ayarlanmamış satırların içeriğe göre yüksekliği: metni kaydır açık hücrelerin
+        sarılmış metni ve büyük yazı boyutlu (biçimli) hücreler. Birleşik hücreler katılmaz."""
+        self._oto_ok = True                      # (yinelemeyi önle)
+        sayfa = self.sayfa
+        havuz = sayfa.havuz
+        stiller = havuz._stiller
+        sar_k = {k for k, st in enumerate(stiller) if st.kaydir}
+        buyuk_k = {k for k, st in enumerate(stiller) if st.boyut and st.boyut > VARSAYILAN_PUNTO}
+        oto: Dict[int, int] = {}
+        if sar_k or buyuk_k:
+            self._onbellek_hazirla()
+            ek = self._z(4)
+            manuel, gizli = sayfa.satir_yukseklik, sayfa.gizli_satir
+            ham, satir_stil, sutun_stil = sayfa._stil.get, sayfa.satir_stil.get, sayfa.sutun_stil.get
+            bir = sayfa._birlesim_idx
+            girinti_px = self._z(9)
+            pad = self._z(4)
+            yatay_bayrak = _YATAY_BAYRAK
+            if buyuk_k:
+                for (r, c), k in sayfa._stil.items():
+                    if k in buyuk_k and r not in manuel and r not in gizli:
+                        gerek = self._font_girdisi(k, havuz.stil(k)).yukseklik + ek
+                        if gerek > oto.get(r, 0):
+                            oto[r] = gerek
+            if sar_k:
+                for (r, c), h in sayfa._hucreler.items():
+                    if r in manuel or r in gizli:
+                        continue
+                    k = ham((r, c))
+                    if k is None:
+                        k = satir_stil(r)
+                        if k is None:
+                            k = sutun_stil(c, 0)
+                    if k not in sar_k or (bir and (r, c) in bir):
+                        continue
+                    v = h.deger if h.formul is None else sayfa._sonuc.get((r, c))
+                    g = self._gen(c)
+                    if not isinstance(v, str) or not g:
+                        continue
+                    stil = havuz.stil(k)
+                    fe = self._font_girdisi(k, stil)
+                    kod = stil.sayi_bicimi
+                    metin = v if kod == "General" else self._bicimle(v, kod).metin
+                    bayrak = yatay_bayrak.get(stil.yatay, Qt.AlignLeft)
+                    ind = stil.girinti * girinti_px if (stil.girinti and bayrak != Qt.AlignHCenter) else 0
+                    sar = self._sar(fe, metin, g - 2 * pad - ind, bayrak)
+                    gerek = sar.h + ek
+                    if gerek > oto.get(r, 0):
+                        oto[r] = gerek
+            ust = self._z(olcu.MAX_YUKSEKLIK_PX)
+            alt = self._z(Sayfa.VARSAYILAN_SATIR_YUKSEKLIGI)
+            oto = {r: min(v, ust) for r, v in oto.items() if v > alt}
+        self._oto = oto
 
     @property
     def ilk_satir(self) -> int:
@@ -556,6 +661,7 @@ class Izgara(QAbstractScrollArea):
             self._font_onb.clear()
             self._bicim_onb.clear()
             self._baslik_onb.clear()
+            self._oto_ok = False
 
     def _font_girdisi(self, kimlik: int, stil: Stil) -> "_FontGirdisi":
         """Stil kimliğine göre yazı tipi + ölçüm/çizim önbellekleri (yakınlaştırma ve havuz değişince sıfırlanır)."""
@@ -658,6 +764,19 @@ class Izgara(QAbstractScrollArea):
                 ind = stil.girinti * girinti_px if stil.girinti else 0
                 gen = fe.gen
                 renk = None
+                if isinstance(v, str) and stil.kaydir:
+                    if genel:
+                        ham_metin = v
+                    else:
+                        sb = self._bicimle(v, kod)
+                        ham_metin, renk = sb.metin, sb.renk
+                    bayrak = yatay_bayrak.get(yatay, sol)
+                    kw = g - 2 * pad - (ind if bayrak != orta else 0)
+                    kx = x + pad + (ind if bayrak == sol else 0)
+                    kutu = QRect(kx, y, max(1, kw), h)
+                    metinler.append((QRect(x, y, g - 1, h), kutu, bayrak,
+                                     self._sar(fe, ham_metin, kutu.width(), bayrak), 0, (renk, fe, stil)))
+                    continue
                 if isinstance(v, str):
                     if genel:
                         # Alt+Enter ile girilen satır sonları kaydırma kapalıyken görünmez
@@ -950,6 +1069,19 @@ class Izgara(QAbstractScrollArea):
             if renk != kalem_renk:
                 p.setPen(self._renk(renk) if renk else varsayilan_renk)
                 kalem_renk = renk
+            if w == 0 and isinstance(metin, _Sar):               # kaydırılmış metin: satır satır
+                if kutu.height() <= metin.h + 2 and stil.dikey != "alt":
+                    ty = kutu.top() + 1 if stil.dikey == "ust" else kutu.top() + (kutu.height() - metin.h) // 2
+                elif stil.dikey == "ust":
+                    ty = kutu.top() + 1
+                elif stil.dikey == "orta":
+                    ty = kutu.top() + (kutu.height() - metin.h) // 2
+                else:
+                    ty = kutu.top() + kutu.height() - metin.h - alt_pay
+                p.setClipRect(kirp_k.intersected(kirp))
+                metin.layout.draw(p, QPointF(kutu.left(), ty))
+                p.setClipRect(kirp)
+                continue
             if bayrak == Qt.AlignRight:
                 x = kutu.left() + kutu.width() - w
             elif bayrak == Qt.AlignHCenter:
@@ -1206,6 +1338,7 @@ class Izgara(QAbstractScrollArea):
         if abs(oran - self.yakinlastirma) < 1e-9:
             return
         self.yakinlastirma = oran
+        self._oto_ok = False
         self._sayfa_adimlari()
         self._duzenleyici_yerlestir()
         self.viewport().update()
@@ -1666,6 +1799,7 @@ class Izgara(QAbstractScrollArea):
         fark = ((p.x() if b["eksen"] == "sutun" else p.y()) - b["p0"]) / self.yakinlastirma
         if b["eksen"] == "sutun":
             yeni = olcu.genislik_sinirla(b["o0"] + fark)
+            self._oto_ok = False                       # genişlik değişince sarılmış satırlar yeniden ölçülür
             for c in b["dizin"]:
                 self.sayfa.sutun_genislik[c] = yeni
         else:
@@ -1746,7 +1880,7 @@ class Izgara(QAbstractScrollArea):
         self._olcu_uygula(uygula)
 
     def satir_otomatik_sigdir(self, satirlar=None) -> None:
-        """Metin kaydırma henüz yok: otomatik sığdır satırı varsayılan yüksekliğe döndürür."""
+        """Elle verilen yüksekliği kaldırır; satır içeriğe göre (metni kaydır, büyük yazı) otomatik uzar."""
         satirlar = list(satirlar) if satirlar is not None else list(self.secili_satirlar())
         if not self._sinirli(len(satirlar)):
             return
@@ -2221,14 +2355,20 @@ class Izgara(QAbstractScrollArea):
                 return False
             if kod is not None and self.sayfa.stil(satir, sutun).sayi_bicimi != "General":
                 kod = None                              # biçim yalnız Genel hücreye önerilir (Excel)
+        yama = {}
+        if kod is not None:
+            yama["sayi_bicimi"] = kod
+        if (yeni is not None and isinstance(yeni.deger, str) and "\n" in yeni.deger
+                and not self.sayfa.stil(satir, sutun).kaydir):
+            yama["kaydir"] = True                       # Alt+Enter: Excel metni kaydırmayı kendiliğinden açar
         if secime_yay and self._secime_yay(satir, sutun, yeni, kod):
             return True
-        if yeni == self.sayfa.hucre(satir, sutun) and kod is None:
+        if yeni == self.sayfa.hucre(satir, sutun) and not yama:
             return True
         komut = HucrelerDegis(self.sayfa, {(satir, sutun): yeni})
-        if kod is not None:
+        if yama:
             komut = Grup([komut, bicim_komutu(self.sayfa, [Aralik(satir, sutun, satir, sutun)],
-                                              StilYama(sayi_bicimi=kod))])
+                                              StilYama(**yama))])
         self.yigin.calistir(komut)
         self._guncelle()
         return True
@@ -2329,6 +2469,7 @@ class Izgara(QAbstractScrollArea):
         Boyutlandırma/gizleme ve yapıştırmanın kendisi işareti korur."""
         if pano_iptal:
             Izgara._pano_durumu = None
+        self._oto_ok = False                       # içerik/biçim/genişlik değişti: otomatik satır yükseklikleri
         self._duzenleyici_yerlestir()
         self._sayfa_adimlari()
         self.viewport().update()
