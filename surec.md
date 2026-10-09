@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3h ✅; sıradaki: 3i–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3i ✅; sıradaki: 3j–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1744 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1766 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1744 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -112,6 +112,11 @@ Testler: 1744 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - Doldurma şerit şerit (dikey: her sütun, yatay: her satır) çalışır; yukarı/sola doldurmada seri **geriye** devam eder (`[1,2,3]` yukarı → 0, −1, −2; tek `Ürün 5` yukarı → `Ürün 4`). Formül içeren şerit desen kopyasıdır (formül göreli kayar); tek sayı kopyalanır, tek tarih +1 gün, iki sayı sabit adım, üç+ doğrusal eğilim (§8b-42); tarihte aynı gün/farklı ay → ay adımı (ay sonu o ayın uzunluğuna kısalır); ay/gün adları döngüsel ve büyük/küçük harf korunur; `Ürün 1`/`1. Çeyrek`/`A01` son sayı artar (tek değerde de, basamak sayısı korunur); düzensiz/karışık şerit desen olarak yinelenir
   - Ctrl+D / Ctrl+R **kopyalar** (seri değil); tam sütun/satır seçiminde kullanılan alanla sınırlanır; çoklu seçimde reddedilir. Ctrl+Enter girdiyi tüm seçime yazar (formül göreli kayar, Genel hücrelere önerilen sayı biçimi gelir; ≤500.000 hücre). Tutamaç (sağ alt köşe, 6 px) sürüklenirken kesikli önizleme çerçevesi; baskın eksen seçilir; kaynak içine bırakmak iş yapmaz; çift tık komşu (önce sol, sonra sağ) sütundaki kesintisiz verinin sonuna kadar doldurur. Doldurma sonunda birleşik seçim kalır
   - Birleşik hücrelere değen doldurma **reddedilir** ("Birleşik hücrelerin bulunduğu alana doldurulamaz"; Excel benzer iletiyle reddeder). Sürüklerken kenarda otomatik kaydırma yok
+- 2026-10-09 (Faz 3 / 3i):
+  - Dondurma `Sayfa.dondur` (kaydırılabilir bölgenin sol üst hücresi) + `Sayfa.kilavuz`; `gorunum_yaz` **geri al yığınına girmez** (Excel gibi), `bicim` olayı `gorunum` ile yayılır. Çizim/tıklama/seçim/hücre dikdörtgeni tek yerden geçtiği için `_gorunen_sutunlar/_satirlar` önce dondurulmuş satır/sütunları, sonra kayan bölgeyi verir; kaydırma çubuğunun alt sınırı dondurmaya göre ayarlanır. Dondurmada artımlı (piksel) kaydırma kapalı, tam çizim (görsel doğruluk: testle tam çizimle piksel eşitliği doğrulandı)
+  - "Bölmeleri Dondur" Excel gibi **etkin hücrenin üstü ve solu**; ama **sayfanın başından** dondurur (Excel kaydırılmış pencerenin üstünden dondurur — bilerek fark). (1,1)'de dondurma olmaz. Dondurulan bölme pencereyi (≈ −80/−60 px) dolduruyorsa reddedilir
+  - Kılavuz kapalıyken yalnız hücre çizgileri kalkar; dolgu, kenarlık, başlık çizgileri durur. Taşan metin dondurma çizgisini geçmez. Dondurma çizgisi koyu gri `#7f7f7f` 1 px
+  - Arayüz: başlık şeridine **Görünüm** menüsü (Bölmeleri Dondur, Üst Satırı Dondur, İlk Sütunu Dondur, Dondurmayı Kaldır, ☑ Kılavuz Çizgileri); durum sayfaya özel
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -487,6 +492,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Yakalanan hata: önizleme çizimindeki yöntem adı yazım hatası `paintEvent` içinde yutuluyordu (testler geçiyordu) → önizleme testi `_boya`'yı doğrudan çağırır
 - **Bilerek eksik:** Ctrl+sürükle (kopya/seri tersine çevirme), "Seri…" penceresi, Otomatik Doldurma Seçenekleri düğmesi, sürüklerken otomatik kaydırma, kaynak içine sürükleyerek silme, harf+sayı dışı karma şablonlar (`Q1-2026`), hafta sonu/iş günü
 - Sıradaki: **3i** (dondurma, kılavuz çizgileri)
+
+## [2026-10-09] — Faz 3 / 3i bitti (Sonnet 5.5)
+- Commit `0f0540f` (3h). **3i:** `Sayfa.dondur/kilavuz/gorunum_yaz`, `Izgara._kayan_ilk_sutun/_satir`, dondurma-farkında `_gorunen_*`, `_donuk_olcu`, `_dondur_uygula`, `dondur_ayarla`, `kilavuz_goster`, `_birlesim_dikdortgeni` ve `_gorunur_yap` düzeltmeleri, kılavuz/dondurma çizgisi çizimi, `Pencere` Görünüm menüsü
+- Testler 1744 → **1766** (`test_dondurma.py` 22: model + olay, kaydırma/gezinme, nokta↔hücre eşlemesi, pano, piksel: dondurma çizgisi, sabit satır kaymaz, kılavuz gizle/göster, dolgu+kenarlık görünür, artımlı = tam çizim, taşma, menü, sayfaya özel, açılışta uygulama). Ekran görüntüsü incelendi (A,B | F… ve 1,2 | 16…). Regresyon yok, hiçbir test değişmedi
+- **Bilerek eksik / bilinen sınır:** dondurma çizgisini kesen birleşik hücrelerde çizim konumu yaklaşık; sürükleyerek bölme çubuğu (split) yok; kayan bölgeye taşıyan Ctrl+Home davranışı Excel'den farklı olabilir (A1'e gider); dondurma/kılavuz .xlsx'e yazılması Faz 4; yazdırmada kılavuz seçeneği Faz 4
+- Sıradaki: **3j** (metni kaydır + otomatik satır yüksekliği)
 
 *(Yeni girişler en alta eklenir.)*
 

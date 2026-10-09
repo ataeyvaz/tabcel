@@ -134,6 +134,23 @@ class Pencere(QMainWindow):
         menu = QMenu(self.dosya_dugmesi)
         menu.addAction("Çıkış", self.close)
         self.dosya_dugmesi.setMenu(menu)
+        self.gorunum_dugmesi = QToolButton()
+        self.gorunum_dugmesi.setObjectName("fileButton")
+        self.gorunum_dugmesi.setText("Görünüm")
+        self.gorunum_dugmesi.setPopupMode(QToolButton.InstantPopup)
+        gm = QMenu(self.gorunum_dugmesi)
+        self.gorunum_eylemleri = {}
+        for anahtar, metin in (("bolme", "Bölmeleri Dondur"), ("ust_satir", "Üst Satırı Dondur"),
+                               ("ilk_sutun", "İlk Sütunu Dondur"), ("coz", "Bölmelerin Dondurmasını Kaldır")):
+            self.gorunum_eylemleri[anahtar] = gm.addAction(
+                metin, lambda t=anahtar: self.izgara().dondur_ayarla(t))
+        gm.addSeparator()
+        self.kilavuz_eylemi = gm.addAction("Kılavuz Çizgileri")
+        self.kilavuz_eylemi.setCheckable(True)
+        self.kilavuz_eylemi.setChecked(True)
+        self.kilavuz_eylemi.toggled.connect(lambda v: self.izgara().kilavuz_goster(v))
+        gm.aboutToShow.connect(self._gorunum_menusu_hazirla)
+        self.gorunum_dugmesi.setMenu(gm)
         self.geri_dugmesi = QToolButton()
         self.geri_dugmesi.setText("Geri Al")
         self.geri_dugmesi.setToolTip("Geri Al (Ctrl+Z)")
@@ -145,6 +162,7 @@ class Pencere(QMainWindow):
         self.belge_etiketi = QLabel()
         self.belge_etiketi.setObjectName("docTitle")
         h.addWidget(self.dosya_dugmesi)
+        h.addWidget(self.gorunum_dugmesi)
         h.addWidget(self.geri_dugmesi)
         h.addWidget(self.yinele_dugmesi)
         h.addStretch(1)
@@ -233,6 +251,14 @@ class Pencere(QMainWindow):
 
         QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
         QShortcut(QKeySequence("Ctrl+PgUp"), self, activated=lambda: self._sekme_git(-1))
+
+    def _gorunum_menusu_hazirla(self) -> None:
+        """Menü açılırken: kılavuz onayı sayfaya uyar; dondurma açıkken 'Dondurmayı Kaldır' ad değişimi yok."""
+        g = self.izgara()
+        self.kilavuz_eylemi.blockSignals(True)
+        self.kilavuz_eylemi.setChecked(g.sayfa.kilavuz)
+        self.kilavuz_eylemi.blockSignals(False)
+        self.gorunum_eylemleri["coz"].setEnabled(g.sayfa.dondur is not None)
 
     def showEvent(self, olay):
         super().showEvent(olay)

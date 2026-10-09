@@ -66,6 +66,8 @@ class Sayfa:
         self.sekme_rengi: Optional[str] = None     # '#rrggbb' ya da None
         self._kul: Optional[Tuple[int, int, int, int]] = None   # kullanılan aralık önbelleği
         self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
+        self.dondur: Optional[Tuple[int, int]] = None   # kaydırılabilir bölgenin sol üst hücresi; None = dondurma yok
+        self.kilavuz: bool = True                  # kılavuz çizgileri görünür mü
         self.birlesimler: List[Aralik] = []        # birleştirilmiş hücre aralıkları (çakışmaz, ≥ 2 hücre)
         self._birlesim_idx: Dict[Anahtar, Aralik] = {}   # birleşimin kapsadığı her hücre → aralığı
 
@@ -355,6 +357,28 @@ class Sayfa:
         self.sutun_genislik, self.satir_yukseklik = dict(g), dict(y)
         self.gizli_sutun, self.gizli_satir = set(gs), set(gr)
         self._bildir("boyut")
+
+    # --- görünüm: dondurulmuş bölmeler, kılavuz çizgileri (faz3_tasarim.md §4) ---
+    def gorunum_yaz(self, dondur="AYNI", kilavuz="AYNI") -> bool:
+        """Dondurma konumu `(satır, sütun)` (kaydırılabilir bölgenin sol üstü; `(1, 1)`/None = dondurma yok)
+        ve kılavuz çizgisi durumunu yazar. Geri al yığınına GİRMEZ (Excel'de de geri alınamaz); değişirse
+        `bicim` olayı `gorunum` ile yayılır. Döner: değişti mi."""
+        degisti = {}
+        if not isinstance(dondur, str):
+            if dondur is not None:
+                r, c = dondur
+                if not (1 <= r <= MAX_ROW and 1 <= c <= MAX_COL):
+                    raise AdresHatasi(f"Dondurma konumu aralık dışı: {dondur}")
+                dondur = None if (r, c) == (1, 1) else (int(r), int(c))
+            if dondur != self.dondur:
+                self.dondur = dondur
+                degisti["dondur"] = dondur
+        if not isinstance(kilavuz, str) and bool(kilavuz) != self.kilavuz:
+            self.kilavuz = bool(kilavuz)
+            degisti["kilavuz"] = self.kilavuz
+        if degisti:
+            self._bildir("bicim", degisiklikler={}, satir={}, sutun={}, gorunum=degisti)
+        return bool(degisti)
 
     # --- birleştirilmiş hücreler (faz3_tasarim.md §3) ---
     def birlesim(self, satir: int, sutun: int) -> Optional[Aralik]:

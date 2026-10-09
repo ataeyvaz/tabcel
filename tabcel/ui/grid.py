@@ -245,6 +245,7 @@ class Izgara(QAbstractScrollArea):
         self.viewport().setMouseTracking(True)
         self.horizontalScrollBar().setRange(0, MAX_COL - 1)
         self.verticalScrollBar().setRange(0, MAX_ROW - 1)
+        self._dondur_uygula()
         self.horizontalScrollBar().valueChanged.connect(self._yatay_kaydi)
         self.verticalScrollBar().valueChanged.connect(self._dikey_kaydi)
         QApplication.clipboard().dataChanged.connect(self._pano_degisti)
@@ -275,9 +276,27 @@ class Izgara(QAbstractScrollArea):
     def ilk_sutun(self) -> int:
         return self.horizontalScrollBar().value() + 1
 
+    @property
+    def _kayan_ilk_sutun(self) -> int:
+        """Kaydırılabilir bölgenin ilk sütunu (dondurma yoksa 1)."""
+        d = self.sayfa.dondur
+        return d[1] if d else 1
+
+    @property
+    def _kayan_ilk_satir(self) -> int:
+        d = self.sayfa.dondur
+        return d[0] if d else 1
+
     def _gorunen_sutunlar(self) -> Iterator[Tuple[int, int, int]]:
-        """(sütun, x, genişlik) — viewport sağına kadar."""
-        x, c, w = self._baslik_g(), self.ilk_sutun, self.viewport().width()
+        """(sütun, x, genişlik) — önce dondurulmuş sütunlar, sonra kaydırılan bölge, viewport sağına kadar."""
+        x, w = self._baslik_g(), self.viewport().width()
+        kayan = self._kayan_ilk_sutun
+        for c in range(1, kayan):
+            g = self._gen(c)
+            if g:
+                yield c, x, g
+                x += g
+        c = max(self.ilk_sutun, kayan)
         while x < w and c <= MAX_COL:
             g = self._gen(c)
             if g:                       # gizli sütun atlanır
@@ -286,13 +305,59 @@ class Izgara(QAbstractScrollArea):
             c += 1
 
     def _gorunen_satirlar(self) -> Iterator[Tuple[int, int, int]]:
-        y, r, h = self._baslik_y(), self.ilk_satir, self.viewport().height()
+        y, h = self._baslik_y(), self.viewport().height()
+        kayan = self._kayan_ilk_satir
+        for r in range(1, kayan):
+            yk = self._yuk(r)
+            if yk:
+                yield r, y, yk
+                y += yk
+        r = max(self.ilk_satir, kayan)
         while y < h and r <= MAX_ROW:
             yk = self._yuk(r)
             if yk:
                 yield r, y, yk
                 y += yk
             r += 1
+
+    def _donuk_olcu(self) -> Tuple[int, int]:
+        """Dondurulmuş bölmelerin (genişlik, yükseklik) pikseli; dondurma yoksa (0, 0)."""
+        return (sum(self._gen(c) for c in range(1, self._kayan_ilk_sutun)),
+                sum(self._yuk(r) for r in range(1, self._kayan_ilk_satir)))
+
+    def _dondur_uygula(self) -> None:
+        """Kaydırma çubuklarının alt sınırını dondurulmuş bölmeye göre ayarlar (kayan bölge oradan başlar)."""
+        self.horizontalScrollBar().setMinimum(self._kayan_ilk_sutun - 1)
+        self.verticalScrollBar().setMinimum(self._kayan_ilk_satir - 1)
+        self._sayfa_adimlari()
+
+    def dondur_ayarla(self, tur: str) -> bool:
+        """`bolme` (etkin hücrenin üstü ve solu), `ust_satir`, `ilk_sutun`, `coz`. Dondurulan bölge pencereyi
+        doldurursa reddedilir. Geri alınamaz (Excel gibi)."""
+        r, c = self._aktif
+        hedef = {"bolme": (r, c), "ust_satir": (2, 1), "ilk_sutun": (1, 2), "coz": None}.get(tur, "?")
+        if hedef == "?":
+            raise ValueError(f"Bilinmeyen dondurma türü: {tur!r}")
+        if hedef is not None and hedef != (1, 1):
+            gen = sum(self._gen(i) for i in range(1, hedef[1]))
+            yuk = sum(self._yuk(i) for i in range(1, hedef[0]))
+            vp = self.viewport()
+            if gen > vp.width() - self._baslik_g() - 80 or yuk > vp.height() - self._baslik_y() - 60:
+                self.uyari.emit("Dondurulacak bölme pencereyi dolduruyor; daha küçük bir bölge seçin.")
+                return False
+        self.sayfa.gorunum_yaz(dondur=hedef)
+        self._dondur_uygula()
+        hs, vs = self.horizontalScrollBar(), self.verticalScrollBar()
+        hs.setValue(max(hs.value(), hs.minimum()))
+        vs.setValue(max(vs.value(), vs.minimum()))
+        self._yatay_son, self._dikey_son = hs.value(), vs.value()
+        self._duzenleyici_yerlestir()
+        self.viewport().update()
+        return True
+
+    def kilavuz_goster(self, goster: bool) -> None:
+        if self.sayfa.gorunum_yaz(kilavuz=goster):
+            self.viewport().update()
 
     def hucre_dikdortgeni(self, satir: int, sutun: int) -> Optional[QRect]:
         """Hücrenin viewport içindeki dikdörtgeni; görünmüyorsa None. Birleşimin sol üst hücresi için
@@ -451,14 +516,18 @@ class Izgara(QAbstractScrollArea):
     def _gorunur_yap(self, hedef: Tuple[int, int]) -> None:
         satir, sutun = hedef
         hs, vs = self.horizontalScrollBar(), self.verticalScrollBar()
-        if sutun < self.ilk_sutun:
+        if sutun < self._kayan_ilk_sutun:
+            pass                                          # dondurulmuş sütun her zaman görünür
+        elif sutun < self.ilk_sutun:
             hs.setValue(sutun - 1)
         else:
             if sutun > self._son_gorunen_sutun() + 1:    # uzak hedef: tek seferde yaklaş
                 hs.setValue(max(hs.value(), sutun - 1 - hs.pageStep()))
             while sutun > self.ilk_sutun and not self._sigiyor_mu(sutun, True):
                 hs.setValue(hs.value() + 1)
-        if satir < self.ilk_satir:
+        if satir < self._kayan_ilk_satir:
+            pass
+        elif satir < self.ilk_satir:
             vs.setValue(satir - 1)
         else:
             if satir > self._son_gorunen_satir() + 1:
@@ -551,6 +620,7 @@ class Izgara(QAbstractScrollArea):
         metinler, tasma, stilli = [], set(), []
         self._stilli = stilli
         bir = sayfa._birlesim_idx if (sayfa.birlesimler and not _birlesim_ciz) else None
+        donuk_son = (sayfa.dondur[1] - 1) if sayfa.dondur else 0     # taşan metin dondurma çizgisini geçmez
         for r, y, h in satirlar:
             for i, (c, x, g) in enumerate(sutunlar):
                 if x2 is not None and x > x2:
@@ -604,7 +674,8 @@ class Izgara(QAbstractScrollArea):
                     if bayrak == sol:
                         gerek = w + 2 * pad + ind
                         toplam, j = g, i
-                        while not stil.kaydir and toplam < gerek and j + 1 < len(sutunlar):
+                        while (not stil.kaydir and toplam < gerek and j + 1 < len(sutunlar)
+                               and sutunlar[j][0] != donuk_son):
                             c2, _, g2 = sutunlar[j + 1]
                             komsu = hucre_al(r, c2)
                             if (komsu is not None and not komsu.bos_mu()) or (bir and (r, c2) in bir):
@@ -764,15 +835,16 @@ class Izgara(QAbstractScrollArea):
         y1, y2 = max(bh, kirp.top()), min(alt - 1, kirp.bottom())
         tasan_sutunlar = {c for _, c in tasma}
         sutunlar_k = [t for t in sutunlar if t[1] <= kirp.right() + 3 and t[1] + t[2] > kirp.left() - 3]
-        for c, x, g in sutunlar_k:
-            if c not in tasan_sutunlar:
-                p.drawLine(x + g - 1, y1, x + g - 1, y2)
-            else:               # taşan metnin altındaki dikey çizgi çizilmez (Excel gibi)
-                for r, y, h in satirlar:
-                    if (r, c) not in tasma:
-                        p.drawLine(x + g - 1, y, x + g - 1, y + h - 1)
-        for _, y, h in satirlar:
-            p.drawLine(bg, y + h - 1, sag - 1, y + h - 1)
+        if self.sayfa.kilavuz:
+            for c, x, g in sutunlar_k:
+                if c not in tasan_sutunlar:
+                    p.drawLine(x + g - 1, y1, x + g - 1, y2)
+                else:               # taşan metnin altındaki dikey çizgi çizilmez (Excel gibi)
+                    for r, y, h in satirlar:
+                        if (r, c) not in tasma:
+                            p.drawLine(x + g - 1, y, x + g - 1, y + h - 1)
+            for _, y, h in satirlar:
+                p.drawLine(bg, y + h - 1, sag - 1, y + h - 1)
 
         if self._stilli:
             self._dolgu_ciz(p, self._stilli, kirp)
@@ -826,6 +898,14 @@ class Izgara(QAbstractScrollArea):
         if tut is not None and tut.intersects(kirp):
             p.fillRect(tut, QColor("#ffffff"))
             p.fillRect(tut.adjusted(1, 1, -1, -1), QColor(theme.ACCENT))
+
+        if self.sayfa.dondur:                   # dondurma çizgisi (Excel: koyu gri, ince)
+            dg, dy = self._donuk_olcu()
+            p.setPen(QPen(QColor("#7f7f7f"), 1))
+            if dg:
+                p.drawLine(bg + dg - 1, bh, bg + dg - 1, alt)
+            if dy:
+                p.drawLine(bg, bh + dy - 1, sag, bh + dy - 1)
 
         # başlıklar
         # (yalnızca açığa çıkan bölgeye değenler: artımlı kaydırmada sütun başlıkları yeniden çizilmez)
@@ -901,18 +981,24 @@ class Izgara(QAbstractScrollArea):
     def _birlesim_dikdortgeni(self, b: Aralik) -> Optional[QRect]:
         """Birleşimin viewport koordinatlarındaki TAM dikdörtgeni (kısmen ekran dışında olabilir);
         hiç görünmüyorsa None. Gizli satır/sütunlar 0 genişlik sayılır."""
-        ic, ir = self.ilk_sutun, self.ilk_satir
-        if b.son_sutun < ic or b.son_satir < ir:
+        kc, kr = self._kayan_ilk_sutun, self._kayan_ilk_satir
+        ic, ir = max(self.ilk_sutun, kc), max(self.ilk_satir, kr)
+        if (b.son_sutun < ic and b.ilk_sutun >= kc) or (b.son_satir < ir and b.ilk_satir >= kr):
             return None
         bg, bh = self._baslik_g(), self._baslik_y()
-        if b.ilk_sutun >= ic:
-            x = bg + sum(self._gen(c) for c in range(ic, b.ilk_sutun))
+        donuk_g, donuk_y = self._donuk_olcu()
+        if b.ilk_sutun < kc:
+            x = bg + sum(self._gen(c) for c in range(1, b.ilk_sutun))
+        elif b.ilk_sutun >= ic:
+            x = bg + donuk_g + sum(self._gen(c) for c in range(ic, b.ilk_sutun))
         else:
-            x = bg - sum(self._gen(c) for c in range(b.ilk_sutun, ic))
-        if b.ilk_satir >= ir:
-            y = bh + sum(self._yuk(r) for r in range(ir, b.ilk_satir))
+            x = bg + donuk_g - sum(self._gen(c) for c in range(b.ilk_sutun, ic))
+        if b.ilk_satir < kr:
+            y = bh + sum(self._yuk(r) for r in range(1, b.ilk_satir))
+        elif b.ilk_satir >= ir:
+            y = bh + donuk_y + sum(self._yuk(r) for r in range(ir, b.ilk_satir))
         else:
-            y = bh - sum(self._yuk(r) for r in range(b.ilk_satir, ir))
+            y = bh + donuk_y - sum(self._yuk(r) for r in range(b.ilk_satir, ir))
         w = sum(self._gen(c) for c in range(b.ilk_sutun, b.son_sutun + 1))
         h = sum(self._yuk(r) for r in range(b.ilk_satir, b.son_satir + 1))
         vp = self.viewport()
@@ -1989,6 +2075,10 @@ class Izgara(QAbstractScrollArea):
         fark = yeni - eski
         if fark == 0:
             return
+        if self.sayfa.dondur:                 # dondurulmuş bölme: piksel kaydırma yerine tam çizim
+            self.viewport().update()
+            self._duzenleyici_yerlestir()
+            return
         n = len(list(self._gorunen_sutunlar()))
         if abs(fark) < n - 1 and self._yatay_artimli_uygun(eski + 1, yeni + 1):
             if fark > 0:      # soldaki `fark` sütun görünümden çıktı
@@ -2041,6 +2131,10 @@ class Izgara(QAbstractScrollArea):
         fark = yeni - eski
         n = len(list(self._gorunen_satirlar()))
         if fark == 0:
+            return
+        if self.sayfa.dondur:                 # dondurulmuş bölme: piksel kaydırma yerine tam çizim
+            self.viewport().update()
+            self._duzenleyici_yerlestir()
             return
         if abs(fark) < n - 1:
             if fark > 0:      # üstteki `fark` satır görünümden çıktı

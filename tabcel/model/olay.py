@@ -12,7 +12,7 @@ Türler ve `ayrinti` anahtarları:
 - ``yapi``   : `eksen` ('satir'|'sutun'), `nerede`, `fark` (+ekleme / −silme), `silinen` {anahtar: Hucre}
 - ``bicim``  : stil (biçim) kayıtları değişti: `degisiklikler` {(satır, sütun): (eski kimlik|None, yeni
   kimlik|None)}, `satir` {satır: (eski, yeni)}, `sutun` {sütun: (eski, yeni)} — yalnız gerçekten değişenler;
-  toplu işlem TEK olay; birleşim değişince ayrıca `birlesim` (eklenen, kaldırılan) aralık listeleri. Kimlikler `Sayfa.havuz`daki stillerin numaralarıdır (None = kayıt yok). Formül
+  toplu işlem TEK olay; birleşim değişince ayrıca `birlesim` (eklenen, kaldırılan) aralık listeleri; dondurma/kılavuz değişince `gorunum` {'dondur': (satır, sütun)|None, 'kilavuz': bool} (yalnız değişenler; geri al yığınına girmez). Kimlikler `Sayfa.havuz`daki stillerin numaralarıdır (None = kayıt yok). Formül
   motoru yok sayar; ızgara ilgili satırları yeniden çizer
 - ``boyut``  : sütun genişliği / satır yüksekliği / gizleme değişti
 - ``sayfa``  : `islem` ('ekle'|'sil'|'ad'|'tasi'), `indeks`; 'ad' için `eski_ad`, 'tasi' için `eski_indeks`
