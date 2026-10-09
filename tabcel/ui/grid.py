@@ -26,6 +26,7 @@ from ..model.komutlar import (
 from ..model import olcu, pano
 from ..model.sayfa import Hucre, Sayfa
 from . import theme
+from .renkli import renkli_ciz
 
 
 class _Duzenleyici(QLineEdit):
@@ -51,6 +52,10 @@ class _Duzenleyici(QLineEdit):
         self._liste.hide()
         self.textChanged.connect(self._oneri_guncelle)
         self.destroyed.connect(self._liste.deleteLater)
+
+    def paintEvent(self, olay):
+        super().paintEvent(olay)
+        renkli_ciz(self)
 
     # --- otomatik tamamlama / ipucu ---
     def oneri_acik(self) -> bool:
@@ -190,6 +195,7 @@ class Izgara(QAbstractScrollArea):
         self._isaret_capa: Optional[Tuple[int, int]] = None  # işaret aralığının sabit / hareketli ucu
         self._isaret_ucu: Optional[Tuple[int, int]] = None
         self._isaret_yaziyor = False
+        self.uzak_sayfa: Optional[Sayfa] = None            # formül başka sayfadan yazılıyorsa asıl sayfa
         self.dis_duzenleyici: Optional[QLineEdit] = None   # formül çubuğu (pencere verir): aynı işaretleme modu
         self._ekler: List[Aralik] = []         # Ctrl ile eklenen önceki aralıklar (birincil aralık hariç)
         self._koru = False                      # fare düğmesi basılıyken çoklu seçim korunur
@@ -1293,6 +1299,10 @@ class Izgara(QAbstractScrollArea):
         `=TOPLA(...)` ile düzenlemeyi başlatır; Enter onaylar. Blok yoksa `=TOPLA()` ve imleç içeride."""
         if self.duzenleniyor():
             return
+        sec = self.secim
+        if (sec.ilk_satir, sec.ilk_sutun) != (sec.son_satir, sec.son_sutun) and not self._ekler:
+            self._secim_toplami(sec)
+            return
         r, c = self._aktif
         k = r - 1
         while k >= 1 and self._sayisal_mi(k, c):
@@ -1309,6 +1319,29 @@ class Izgara(QAbstractScrollArea):
         self.duzenle_baslat(metin)
         if ar is None and self._duzenleyici is not None:
             self._duzenleyici.setCursorPosition(len(metin) - 1)
+
+    def _secim_toplami(self, sec: Aralik) -> None:
+        """Çok hücreli seçimde Alt+=: birden çok satırda her sütunun toplamı seçimin altındaki satıra,
+        tek satırda toplam seçimin sağındaki hücreye yazılır (Excel gibi; doğrudan, tek geri al adımı)."""
+        plan = {}
+        if sec.son_satir > sec.ilk_satir:
+            hedef = sec.son_satir + 1
+            if hedef > MAX_ROW:
+                return
+            for c in range(sec.ilk_sutun, sec.son_sutun + 1):
+                govde = isaretleme.basvuru_metni(Aralik(sec.ilk_satir, c, sec.son_satir, c))
+                plan[(hedef, c)] = Hucre(None, f"=SUM({govde})")
+        else:
+            hedef = sec.son_sutun + 1
+            if hedef > MAX_COL:
+                return
+            govde = isaretleme.basvuru_metni(sec)
+            plan[(sec.ilk_satir, hedef)] = Hucre(None, f"=SUM({govde})")
+        self.yigin.calistir(HucrelerDegis(self.sayfa, plan))
+        self._guncelle()
+        satirlar = [k[0] for k in plan]
+        sutunlar = [k[1] for k in plan]
+        self.sec((min(satirlar), min(sutunlar)), (max(satirlar), max(sutunlar)))
 
     # --- işaretleme modu (K7): formül yazarken fareyle/okla başvuru seçme ---
     def _metin_degisti(self, _=None) -> None:
@@ -1350,7 +1383,8 @@ class Izgara(QAbstractScrollArea):
 
     def _isaret_yaz_secim(self) -> None:
         (r1, c1), (r2, c2) = self._isaret_capa, self._isaret_ucu
-        self.isaret_yaz(Aralik(min(r1, r2), min(c1, c2), max(r1, r2), max(c1, c2)))
+        ad = self.sayfa.ad if self.uzak_sayfa is not None and self.sayfa is not self.uzak_sayfa else None
+        self.isaret_yaz(Aralik(min(r1, r2), min(c1, c2), max(r1, r2), max(c1, c2)), ad)
 
     def _isaret_tikla(self, satir: int, sutun: int, shift: bool) -> None:
         if shift and self._isaret is not None and self._isaret_capa is not None:
@@ -1378,8 +1412,10 @@ class Izgara(QAbstractScrollArea):
         if e is None or not e.text().startswith("=") or not sutunlar or not satirlar:
             return
         for _, _, b, renk in isaretleme.renkli_basvurular(e.text()):
-            if b.sayfa is not None and not (isinstance(b.sayfa, str)
-                                            and b.sayfa.casefold() == self.sayfa.ad.casefold()):
+            if b.sayfa is None:
+                if self.uzak_sayfa is not None and self.sayfa is not self.uzak_sayfa:
+                    continue                  # öneksiz başvuru asıl (formülün yazıldığı) sayfaya aittir
+            elif not (isinstance(b.sayfa, str) and b.sayfa.casefold() == self.sayfa.ad.casefold()):
                 continue
             self._secim_cercevesi(p, Aralik(b.r1, b.c1, b.r2, b.c2), sutunlar, satirlar,
                                   QPen(QColor(renk), 2), tek_hucre=True)
@@ -1467,10 +1503,10 @@ class Izgara(QAbstractScrollArea):
         self.gecmisIslemi.emit(True)       # pencere: başka sayfadaki değişikliğe geçebilsin
         try:
             tamam = islem()
+            if tamam:
+                self._guncelle()           # `degisti` de bayrak açıkken çıkar (pencere döngü uyarısı vermesin)
         finally:
             self.gecmisIslemi.emit(False)
-        if tamam:
-            self._guncelle()
 
     def _guncelle(self, pano_iptal: bool = True) -> None:
         """İçerik/yapı değişikliği sonrası yenile. Varsayılan olarak kopyala/kes işaretini iptal eder

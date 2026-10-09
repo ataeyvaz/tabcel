@@ -269,3 +269,84 @@ def test_oneri_tam_ad_yazilinca_kapanir_basvuruda_acilmaz(pencere):
     g.sec((1, 4))
     yaz(g, "=A1")
     assert not g._duzenleyici.oneri_acik()
+
+
+# ---------------------------------------------------------------- başka sayfadan başvuru
+def test_sekme_tiklayarak_baska_sayfadan_basvuru(pencere):
+    k = pencere.kitap
+    pencere.sayfa_ekle()
+    s2 = k.sayfalar[1]
+    s2.ata(2, 2, Hucre(7.0))
+    pencere.sekmeler.setCurrentIndex(0)
+    g1 = pencere.izgara()
+    g1.sec((1, 4))
+    yaz(g1, "=")
+    pencere.sekmeler.setCurrentIndex(1)               # düzenleme sürerken Sayfa2 sekmesine tıklandı
+    g2 = pencere.izgara()
+    assert g2.sayfa is s2 and not g1.duzenleniyor()
+    assert pencere.formul.text() == "="
+    tikla(g2, 2, 2)
+    assert pencere.formul.text() == f"={s2.ad}!B2"
+    pencere.formul.setCursorPosition(len(pencere.formul.text()))
+    QTest.keyClicks(pencere.formul, "*2")
+    QTest.keyClick(pencere.formul, Qt.Key_Return)
+    assert pencere.izgara() is g1                     # ilk sayfaya dönüldü
+    assert g1.sayfa.hucre(1, 4).formul == f"=[{s2.kimlik}]!B2*2"
+    assert g1.sayfa.deger(1, 4) == 14.0
+
+
+def test_baska_sayfadan_esc_vazgecer_ve_donunce_onekler_kalkar(pencere):
+    pencere.sayfa_ekle()
+    pencere.sekmeler.setCurrentIndex(0)
+    g1 = pencere.izgara()
+    g1.sec((1, 4))
+    yaz(g1, "=")
+    pencere.sekmeler.setCurrentIndex(1)
+    QTest.keyClick(pencere.formul, Qt.Key_Escape)
+    assert pencere.izgara() is g1 and g1.sayfa.hucre(1, 4) is None and pencere._uzak is None
+    assert g1.uzak_sayfa is None
+
+
+def test_baska_sayfadan_asil_sayfaya_donup_tiklarsa_onek_yok(pencere):
+    pencere.sayfa_ekle()
+    pencere.sekmeler.setCurrentIndex(0)
+    g1 = pencere.izgara()
+    g1.sec((1, 4))
+    yaz(g1, "=")
+    pencere.sekmeler.setCurrentIndex(1)
+    pencere.sekmeler.setCurrentIndex(0)               # asıl sayfaya geri
+    tikla(g1, 2, 1)
+    assert pencere.formul.text() == "=A2"
+
+
+# ---------------------------------------------------------------- çok hücreli Alt+=
+def test_otomatik_toplam_cok_satirli_secim_altina_yazar(pencere):
+    g = pencere.izgara()
+    g.sec((1, 1), (5, 2))
+    alt_esittir(g)
+    assert g.sayfa.hucre(6, 1).formul == "=SUM(A1:A5)" and g.sayfa.hucre(6, 2).formul == "=SUM(B1:B5)"
+    assert g.sayfa.deger(6, 1) == 15.0 and g.sayfa.deger(6, 2) == 150.0
+    assert g.secim == (6, 1, 6, 2) and not g.duzenleniyor()
+    g.geri_al()                                      # tek adım
+    assert g.sayfa.hucre(6, 1) is None and g.sayfa.hucre(6, 2) is None
+
+
+def test_otomatik_toplam_tek_satirli_secim_sagina_yazar(pencere):
+    g = pencere.izgara()
+    g.sec((2, 1), (2, 2))
+    alt_esittir(g)
+    assert g.sayfa.hucre(2, 3).formul == "=SUM(A2:B2)" and g.sayfa.deger(2, 3) == 22.0
+
+
+def test_renkli_metin_cizimi_hata_vermez_ve_boyar(pencere):
+    from PySide6.QtGui import QColor
+    g = pencere.izgara()
+    g.sec((1, 4))
+    yaz(g, "=A1+B2")
+    e = g._duzenleyici
+    e.setCursorPosition(len(e.text()))
+    img = e.grab().toImage()
+    renkler = {QColor(img.pixel(x, y)).name() for x in range(img.width()) for y in range(img.height())}
+    from tabcel.formul import isaretleme
+    paleti = {r.lower() for r in isaretleme.RENKLER[:2]}
+    assert paleti & renkler                          # ilk iki başvurunun renkleri yazıda görünür

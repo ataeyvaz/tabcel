@@ -19,6 +19,8 @@ HEADER_TEXT = "#444444"
 HEADER_TEXT_SELECTED = ACCENT_DARK
 SELECTION_FILL = "#217346"   # yarı saydam çizilir
 
+UYARI = "#b45309"            # durum çubuğu uyarısı (ör. döngüsel başvuru)
+
 HOVER = "#f0f0f0"
 PRESSED = "#e0e0e0"
 

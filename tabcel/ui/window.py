@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from .. import APP_NAME
 from ..model.adres import AdresHatasi, aralik_coz, hucre_yaz
 from ..formul import isaretleme
+from .renkli import renkli_ciz
 from ..formul.ceviri import hucre_metni
 from ..formul.motor import Hesaplayici
 from ..model.komutlar import (
@@ -65,6 +66,10 @@ class _FormulCubugu(QLineEdit):
         super().focusInEvent(olay)
         self.odakAldi.emit()
 
+    def paintEvent(self, olay):
+        super().paintEvent(olay)
+        renkli_ciz(self, ek_x=7)         # stil sayfası: 1 px kenarlık + 6 px iç boşluk
+
     def keyPressEvent(self, olay):
         k = olay.key()
         oklar = {Qt.Key_Up: (-1, 0), Qt.Key_Down: (1, 0), Qt.Key_Left: (0, -1), Qt.Key_Right: (0, 1)}
@@ -94,8 +99,10 @@ class Pencere(QMainWindow):
         self._izgaralar: Dict[Sayfa, Izgara] = {}
         self._saklanan: Dict[Sayfa, Izgara] = {}      # kitaptan çıkan sayfaların ızgarası (geri al için)
         self._secili_sayfa: Optional[Sayfa] = None
+        self._uzak: Optional[dict] = None     # başka sayfaya geçilirken devredilen hücre düzenlemesi
         self._son_indeks = 0
         self._gecmis_islemi = False
+        self._dongu_bilinen = set()                   # son denetimde döngüde olan hücreler (yeni döngüyü ayırt eder)
         self._mod = "Hazır"
         self.setStyleSheet(theme.stylesheet())
         self._kur()
@@ -196,6 +203,9 @@ class Pencere(QMainWindow):
         self.mod_etiketi = QLabel("Hazır")
         self.mod_etiketi.setMinimumWidth(60)
         self.ozet_etiketi = QLabel("")
+        self.dongu_etiketi = QLabel("")               # "Döngüsel Başvurular: A1" (yalnız döngü varken)
+        self.dongu_etiketi.setStyleSheet(f"color: {theme.UYARI}; font-weight: 600; padding: 0 8px;")
+        self.dongu_etiketi.hide()
         self.yakin_etiketi = QLabel("100%")
         self.yakin_etiketi.setMinimumWidth(40)
         self.yakin_etiketi.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -207,6 +217,7 @@ class Pencere(QMainWindow):
         sb = self.statusBar()
         sb.setSizeGripEnabled(False)
         sb.addWidget(self.mod_etiketi)
+        sb.addWidget(self.dongu_etiketi)
         sb.addPermanentWidget(self.ozet_etiketi)
         sb.addPermanentWidget(self.yakin_kaydirici)
         sb.addPermanentWidget(self.yakin_etiketi)
@@ -290,6 +301,7 @@ class Pencere(QMainWindow):
             g = self._izgaralar.get(olay.sayfa)
             if g is not None and olay.sayfa is self._secili_sayfa:
                 g.viewport().update()          # başka hücreden tetiklenen yeniden hesaplama
+            self._dongu_etiketi_guncelle()
             return
         if olay.tur == "sayfa":
             if olay["islem"] == "sil":
@@ -370,15 +382,54 @@ class Pencere(QMainWindow):
     def _sekme_degisti(self, i: int):
         if i < 0 or i >= len(self.kitap.sayfalar):
             return
-        self._secili_sayfa = self.kitap.sayfalar[i]
+        eski = self._izgaralar.get(self._secili_sayfa)
+        yeni_sayfa = self.kitap.sayfalar[i]
+        if (eski is not None and self._uzak is None and yeni_sayfa is not self._secili_sayfa
+                and eski.duzenleniyor() and eski._isaret_modu()):
+            self._duzenlemeyi_devret(eski)
+        self._secili_sayfa = yeni_sayfa
         g = self._izgaralar[self._secili_sayfa]
         self.izgara_yigini.setCurrentWidget(g)
+        if self._uzak is not None:
+            self._uzak_baglan(g)
         self.yakin_kaydirici.blockSignals(True)
         self.yakin_kaydirici.setValue(round(g.yakinlastirma * 100))
         self.yakin_kaydirici.blockSignals(False)
         self.yakin_etiketi.setText(f"{round(g.yakinlastirma * 100)}%")
         self._arayuzu_guncelle()
-        g.setFocus()
+        if self._uzak is not None:
+            self.formul.setFocus()
+        else:
+            g.setFocus()
+
+    # ------------------------------------------------------------------ başka sayfadan başvuru (K7)
+    def _duzenlemeyi_devret(self, g: Izgara):
+        """Formül yazarken başka sayfa sekmesine tıklandı: hücre içi düzenleme formül çubuğuna devredilir
+        (düzenleyici kendi sayfasının ızgarasında yaşar, sekme değişince gizlenir). Enter formülü
+        ilk hücreye yazar ve o sayfaya döner; Esc vazgeçer."""
+        e = g._duzenleyici
+        self._uzak = {"izgara": g, "hucre": g._duzenlenen}
+        self.formul.setText(e.text())
+        self.formul.setCursorPosition(e.cursorPosition())
+        g.duzenlemeyi_bitir(False)
+        self._mod_degisti("Gir")
+        self.mod_etiketi.setText("Gir")
+
+    def _uzak_baglan(self, g: Izgara):
+        for x in self._izgaralar.values():
+            x.dis_duzenleyici = None
+            x.uzak_sayfa = self._uzak["izgara"].sayfa
+        g.dis_duzenleyici = self.formul
+        self.formul.isaret_denetimi = g._isaret_modu
+
+    def _uzak_bitir(self):
+        """Devredilen düzenleme bitti: kaynak sayfaya dön. Kaynak ızgarayı verir."""
+        u, self._uzak = self._uzak, None
+        for x in self._izgaralar.values():
+            x.uzak_sayfa = None
+        if u["izgara"].sayfa in self.kitap.sayfalar:
+            self.sekmeler.setCurrentIndex(self.kitap.sayfalar.index(u["izgara"].sayfa))
+        return u
 
     # ------------------------------------------------------------------ ad kutusu / formül çubuğu
     def _arayuzu_guncelle(self, *_):
@@ -394,10 +445,12 @@ class Pencere(QMainWindow):
         else:
             self.ad_kutusu.setText(hucre_yaz(*g.aktif))
         isaretleniyor = g.dis_duzenleyici is not None and g._isaret is not None
-        if not g.duzenleniyor() and not self.formul.hasFocus() and not isaretleniyor:
+        if (not g.duzenleniyor() and not self.formul.hasFocus() and not isaretleniyor
+                and self._uzak is None):
             self._formul_isareti_kapat()
             self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
         self._ozet_guncelle()
+        self._dongu_etiketi_guncelle()
 
     def _uyari(self, metin: str):
         self.statusBar().showMessage(metin, 6000)
@@ -407,6 +460,35 @@ class Pencere(QMainWindow):
         for g in self._izgaralar.values():
             g.viewport().update()
         self._arayuzu_guncelle()
+        self._dongu_denetle()
+
+    # ------------------------------------------------------------------ döngüsel başvuru (6e)
+    def _dongu_etiketi_guncelle(self):
+        """Durum çubuğu: seçili sayfadaki döngü hücrelerinden ilki (Excel gibi); yalnız başka
+        sayfada varsa adressiz "Döngüsel Başvurular"."""
+        dongu = self.motor.donguler
+        if not dongu:
+            self.dongu_etiketi.hide()
+            return
+        kimlik = self._secili_sayfa.kimlik if self._secili_sayfa is not None else None
+        burada = sorted((r, c) for k, r, c in dongu if k == kimlik)
+        self.dongu_etiketi.setText("Döngüsel Başvurular: " + hucre_yaz(*burada[0]) if burada
+                                   else "Döngüsel Başvurular")
+        self.dongu_etiketi.show()
+
+    def _dongu_denetle(self):
+        """Yeni bir döngü oluştuysa (formül girişi, yapıştırma…) bir kez uyarır. Geri al/yinele
+        sırasında uyarmaz; etiket her durumda güncellenir."""
+        simdiki = set(self.motor.donguler)
+        yeni = simdiki - self._dongu_bilinen
+        self._dongu_bilinen = simdiki
+        self._dongu_etiketi_guncelle()
+        if yeni and not self._gecmis_islemi:
+            QMessageBox.warning(
+                self, APP_NAME,
+                "Bu formül döngüsel başvuru içeriyor: bir formül kendi hücresine doğrudan ya da "
+                "dolaylı olarak başvuruyor. Döngüdeki hücreler 0 olarak hesaplanır; sonuçlar yanlış "
+                "olabilir.")
 
     def _ad_kutusundan_git(self):
         g = self.izgara()
@@ -446,6 +528,16 @@ class Pencere(QMainWindow):
             g.viewport().update()
 
     def _formul_onayla(self, metin: str):
+        if self._uzak is not None:
+            kaynak, (r, c) = self._uzak["izgara"], self._uzak["hucre"]
+            if not kaynak.hucre_gir(r, c, metin):
+                return                              # formül hatalı: formül çubuğunda kalınır
+            self._uzak_bitir()
+            self._formul_isareti_kapat()
+            kaynak.sec((r, c))
+            kaynak.setFocus()
+            kaynak.sec((r + 1, c))
+            return
         g = self.izgara()
         if not g.hucre_gir(*g.aktif, metin):
             return                                  # formül hatalı: formül çubuğunda kalınır
@@ -454,6 +546,8 @@ class Pencere(QMainWindow):
         g.sec((g.aktif[0] + 1, g.aktif[1]))
 
     def _formul_vazgec(self):
+        if self._uzak is not None:
+            self._uzak_bitir()
         g = self.izgara()
         self._formul_isareti_kapat()
         self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
