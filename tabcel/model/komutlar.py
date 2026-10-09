@@ -243,9 +243,27 @@ class Grup:
             k.geri_al()
 
 
+def ana_sayfa(komut, geri_al: bool = False):
+    """Komutun asıl değişikliği yaptığı sayfa (başka sayfalardaki formül düzeltmeleri yan etkidir);
+    sayfa işlemlerinde ya da bilinmiyorsa None. Geri al/yinele sonrası arayüz o sayfaya geçer.
+    Taşımada geri alırken kaynak, yinelerken hedef sayfa."""
+    if isinstance(komut, HucreTasi):
+        return komut.kaynak if geri_al else komut.hedef
+    if isinstance(komut, Grup):
+        for k in komut.komutlar:
+            s = ana_sayfa(k, geri_al)
+            if s is not None:
+                return s
+        return None
+    return getattr(komut, "sayfa", None) if isinstance(
+        komut, (HucrelerDegis, _SatirSutun, OlcuDegis)) else None
+
+
 class GeriAlYigini:
     def __init__(self, sinir: int = 100):
         self.sinir = sinir
+        self.son_komut = None            # en son geri alınan/yinelenen komut
+        self.son_geri_al = False
         self._geri: List[Komut] = []
         self._ileri: List[Komut] = []
 
@@ -268,6 +286,7 @@ class GeriAlYigini:
         k = self._geri.pop()
         k.geri_al()
         self._ileri.append(k)
+        self.son_komut, self.son_geri_al = k, True
         return True
 
     def yinele(self) -> bool:
@@ -276,6 +295,7 @@ class GeriAlYigini:
         k = self._ileri.pop()
         k.yap()
         self._geri.append(k)
+        self.son_komut, self.son_geri_al = k, False
         return True
 
     def temizle(self) -> None:

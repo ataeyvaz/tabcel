@@ -22,6 +22,7 @@ from ..formul.motor import Hesaplayici
 from ..model.komutlar import (
     GeriAlYigini, SayfaEkle, SayfaSil, SayfaTasi, SayfaYenidenAdlandir,
 )
+from ..model.komutlar import ana_sayfa
 from ..model.olay import Olay
 from ..model.sayfa import CalismaKitabi, Sayfa
 from . import theme
@@ -255,6 +256,14 @@ class Pencere(QMainWindow):
 
     def _gecmis_islemi_ayarla(self, basladi: bool):
         self._gecmis_islemi = basladi
+        if basladi:
+            return
+        # geri al/yinele bitti: asıl değişiklik başka sayfadaysa o sayfaya geç (Excel gibi). Hedef
+        # olaylardan değil komuttan alınır: başka sayfalardaki formül düzeltmeleri (yan etki) geçiş
+        # yaptırmaz (6f)
+        hedef = ana_sayfa(self.yigin.son_komut, self.yigin.son_geri_al)
+        if hedef is not None and hedef is not self._secili_sayfa and hedef in self.kitap.sayfalar:
+            self.sekmeler.setCurrentIndex(self.kitap.sayfalar.index(hedef))
 
     def _sekmeleri_esitle(self, secilecek: Optional[Sayfa] = None):
         """Izgaraları ve sekme çubuğunu kitabın güncel sayfa listesine göre eşitler.
@@ -307,10 +316,6 @@ class Pencere(QMainWindow):
             if olay["islem"] == "sil":
                 self._son_indeks = olay["indeks"]
             self._sekmeleri_esitle(olay.sayfa if olay["islem"] == "ekle" else None)
-        elif (self._gecmis_islemi and olay.tur in ("hucre", "yapi", "boyut")
-              and olay.sayfa in self._izgaralar and olay.sayfa is not self._secili_sayfa):
-            # geri al/yinele başka sayfadaki bir değişikliği geri aldı: o sayfaya geç (Excel gibi)
-            self.sekmeler.setCurrentIndex(self.kitap.sayfalar.index(olay.sayfa))
 
     def sayfa_ekle(self):
         self.yigin.calistir(SayfaEkle(self.kitap))
