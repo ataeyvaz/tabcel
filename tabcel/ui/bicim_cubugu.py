@@ -7,7 +7,7 @@ tek geri al adımıdır.
 """
 from typing import Callable
 
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QApplication, QComboBox, QDialog, QFontComboBox, QFrame, QHBoxLayout, QMenu, QToolButton, QWidget,
@@ -38,6 +38,14 @@ class _Ayirac(QFrame):
         self.setFixedHeight(20)
 
 
+class _BoyaciDugmesi(QToolButton):
+    """Tek tık: bir kez boya; çift tık: Esc'e dek kalıcı (Excel gibi)."""
+    ciftTik = Signal()
+
+    def mouseDoubleClickEvent(self, olay):
+        self.ciftTik.emit()
+
+
 class BicimCubugu(QWidget):
     def __init__(self, izgara_al: Callable, parent=None):
         super().__init__(parent)
@@ -48,9 +56,20 @@ class BicimCubugu(QWidget):
         h.setContentsMargins(6, 3, 6, 3)
         h.setSpacing(2)
 
+        # biçim boyacısı
+        self.boyaci = _BoyaciDugmesi()
+        self.boyaci.setIcon(icons.icon("format_painter"))
+        self.boyaci.setIconSize(QSize(20, 20))
+        self.boyaci.setToolTip("Biçim Boyacısı (çift tık: kalıcı, Esc: bitir)")
+        self.boyaci.setFocusPolicy(Qt.NoFocus)
+        self.boyaci.setCheckable(True)
+        self.boyaci.clicked.connect(lambda _=False: self._boyaci_tikla())
+        self.boyaci.ciftTik.connect(lambda: self._boyaci_tikla(True))
+        h.addWidget(self.boyaci)
+
         # yazı tipi + boyut
         self.yazi_tipi = QFontComboBox()
-        self.yazi_tipi.setFixedWidth(128)
+        self.yazi_tipi.setFixedWidth(112)
         self.yazi_tipi.setToolTip("Yazı Tipi")
         self.yazi_tipi.activated.connect(self._yazi_tipi_secildi)
         self.boyut = QComboBox()
@@ -129,7 +148,7 @@ class BicimCubugu(QWidget):
 
         # sayı
         self.sayi_bicimi = QComboBox()
-        self.sayi_bicimi.setFixedWidth(128)
+        self.sayi_bicimi.setFixedWidth(116)
         self.sayi_bicimi.setToolTip("Sayı Biçimi")
         self.sayi_bicimi.addItems(list(HAZIR))
         self.sayi_bicimi.addItem("Özel")
@@ -187,6 +206,16 @@ class BicimCubugu(QWidget):
         if odak is None or self.isAncestorOf(odak):     # düzenleme/formül çubuğundaki odak çalınmaz
             g.setFocus()
         self.guncelle()                  # işaretli düğmeler komutun gerçek sonucuna dönsün
+
+    def _boyaci_tikla(self, kalici: bool = False) -> None:
+        g = self._g()
+        if g.boyaci_acik_mi() and not kalici:
+            g.boyaci_iptal()                 # açıkken düğmeye basmak kapatır
+        else:
+            g.boyaci_iptal()                 # çift tıkın ilk tıkı tek tık olarak açmış olabilir
+            g.boyaci_baslat(kalici)
+        self.boyaci.setChecked(g.boyaci_acik_mi())
+        g.setFocus()
 
     def _degistir(self, yama_uretici: Callable) -> None:
         self._uygula(yama_uretici(self._etkin_stil()))
@@ -285,6 +314,7 @@ class BicimCubugu(QWidget):
         s = self._etkin_stil()
         self._guncelleniyor = True
         try:
+            self.boyaci.setChecked(self._g().boyaci_acik_mi())
             self.kalin.setChecked(s.kalin)
             self.italik.setChecked(s.italik)
             self.altcizili.setChecked(s.alti_cizili != "yok")

@@ -281,6 +281,7 @@ class Pencere(QMainWindow):
         g.modDegisti.connect(self._mod_degisti)
         g.duzenlemeMetniDegisti.connect(self._duzenleme_aynala)
         g.suruklemeBitti.connect(self._arayuzu_guncelle)
+        g.boyaciDegisti.connect(lambda _a: self._arayuzu_guncelle())
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
         g.uzakOnay.connect(self._uzak_onayla)
@@ -437,6 +438,8 @@ class Pencere(QMainWindow):
         if (eski is not None and self._uzak is None and yeni_sayfa is not self._secili_sayfa
                 and eski.duzenleniyor() and eski._isaret_modu()):
             self._duzenlemeyi_devret(eski)
+        if eski is not None and yeni_sayfa is not self._secili_sayfa:
+            eski.boyaci_iptal()                  # biçim boyacısı sayfaya özel: sayfa değişince biter
         self._secili_sayfa = yeni_sayfa
         g = self._izgaralar[self._secili_sayfa]
         self.izgara_yigini.setCurrentWidget(g)

@@ -32,6 +32,7 @@ from ..model.komutlar import (
     SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
+from ..model.bicim_islem import boyaci_stilleri
 from ..model.sayfa import Hucre, Sayfa
 from . import theme
 from .renkli import renkli_ciz
@@ -210,6 +211,7 @@ class Izgara(QAbstractScrollArea):
     modDegisti = Signal(str)              # 'Hazır' | 'Gir' | 'Düzenle'
     duzenlemeMetniDegisti = Signal(str)   # hücre içi düzenleyicideki metin (formül çubuğu aynalar)
     suruklemeBitti = Signal()
+    boyaciDegisti = Signal(bool)          # biçim boyacısı açıldı (True) / bitti (False)
     gecmisIslemi = Signal(bool)           # geri al/yinele başladı (True) / bitti (False)
     yakinlastirmaDegisti = Signal(float)
     uyari = Signal(str)                   # kullanıcıya gösterilecek iletiler
@@ -231,6 +233,7 @@ class Izgara(QAbstractScrollArea):
         self._aktif = (1, 1)
         self._uc = (1, 1)            # seçimin hareketli ucu
         self._surukleme: Optional[str] = None   # 'hucre' | 'satir' | 'sutun'
+        self._boyaci: Optional[dict] = None     # biçim boyacısı: {"kaynak": Aralik, "kalici": bool}
         self.yigin = yigin if yigin is not None else GeriAlYigini()
         self._duzenleyici: Optional[_Duzenleyici] = None
         self._duzenlenen = (1, 1)
@@ -1326,6 +1329,8 @@ class Izgara(QAbstractScrollArea):
             self._boyut_bitir()
         elif self._surukleme == "doldur":
             self._doldur_bitir()
+        elif self._surukleme in ("hucre", "satir", "sutun") and self._boyaci is not None:
+            self._boyaci_uygula()
         self._surukleme = None
         self._koru = False
         self.suruklemeBitti.emit()
@@ -1450,7 +1455,10 @@ class Izgara(QAbstractScrollArea):
         elif ctrl and k == Qt.Key_V or (shift and k == Qt.Key_Insert):
             self.yapistir()
         elif k == Qt.Key_Escape:
-            self._pano_isareti_temizle()
+            if self._boyaci is not None:
+                self.boyaci_iptal()
+            else:
+                self._pano_isareti_temizle()
         elif k == Qt.Key_Z and ctrl:
             self.geri_al()
         elif k == Qt.Key_Y and ctrl:
@@ -1780,6 +1788,8 @@ class Izgara(QAbstractScrollArea):
             sekil = Qt.CrossCursor
         elif kenar:
             sekil = Qt.SplitHCursor if kenar[0] == "sutun" else Qt.SplitVCursor
+        elif self._boyaci is not None:
+            sekil = Qt.PointingHandCursor
         self.viewport().setCursor(sekil)
 
     def _boyut_basla(self, kenar, p: QPoint) -> None:
@@ -2389,6 +2399,48 @@ class Izgara(QAbstractScrollArea):
         if not kmt.bos_mu():
             self.yigin.calistir(kmt)
             self._guncelle()
+
+    # --- biçim boyacısı ---
+    def boyaci_baslat(self, kalici: bool = False) -> bool:
+        """Seçimin biçimini alır; sonraki hücre/aralık seçimine boyar. `kalici` (çift tık): Esc'e ya da
+        düğmeye yeniden basana dek açık kalır. Çoklu seçimde alınamaz (Excel gibi)."""
+        if self.duzenleniyor():
+            return False
+        if self._ekler:
+            self.uyari.emit("Bu komut birden çok seçimde kullanılamaz.")
+            return False
+        self._boyaci = {"kaynak": self.secim, "kalici": kalici}
+        self.viewport().setCursor(Qt.PointingHandCursor)
+        self.boyaciDegisti.emit(True)
+        return True
+
+    def boyaci_iptal(self) -> None:
+        if self._boyaci is None:
+            return
+        self._boyaci = None
+        self.viewport().setCursor(Qt.ArrowCursor)
+        self.boyaciDegisti.emit(False)
+
+    def boyaci_acik_mi(self) -> bool:
+        return self._boyaci is not None
+
+    def _boyaci_uygula(self) -> None:
+        b = self._boyaci
+        if len(self.secimler) != 1:
+            return
+        try:
+            stiller = boyaci_stilleri(self.sayfa, b["kaynak"], self.secim)
+        except ValueError as h:
+            self.uyari.emit(str(h))
+            self.boyaci_iptal()
+            return
+        # kaynağın kendine boyanması gibi değişmeyen işlemde komut eklenmez
+        degisen = {k: v for k, v in stiller.items() if self.sayfa.stil_kimligi(*k) != v}
+        if degisen:
+            self.yigin.calistir(BicimDegis(self.sayfa, hucreler=degisen))
+            self._guncelle()
+        if not b["kalici"]:
+            self.boyaci_iptal()
 
     def bicim_uygula(self, yama_ya_da_plan) -> bool:
         """Seçime stil yaması uygular (biçim araç çubuğu). Ya tek `StilYama` (tüm seçim) ya da

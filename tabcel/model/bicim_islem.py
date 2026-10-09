@@ -5,7 +5,7 @@ geri al adımı olur. Düğmelerin hangi yamayı ürettiği burada sınanır (ek
 """
 from typing import List, Optional, Sequence, Tuple
 
-from .adres import Aralik
+from .adres import MAX_COL, MAX_ROW, Aralik
 from .sayi_bicimi import HAZIR, BicimHatasi, ondalik_degistir
 from .stil import Stil, StilYama
 
@@ -158,6 +158,35 @@ def kenarlik_plani(araliklar: Sequence[Aralik], secenek: str,
         else:
             plan.append(([_sutun(a, a.son_sutun)], StilYama(kenar={"sag": ("ince", renk)})))
     return plan
+
+
+BOYACI_ALAN_SINIRI = 200_000     # biçim boyacısının bir seferde boyayacağı en çok hücre
+
+
+def boyaci_stilleri(sayfa, kaynak: Aralik, hedef: Aralik) -> dict:
+    """Biçim boyacısı: `kaynak` aralığının hücre biçimleri {(satır, sütun): stil kimliği} olarak hedefe.
+
+    - Hedef tek hücreyse kaynağın tamamı o hücreden başlayarak boyanır (sayfa sınırında kırpılır).
+    - Hedef birden çok hücreyse desen hedefin sol üstünden başlayıp seçimin tamamını kaplayacak
+      kadar yinelenir (kaynak seçimin tam katı değilse son yineleme kırpılır).
+    Kaynakta biçimsiz hücre hedefin biçimini varsayılana (0) döndürür (Excel gibi). Satır/sütun
+    stilleri hücre biçimine dahil okunur. Hedef `BOYACI_ALAN_SINIRI` hücreyi aşarsa ValueError.
+    """
+    kr = kaynak.son_satir - kaynak.ilk_satir + 1
+    kc = kaynak.son_sutun - kaynak.ilk_sutun + 1
+    if kr * kc > BOYACI_ALAN_SINIRI:
+        raise ValueError("Kaynak alan biçim boyacısı için çok büyük")
+    if hedef.ilk_satir == hedef.son_satir and hedef.ilk_sutun == hedef.son_sutun:
+        son_r = min(hedef.ilk_satir + kr - 1, MAX_ROW)
+        son_c = min(hedef.ilk_sutun + kc - 1, MAX_COL)
+        hedef = Aralik(hedef.ilk_satir, hedef.ilk_sutun, son_r, son_c)
+    if (hedef.son_satir - hedef.ilk_satir + 1) * (hedef.son_sutun - hedef.ilk_sutun + 1) > BOYACI_ALAN_SINIRI:
+        raise ValueError("Biçim bu kadar büyük bir alana boyanamaz")
+    desen = {(dr, dc): sayfa.stil_kimligi(kaynak.ilk_satir + dr, kaynak.ilk_sutun + dc)
+             for dr in range(kr) for dc in range(kc)}
+    return {(r, c): desen[((r - hedef.ilk_satir) % kr, (c - hedef.ilk_sutun) % kc)]
+            for r in range(hedef.ilk_satir, hedef.son_satir + 1)
+            for c in range(hedef.ilk_sutun, hedef.son_sutun + 1)}
 
 
 DEGISMEDI = object()

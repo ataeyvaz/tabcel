@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3j ✅; sıradaki: 3k–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅; sıradaki: 3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1787 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1801 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1787 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -122,6 +122,9 @@ Testler: 1787 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - **Otomatik satır yüksekliği:** elle yüksekliği ayarlanmamış satır (`satir_yukseklik`'te kaydı yok) içeriğe göre uzar: kaydırılmış metnin satır sayısı ve 11 punto üstü biçimli hücre. Hesap **ızgarada** (model Qt'siz kalsın diye), mevcut yakınlaştırma pikseliyle yapılır (`_oto`, tembel; içerik/biçim/genişlik/yakınlaştırma/sonuç olayında geçersiz kılınır, yalnız kaydırma ya da büyük yazı stili varken çalışır). Yakınlaştırmada sarma tam ölçekli değil (çizim ve ölçüm aynı pikselde, fark yok ama yazı tipi ipuçlaması farklı olabilir). Birleşik ve gizli satır katılmaz; üst sınır 409 px
   - Elle yükseklik kazanır; **"Otomatik sığdır"** (satır başlığı çift tık/menü) elle değeri siler → otomatik. Kaydırma kapanınca/metin kısalınca/sütun genişleyince satır geri küçülür (geri al da)
   - **Alt+Enter** ile girilen çok satırlı metin hücrenin kaydırmasını kendiliğinden açar (metin + biçim tek geri al adımı; yalnız hücre zaten kaydırmalı değilse)
+- 2026-10-09 (Faz 3 / 3k):
+  - **Biçim boyacısı** kaynak = seçim (tek aralık; çoklu seçimde alınamaz, Excel gibi). Tek tık düğme: bir kez; çift tık: kalıcı; düğmeye yeniden basmak ya da Esc bitirir; sayfa sekmesi değişince biter (Excel sayfalar arası boyar — bilerek fark). Hedef tek hücreyse kaynağın tamamı oradan başlayarak boyanır, çok hücreliyse desen seçime yinelenir (kırpılır); kaynaktaki biçimsiz hücre hedefi sıfırlar
+  - Yalnız **hücre biçimi** (stil) taşır; **birleşim ve sütun genişliği/satır yüksekliği taşınmaz** (Excel birleşimi de taşır). Hedef >200.000 hücre (tam sütun/satır) reddedilir (uyarı); satır/sütun stiline yazma yok. Kaynak çerçevesi (kayan karıncalar) yok, yalnız imleç/düğme durumu
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -509,6 +512,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1766 → **1787** (`test_kaydir_metin.py` 21: otomatik yükseklik (içerik/genişlik/elle/otomatik sığdır/kapama/metin değişimi/Alt+Enter/sayı/formül sonucu/satır stili/gizli+birleşik/büyük yazı/yakınlaştırma), çizim (satırlara bölme, komşuya taşmama, uzun kelime, açık satır sonu, dikey/yatay hiza, birleşik, renk+dolgu)). Ekran görüntüsü incelendi (çok satırlı hücre, sayı alt hizalı, satır sonları). Regresyon yok, hiçbir test değişmedi
 - **Bilerek eksik:** `Izgara` içi düzenleyici kaydırılmış metni çok satırlı göstermez (tek satır `QLineEdit`; Alt+Enter metne satır sonu ekler ama kutuda görünmez); "Otomatik Sığdır Sütun Genişliği" kaydırılmış metni hesaba katmaz; sarmada Excel'in kelime bölme ayrıntıları (tire, Unicode kuralları) Qt'ninki; `doldur`/`iki_yana`/`secim_ortasi` hizaları hâlâ yaklaşık (3c notu)
 - Sıradaki: **3k** (biçim boyacısı)
+
+## [2026-10-09] — Faz 3 / 3k bitti (Sonnet 5.5)
+- Commit `eb1d857` (3j). **3k:** `model/bicim_islem.boyaci_stilleri` (desen/yineleme/kırpma), `Izgara.boyaci_baslat/boyaci_iptal/_boyaci_uygula` (fare bırakınca boyar, Esc iptal, imleç), `BicimCubugu` fırça düğmesi (tek/çift tık), `icons.format_painter`, `Pencere` sayfa değişince iptal
+- Testler 1787 → **1801** (`test_bicim_boyaci.py` 14: 7 Qt'siz model, 7 arayüz). **Regresyon:** çubuk genişliği testi (`test_ekran_goruntusu_boyutlari`, ≤1100 px) 1119'a çıkıp kırıldı → test değişmedi; yazı tipi kutusu 128→112, sayı kutusu 128→116 px yapıldı, düğmenin ayracı konmadı
+- **Bilerek eksik:** birleşim/sütun genişliği boyanmaz; tam sütun/satır hedef (>200.000 hücre) reddedilir; kaynak çevresinde kayan çerçeve yok; sayfalar arası boyama yok. Ekran görüntüsü alınmadı (görsel denetim 3l'de)
+- Sıradaki: **3l** (Faz 3 sonu: test.md, iş senaryosu, ölçüm, Opus gözden geçirmesi)
 
 *(Yeni girişler en alta eklenir.)*
 
