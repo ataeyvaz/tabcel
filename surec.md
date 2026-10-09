@@ -9,13 +9,13 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
-| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
+| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü | 🔄 4c–4g (§2 madde 9) |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1863 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1895 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -41,6 +41,7 @@ Testler: 1863 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d PDF/yazdır (sayfa yapısı, önizleme) · 4e otomatik kayıt + kurtarma kopyası · 4f büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -530,6 +531,20 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Kararlar: yüzde düzenleme metni Decimal ile (bilimsel yazım yok); doldurma tam sayıları olduğu gibi bırakır; `bicimle`/`sigdir` 400 basamaklı Decimal bağlamı; kaydırılmış metin için yerleşim önbelleği 4000 girdi, otomatik yükseklik yalnız yükseklik saklar ve sütun sürüklerken değil bırakınca hesaplanır; kısmi seçimde çok sayıda biçimli satır/sütun kesişimi sessiz atlanmaz, uyarı verir
 - **Açık:** son satır/sütun biçimi ekleme ile dışarı itilince geri alınmıyor; ≥1e12 yuvarlama tutarsızlığı; 6 performans ❌ kararı; Faz 3 elle testler (`test.md` §11.4)
 - Sıradaki: kullanıcı onayı → **Faz 4** (.xlsx/.csv/PDF/yazdır/otomatik kayıt)
+
+## [2026-10-09] — Faz 4 / 4a bitti (Sonnet 5.5)
+- Commit `7f4b003` (3l). **4a:** `tabcel/io/xlsx_io.py` — `kaydet(kitap, yol) -> Rapor` (geçici dosya + `os.replace`, hata `XlsxHatasi`), `ac(yol) -> (kitap, Rapor)`, `tara(yol)` (zip yollarından grafik/resim/pivot/makro/dış bağlantı/yorum/dilimleyici; sayfa XML'inden koşullu biçim/veri doğrulama/filtre; tanımlı ad)
+- Eşlemeler: değer/formül (kanonik ⇄ dosya, sayfa kimliği ⇄ ad, `_xlfn.` öneki: CONCAT DAYS IFNA IFS MAXIFS MINIFS SWITCH TEXTJOIN XLOOKUP XMATCH XOR), hata değerleri, tarih→seri, stil (yazı tipi/boyut/K-İ-A-üstü çizili, renk, dolgu, kenarlık çizgileri, hizalama, girinti, kaydır, sayı biçimi), satır/sütun stili, genişlik/yükseklik, gizli satır/sütun, birleşim, dondurma, kılavuz, sekme rengi, sayfa sırası/adı. Varsayılan font (Calibri 11) `None` olarak okunur
+- Testler 1863 → **1878** (`test_xlsx_io.py` 15: gidiş-dönüş × 9, başka programda üretilmiş dosya, tarama uyarıları, bozuk dosya, atomik kayıt, hatalı kayıtta eski dosya bozulmaz, gizli sayfa)
+- **Bilerek eksik / belirsiz:** formül önbellek değeri yazılmaz; tema renkleri varsayılan Office teması varsayımıyla (yeni Excel 365 teması farklı olabilir — gerçek dosyada doğrulanmalı); gizli sayfa görünür yapılır (uyarılı); yorum/not, tanımlı ad, filtre, koşullu biçim, veri doğrulama **korunmaz** (uyarı verilir; ilgili özellikler Faz 5'te modele girince eşlenecek — plan.md'deki "adlandırılmış aralık/yorum Faz 4" maddesi Faz 5'e kayar); satır yüksekliği/sütun genişliği dönüşümü yaklaşık (±7 px); iki hücre aralığı dışındaki paylaşılan/dizi formül ayrıntıları sınanmadı; gerçek Excel'de açma **elle test bekliyor**
+- Sıradaki: **4b** (Dosya menüsü)
+
+## [2026-10-09] — Faz 4 / 4b bitti (Sonnet 5.5)
+- **4b:** `ui/dosya_islemleri.py` (`DosyaIslemleri` karışımı; `Pencere` miras alır): Yeni/Aç/Kaydet/Farklı Kaydet/Son Kullanılanlar/Çıkış menüsü + Ctrl+N/O/S/Ctrl+Shift+S/F12; `io/son_dosyalar.py` (`veri_klasoru()/son_dosyalar.json`, 10 girdi); `tabcel.veri_klasoru()` (`TABCEL_VERI_KLASORU` ile değişir, `testler/conftest.py` testlerde geçici klasöre yönlendirir); `GeriAlYigini.damga()` ile "değişti" işareti (başlıkta `*`; geri alıp kayıt noktasına dönünce kalkar); `main.py` komut satırından dosya açar (örnek veri kalktı)
+- Kararlar: her dosya **ayrı pencerede** açılır (Excel gibi; boş+değişmemiş pencere yerini alır ve kapanır; aynı dosya açıksa o pencere öne gelir); korunamayan öğe (grafik/resim/makro/pivot/yorum/koşullu biçim/veri doğrulama/filtre/tanımlı ad) açılışta **sarı bilgi çubuğu**; üzerine kaydederken üç seçenekli onay (Farklı Kaydet / Yine de Kaydet / İptal); Farklı Kaydet'ten sonra uyarı biter (artık dosya kitabın kendisi); `.xlsx` uzantısı yoksa eklenir; kapatırken değişiklik varsa Kaydet/Kaydetme/İptal sorulur; kaydetme hatası (dosya Excel'de açık vb.) anlaşılır iletiyle, eski dosya bozulmaz
+- Testler 1878 → **1895** (`test_dosya_menusu.py` 17; mevcut hiçbir test değişmedi)
+- **Bilerek eksik:** son dosya listesinde var olmayan dosya elenmez (tıklayınca hata verir ve listeden çıkar); .csv/PDF Farklı Kaydet süzgeci 4c/4d'de; görünüm değişiklikleri (dondurma, yakınlaştırma) "değişti" saymaz; çıkışta birden çok pencere sırayla sorar
+- Sıradaki: **4c** (.csv)
 
 *(Yeni girişler en alta eklenir.)*
 

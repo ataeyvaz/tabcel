@@ -27,6 +27,7 @@ from ..model.olay import Olay
 from ..model.sayfa import CalismaKitabi, Sayfa
 from . import theme
 from .bicim_cubugu import BicimCubugu
+from .dosya_islemleri import DosyaIslemleri
 from .grid import Izgara, goster
 
 
@@ -91,7 +92,7 @@ class _FormulCubugu(QLineEdit):
             super().keyPressEvent(olay)
 
 
-class Pencere(QMainWindow):
+class Pencere(DosyaIslemleri, QMainWindow):
     def __init__(self, kitap: Optional[CalismaKitabi] = None):
         super().__init__()
         self.kitap = kitap or CalismaKitabi()
@@ -108,6 +109,7 @@ class Pencere(QMainWindow):
         self._mod = "Hazır"
         self.setStyleSheet(theme.stylesheet())
         self._kur()
+        self._dosya_kur()
         self._sekmeleri_esitle(self.kitap.sayfalar[0])
         self.kitap.dinle(self._kitap_olayi)           # sayfa ekle/sil/ad/taşı + geri al/yinele buradan yansır
         self._baslik_guncelle()
@@ -132,7 +134,7 @@ class Pencere(QMainWindow):
         self.dosya_dugmesi.setText("Dosya")
         self.dosya_dugmesi.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu(self.dosya_dugmesi)
-        menu.addAction("Çıkış", self.close)
+        self._dosya_menusu_doldur(menu)
         self.dosya_dugmesi.setMenu(menu)
         self.gorunum_dugmesi = QToolButton()
         self.gorunum_dugmesi.setObjectName("fileButton")
@@ -169,6 +171,8 @@ class Pencere(QMainWindow):
         h.addWidget(self.belge_etiketi)
         h.addStretch(1)
         dikey.addWidget(baslik)
+        self.bilgi_cubugu = self._bilgi_cubugu_olustur()      # açılan dosyada korunamayan öğe uyarısı
+        dikey.addWidget(self.bilgi_cubugu)
 
         # biçim araç çubuğu (3d)
         self.bicim_cubugu = BicimCubugu(self.izgara)
@@ -260,6 +264,13 @@ class Pencere(QMainWindow):
         self.kilavuz_eylemi.blockSignals(False)
         self.gorunum_eylemleri["coz"].setEnabled(g.sayfa.dondur is not None)
 
+    def closeEvent(self, olay):
+        if self._kapanabilir_mi():
+            self._pencere_kapandi()
+            olay.accept()
+        else:
+            olay.ignore()
+
     def showEvent(self, olay):
         super().showEvent(olay)
         theme.baslik_cubugu_rengi(self)
@@ -269,8 +280,9 @@ class Pencere(QMainWindow):
         return self.izgara_yigini.currentWidget()
 
     def _baslik_guncelle(self):
-        self.setWindowTitle(f"{self.belge_adi} - {APP_NAME}")
-        self.belge_etiketi.setText(f"{self.belge_adi} — {APP_NAME}")
+        ad = self.belge_adi + (" *" if self.degisti_mi() else "")
+        self.setWindowTitle(f"{ad} - {APP_NAME}")
+        self.belge_etiketi.setText(f"{ad} — {APP_NAME}")
 
     # ------------------------------------------------------------------ sayfalar
     def _izgara_olustur(self, sayfa: Sayfa) -> Izgara:
@@ -492,6 +504,7 @@ class Pencere(QMainWindow):
 
     # ------------------------------------------------------------------ ad kutusu / formül çubuğu
     def _arayuzu_guncelle(self, *_):
+        self._baslik_guncelle()
         g = self.izgara()
         kaynak = self.sender()
         if kaynak is not g and kaynak in self._izgaralar.values():

@@ -519,6 +519,14 @@ class GeriAlYigini:
         self._geri: List[Komut] = []
         self._ileri: List[Komut] = []
 
+    def damga(self):
+        """Geri al yığınının anlık durumu (kayıt noktası işareti): geri alıp aynı noktaya dönülürse eşit olur."""
+        return (len(self._geri), self._geri[-1] if self._geri else None)
+
+    @staticmethod
+    def damga_esit(a, b) -> bool:
+        return a[0] == b[0] and a[1] is b[1]
+
     def calistir(self, komut: Komut) -> None:
         komut.yap()
         self._geri.append(komut)
