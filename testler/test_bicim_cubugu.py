@@ -240,7 +240,11 @@ def test_ondalik_genel_bicimde_gorunen_ondaliktan_baslar(pencere):
     assert stil(pencere, 1, 1).sayi_bicimi == "0.00"
 
 
-def test_sayi_bicimi_listesi(pencere):
+def test_sayi_bicimi_listesi(pencere, monkeypatch):
+    from PySide6.QtWidgets import QDialog
+    from tabcel.ui.bicim_penceresi import BicimPenceresi
+    acilan = []
+    monkeypatch.setattr(BicimPenceresi, "exec", lambda self: acilan.append(self) or QDialog.Rejected)
     sec(pencere, (1, 1), (2, 1))
     c = pencere.bicim_cubugu
     from tabcel.model.sayi_bicimi import HAZIR
@@ -250,8 +254,9 @@ def test_sayi_bicimi_listesi(pencere):
         c.sayi_bicimi.activated.emit(c.sayi_bicimi.currentIndex())
         assert stil(pencere, 2, 1).sayi_bicimi == kod
         assert c.sayi_bicimi.currentText() == ad
-    c.sayi_bicimi.setCurrentText("Özel")                         # Özel seçmek biçimi bozmaz
+    c.sayi_bicimi.setCurrentText("Özel")                         # Özel: pencereyi açar, iptalde biçim bozulmaz
     c.sayi_bicimi.activated.emit(c.sayi_bicimi.currentIndex())
+    assert len(acilan) == 1
     assert stil(pencere, 2, 1).sayi_bicimi == HAZIR["Metin"]
 
 

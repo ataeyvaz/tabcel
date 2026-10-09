@@ -10,13 +10,14 @@ from typing import Callable
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QFontComboBox, QFrame, QHBoxLayout, QMenu, QToolButton, QWidget,
+    QApplication, QComboBox, QDialog, QFontComboBox, QFrame, QHBoxLayout, QMenu, QToolButton, QWidget,
 )
 
 from ..model import bicim_islem as bi
 from ..model.sayi_bicimi import HAZIR
 from ..model.stil import StilYama
 from . import icons
+from .bicim_penceresi import BicimPenceresi
 from .widgets import RenkDugmesi
 
 KENAR_METINLERI = (
@@ -128,7 +129,10 @@ class BicimCubugu(QWidget):
         for w in (self.sayi_bicimi, self.para, self.yuzde, self.binlik, self.ondalik_artir,
                   self.ondalik_azalt):
             h.addWidget(w)
+        self.pencere_dugmesi = self._dugme("dialog_launcher", "Hücreleri Biçimlendir (Ctrl+1)",
+                                           lambda: self.penceresi_ac())
         h.addStretch(1)
+        h.addWidget(self.pencere_dugmesi)
 
         # klavye kısayolları. Türkçe Excel'deki karşılıkları doğrulanana dek Sözcük'teki kararla aynı
         # (Ctrl+B/I/U; §8b-44). Gizlenen/kısa pencerede de çalışsın diye pencereye bağlı
@@ -136,6 +140,8 @@ class BicimCubugu(QWidget):
                            ("Ctrl+U", bi.alti_cizili_yamasi), ("Ctrl+5", bi.ustu_cizili_yamasi)):
             QShortcut(QKeySequence(tus), self, activated=lambda f=islem: self._degistir(f),
                       context=Qt.WindowShortcut)
+        QShortcut(QKeySequence("Ctrl+1"), self, activated=lambda: self.penceresi_ac(),
+                  context=Qt.WindowShortcut)
         for tus, kod in (("Ctrl+Shift+4", bi.PARA), ("Ctrl+Shift+5", bi.YUZDE),
                          ("Ctrl+Shift+1", bi.BINLIK)):
             QShortcut(QKeySequence(tus), self, activated=lambda k=kod: self._sayi_kodu(k),
@@ -214,8 +220,28 @@ class BicimCubugu(QWidget):
         if ad in HAZIR:
             self._sayi_kodu(HAZIR[ad])
         else:
-            self.guncelle()              # "Özel" yalnız durumu gösterir; kod Ctrl+1 penceresinde (3e)
-            self._g().setFocus()
+            self.guncelle()
+            self.penceresi_ac(0)         # "Özel": kodu Hücreleri Biçimlendir'de yazılır
+
+    def penceresi_ac(self, sekme: int = 0) -> bool:
+        """Hücreleri Biçimlendir (Ctrl+1). Tamam'da yalnız değişen alanlar tüm seçime uygulanır."""
+        g = self._g()
+        r, c = g.aktif
+        h = g.sayfa.hucre(r, c)
+        deger = None
+        if h is not None:
+            deger = h.deger if h.formul is None else g.sayfa.sonuc(r, c)
+        p = BicimPenceresi(self._etkin_stil(), deger, self.window(), sekme)
+        if p.exec() != QDialog.Accepted:
+            g.setFocus()
+            self.guncelle()
+            return False
+        plan = p.plan(g.secimler)
+        if plan:
+            g.bicim_uygula(plan)
+        g.setFocus()
+        self.guncelle()
+        return bool(plan)
 
     def _ondalik(self, fark: int) -> None:
         g = self._g()

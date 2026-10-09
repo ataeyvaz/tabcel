@@ -43,6 +43,7 @@ ICONS = {
     "thousands": {"text": [("000", 9, True, False, (0, 0, 20, 19))]},
     "decimal_more": {"svg": "M3.5 11.5L1.5 13.5L3.5 15.5 M1.5 13.5H6.5", "text": [("0,0", 9, False, False, (7, 3, 13, 10))]},
     "decimal_less": {"svg": "M6.5 11.5L8.5 13.5L6.5 15.5 M8.5 13.5H3.5", "text": [("0,0", 9, False, False, (7, 3, 13, 10))]},
+    "dialog_launcher": {"svg": "M4.5 4.5H15.5V15.5H4.5Z M10.5 14.5L14.5 10.5 M14.5 13.5V10.5H11.5"},
     "chevron_down": {"svg": "M6 8L10 12L14 8"},
 }
 

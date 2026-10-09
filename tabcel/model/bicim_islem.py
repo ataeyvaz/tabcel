@@ -158,3 +158,26 @@ def kenarlik_plani(araliklar: Sequence[Aralik], secenek: str,
         else:
             plan.append(([_sutun(a, a.son_sutun)], StilYama(kenar={"sag": ("ince", renk)})))
     return plan
+
+
+DEGISMEDI = object()
+
+
+def kenar_ayar_plani(araliklar: Sequence[Aralik], yonler: dict, ic=DEGISMEDI) -> Plan:
+    """Hücreleri Biçimlendir ▸ Kenarlık: `yonler` = yalnız DEĞİŞEN dış kenarlar
+    ({"ust": (çizgi, renk) | None}); `ic`: iç çizgiler (çizgi tuple'ı, None = kaldır, verilmezse
+    dokunulmaz). Önce iç (her hücrenin dört kenarı), sonra dış kenarlar — dış kenar iç ayarı ezer."""
+    plan: Plan = []
+    for a in araliklar:
+        if ic is not DEGISMEDI:
+            plan.append(([a], StilYama(kenar={y: ic for y in ("ust", "alt", "sol", "sag")})))
+        for y, c in yonler.items():
+            if y == "ust":
+                plan.append(([_satir(a, a.ilk_satir)], StilYama(kenar={"ust": c})))
+            elif y == "alt":
+                plan.append(([_satir(a, a.son_satir)], StilYama(kenar={"alt": c})))
+            elif y == "sol":
+                plan.append(([_sutun(a, a.ilk_sutun)], StilYama(kenar={"sol": c})))
+            else:
+                plan.append(([_sutun(a, a.son_sutun)], StilYama(kenar={"sag": c})))
+    return plan
