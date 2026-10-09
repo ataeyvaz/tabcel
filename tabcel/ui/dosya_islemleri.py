@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 )
 
 from .. import APP_NAME
+from .arka_plan import arka_planda
 from ..io import csv_io, kurtarma, son_dosyalar, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
 from ..model.komutlar import SayfaYapisiDegis
@@ -199,17 +200,17 @@ class DosyaIslemleri:
         if a is None:
             return None
         satirlar, metin_olarak = a
-        kitap, uyarilar = csv_io.kitap_olustur(satirlar, csv_io.sayfa_adi_uret(yol), metin_olarak)
+        kitap, uyarilar = arka_planda(self, "CSV içe aktarılıyor…", lambda: csv_io.kitap_olustur(
+            satirlar, csv_io.sayfa_adi_uret(yol), metin_olarak))
         r = Rapor()
         for u in uyarilar:
             r.ekle(u)
         return kitap, r
 
-    @staticmethod
-    def _kitap_oku(yol: str):
+    def _kitap_oku(self, yol: str):
         if not os.path.exists(yol):
             raise XlsxHatasi(f"Dosya bulunamadı: {yol}")
-        return xlsx_io.ac(yol)
+        return arka_planda(self, "Dosya açılıyor…", lambda: xlsx_io.ac(yol))
 
     # ------------------------------------------------------------------ kaydet
     def kaydet(self) -> bool:
@@ -250,9 +251,10 @@ class DosyaIslemleri:
             if csv_mi:
                 if len(self.kitap.sayfalar) > 1 and not self._csv_cok_sayfa_sorusu():
                     return False
-                csv_io.dosya_yaz(self.izgara().sayfa, yol)
+                sayfa = self.izgara().sayfa
+                arka_planda(self, "Kaydediliyor…", lambda: csv_io.dosya_yaz(sayfa, yol))
             else:
-                xlsx_io.kaydet(self.kitap, yol)
+                arka_planda(self, "Kaydediliyor…", lambda: xlsx_io.kaydet(self.kitap, yol))
         except (XlsxHatasi, csv_io.CsvHatasi) as e:
             QMessageBox.critical(self, APP_NAME, str(e))
             return False

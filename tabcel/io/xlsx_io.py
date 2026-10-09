@@ -11,6 +11,7 @@ Bilinen sınırlar (her açılışta `Rapor`'a yazılır, arayüz bilgi çubuğu
 import os
 import re
 import zipfile
+from copy import copy
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -261,10 +262,54 @@ def _yapi_oku(ws) -> SayfaYapisi:
         return SayfaYapisi()
 
 
+# --- hızlı formül çevirisi ------------------------------------------------------------------------
+# Büyük dosyada aynı sütunun formülleri yalnız satırı değişir (`=A5+B5*3`, `=A6+B6*3`…); her birini baştan
+# ayrıştırmak açılışın yarısını yiyordu. Yalnız basit (sayı, işleç, hücre başvurusu, işlev çağrısı) formüller
+# için, hücre konumuna göre bağıl (R1C1 benzeri) bir anahtar çıkarılır; ilk örnek tam çevrilir ve sonuç
+# metne ÖZDEŞ çıkarsa (sayfa başvurusu/ad/küçük harf yok) aynı anahtarlı diğerleri çevrilmeden kabul edilir.
+_BASIT = re.compile(r"(?:\s+|\d+(?:\.\d+)?|[-+*/^&=<>(),:%]|\$?[A-Z]{1,3}\$?\d+|[A-Z][A-Z0-9.]*(?=\())+")
+_BASV = re.compile(r"(?<![A-Z0-9.$])(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\w(.])")
+
+
+def _sutun_no(harf: str) -> int:
+    n = 0
+    for ch in harf:
+        n = n * 26 + ord(ch) - 64
+    return n
+
+
+def _formul_anahtari(metin: str, r: int, c: int) -> Optional[str]:
+    if "!" in metin or '"' in metin or not _BASIT.fullmatch(metin[1:] if metin.startswith("=") else metin):
+        return None
+
+    def bag(m):
+        sm, sh, rm, rn = m.group(1), m.group(2), m.group(3), int(m.group(4))
+        col = _sutun_no(sh)
+        return (f"C{col}" if sm else f"C[{col - c}]") + (f"R{rn}" if rm else f"R[{rn - r}]")
+    return _BASV.sub(bag, metin)
+
+
+class _FormulOnbellek:
+    def __init__(self):
+        self._ozdes: Dict[str, bool] = {}
+
+    def cevir(self, metin: str, r: int, c: int, yavas):
+        """`yavas(metin)` tam çeviridir; özdeşlik bilinen anahtarlarda atlanır."""
+        anahtar = _formul_anahtari(metin, r, c)
+        if anahtar is not None and self._ozdes.get(anahtar):
+            return metin
+        sonuc = yavas(metin)
+        if anahtar is not None and anahtar not in self._ozdes:
+            self._ozdes[anahtar] = (sonuc == metin)
+        return sonuc
+
+
 # --- yazma ----------------------------------------------------------------------------------------
-def _hucre_degeri(h: Hucre, kitap):
+def _hucre_degeri(h: Hucre, kitap, r: int = 0, c: int = 0, onb: Optional[_FormulOnbellek] = None):
     """(değer, formül mü) — değer openpyxl'e verilecek biçimde."""
     if h.formul is not None:
+        if onb is not None:
+            return onb.cevir(h.formul, r, c, lambda m: _formul_yaz(m, kitap)), True
         return _formul_yaz(h.formul, kitap), True
     v = h.deger
     if isinstance(v, Hata):
@@ -279,6 +324,8 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
     wb.remove(wb.active)
     havuz = kitap.stil_havuzu
     onbellek: Dict[int, tuple] = {}
+    stil_dizisi: Dict[int, object] = {}          # stil kimliği → openpyxl `StyleArray` (hücre başına 5 atama yerine kopya)
+    formul_onb = _FormulOnbellek()
 
     def stil_nesneleri(kimlik: int):
         t = onbellek.get(kimlik)
@@ -289,15 +336,20 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
     def uygula(nesne, kimlik: int):
         if kimlik == 0:
             return
-        f, fi, b, a, nf = stil_nesneleri(kimlik)
-        nesne.font, nesne.fill, nesne.border, nesne.alignment, nesne.number_format = f, fi, b, a, nf
+        dizi = stil_dizisi.get(kimlik)
+        if dizi is None:
+            f, fi, b, a, nf = stil_nesneleri(kimlik)
+            nesne.font, nesne.fill, nesne.border, nesne.alignment, nesne.number_format = f, fi, b, a, nf
+            stil_dizisi[kimlik] = copy(nesne._style)
+        else:
+            nesne._style = copy(dizi)
 
     for sayfa in kitap.sayfalar:
         ws = wb.create_sheet(sayfa.ad)
         if sayfa.sekme_rengi:
             ws.sheet_properties.tabColor = sayfa.sekme_rengi[1:]
         for (r, c), h in sayfa._hucreler.items():
-            deger, formul = _hucre_degeri(h, kitap)
+            deger, formul = _hucre_degeri(h, kitap, r, c, formul_onb)
             if deger is None:
                 continue
             hc = ws.cell(row=r, column=c)
@@ -390,6 +442,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         return k
 
     bozuk_formul = 0
+    formul_onb = _FormulOnbellek()
     for ws, s in sayfalar:
         yeni, stiller = {}, {}
         for satir in ws.iter_rows():
@@ -407,7 +460,8 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
                         if not metin.startswith("="):
                             metin = "=" + metin
                         try:
-                            yeni[(r, c)] = Hucre(None, _formul_oku(metin, kitap))
+                            yeni[(r, c)] = Hucre(None, formul_onb.cevir(
+                                metin, r, c, lambda m: _formul_oku(m, kitap)))
                         except FormulHatasi:
                             bozuk_formul += 1
                             yeni[(r, c)] = Hucre(metin)

@@ -236,3 +236,44 @@ def test_gizli_sayfa_uyarisi(tmp_path):
     k, rapor = xlsx_io.ac(yol)
     assert [x.ad for x in k.sayfalar] == ["Sheet", "Gizli"]
     assert any("Gizli" in u for u in rapor.uyarilar)
+
+
+# ---------------------------------------------------------------- 4f: hızlı formül çevirisi
+def test_hizli_formul_yolu_yavasla_ayni_sonuc():
+    from tabcel.io.xlsx_io import _FormulOnbellek, _formul_anahtari, _formul_oku
+    k, s = _kitap()
+    k.sayfa_ekle("Gelir")
+    formuller = []
+    for r in range(1, 40):
+        formuller += [f"=A{r}+B{r}*3", f"=SUM(A1:A{r})", f"=$A$1+C{r}", f"=Gelir!A{r}", f"=sum(a{r}:b{r})",
+                      f"=IF(A{r}>1,\"x\",\"y\")", f"=LOG10(A{r})", f"=_xlfn.IFS(A{r}>1,1,TRUE,2)",
+                      f"=A{r} + B{r}", f"=-A{r}^2%", f"=TOPLA(A{r})", f"=A{r}&B{r}", f"=1.5*A{r}"]
+    onb = _FormulOnbellek()
+    for i, f in enumerate(formuller):
+        r, c = 1 + i // 13, 1 + i % 13
+        try:
+            beklenen = _formul_oku(f, k)
+        except Exception as e:
+            beklenen = type(e)
+        try:
+            gelen = onb.cevir(f, r, c, lambda m: _formul_oku(m, k))
+        except Exception as e:
+            gelen = type(e)
+        assert gelen == beklenen, (f, gelen, beklenen)
+    assert _formul_anahtari("=A5+B5", 5, 1) == _formul_anahtari("=A6+B6", 6, 1)       # bağıl yapı aynı
+    assert _formul_anahtari("=A5+B5", 5, 1) != _formul_anahtari("=A6+B5", 6, 1)
+    assert _formul_anahtari("=$A$1+B5", 5, 1) != _formul_anahtari("=$A$2+B6", 6, 1)   # mutlak başvuru farklı
+    assert _formul_anahtari("=Gelir!A1", 1, 1) is None and _formul_anahtari('=IF(A1,"x")', 1, 1) is None
+
+
+def test_buyuk_dosya_gidis_donus_ayni(tmp_path):
+    k, s = _kitap()
+    yeni = {}
+    for r in range(1, 301):
+        yeni[(r, 1)] = Hucre(float(r))
+        yeni[(r, 2)] = Hucre(None, ceviri.iceri(f"=A{r}*2+IF(A{r}>10,1,0)", k))
+        yeni[(r, 3)] = Hucre(None, ceviri.iceri(f"=SUM($A$1:A{r})", k))
+    s.toplu_yaz(yeni)
+    k2, _ = _gidis_donus(k, tmp_path)
+    for anahtar, h in yeni.items():
+        assert k2.sayfalar[0].hucre(*anahtar) == h

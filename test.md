@@ -1989,3 +1989,51 @@ Salt okunur Opus 5.5 alt ajanı (57 araç çağrısı; model düzeyinde 1500 toh
 **Temiz çıkanlar:** geri al/yinele model düzeyinde 1500 tohum × 45 işlem, **0 sapma** (stil depoları, birleşimler, ölçüler); pano gidiş-dönüşü (formül kayması, stil, birleşim, kes-yapıştır); sayı biçimi 55 bilinen Excel örneğinin hepsi; akıllı giriş sınırları; doldurma ay sonu kırpma; kural 2; testlerde yutulan hata/skip yok; 100.000 hücrede kalın uygulama 301 ms, geri al 127 ms, boyacı 200.000 hücre 389 ms.
 
 **İncelenmeyenler:** biçim çubuğu/Hücreleri Biçimlendir arayüz ayrıntıları; dondurma, kenarlık önceliği, birleşim çiziminin piksel doğruluğu; METNEÇEVİR; gerçek yazı tipiyle zamanlama; `paintEvent` istisnasının gerçek olay döngüsünde uygulamayı kapatıp kapatmadığı (düzeltme bunu gereksiz kıldı).
+
+
+---
+
+## 13. Faz 4 — dosyalar (2026-10-09)
+
+**Sonuç: 1993 test, hepsi geçiyor** (Faz 3 sonunda 1863 → Faz 4 ile +130).
+
+### 13.1 Kapsam
+| Alan | Katman | Durum | Test dosyası |
+|---|---|---|---|
+| .xlsx aç/kaydet: değer, formül (`_xlfn.`, sayfa kimliği⇄ad), hata, tarih, stil, ölçü, gizli, birleşim, dondurma, kılavuz, sekme rengi, sayfa yapısı | A | ✅ | `test_xlsx_io` (17) |
+| Korunamayan öğe taraması (grafik/resim/pivot/makro/yorum/koşullu biçim/doğrulama/filtre/tanımlı ad) + uyarı + onay | A/B | ✅ | `test_xlsx_io`, `test_dosya_menusu` |
+| Atomik kayıt (geçici dosya + `os.replace`), hatada eski dosya bozulmaz | A | ✅ | `test_xlsx_io`, `test_csv_io`, `test_yazdir` |
+| Dosya menüsü: Yeni/Aç/Kaydet/Farklı Kaydet/Son Kullanılanlar, değişti işareti, kapatırken sorma, komut satırı | B | ✅ | `test_dosya_menusu` (17) |
+| .csv: kodlama/ayraç tanıma, önizleme, metin olarak al, görünen metinle yazma | A/B | ✅ | `test_csv_io` (21), `test_csv_menu` (9) |
+| Sayfa yapısı, sayfalama (Qt'siz), PDF/yazdır çizimi, Sayfa Yapısı penceresi | A/B/E | ✅ | `test_sayfalama` (19), `test_yazdir` (17) |
+| Otomatik kurtarma kopyası + çökme sonrası kurtarma (gerçek süreç çökmesi dahil) | A/B | ✅ | `test_kurtarma` (15) |
+| Büyük dosya: arka plan çalıştırıcı, hızlı formül yolu = yavaş yol | A/B | ✅ | `test_arka_plan` (7), `test_xlsx_io` |
+| **Örnek dosyalar gidiş-dönüşü** (`testler/ornekler/`: butce.xlsx, grafikli.xlsx, satis_tr.csv, satis_utf8.csv) | B | ✅ | `test_xlsx_ornekler` (9): kayıpsız karşılaştırıcı (`kitap_farklari`), openpyxl ile çapraz okuma, grafikli dosyada uyarı + veri korunur + korunamayan öğenin çıktığı doğrulanır, özgün dosya değişmez |
+| **Gerçek iş akışı** | B/E | ✅ | aç → düzenle (formül yeniden hesap) → kurtarma kopyası → kaydet → yeniden aç → PDF (yatay+dikey sayfa) → CSV |
+| Görsel (yazdırma sayfası) | E | ✅ | ekran görüntüsüyle incelendi (4d) |
+| Gerçek Excel'de açma / Excel'in yazdığı dosyayı açma | F | ⏳ | kullanıcı |
+
+### 13.2 Performans (`araclar/dosya_olcum.py`, 100.000 hücre; ayrıntı `surec.md` §8)
+Açılış (model + motor hesabı) 8 → **5,5 sn** (hedef < 10 ✅); .xlsx kayıt 7,4 → **3,2 sn**; CSV yaz 0,5 sn, akıllı içe aktarma 1,7 sn.
+
+### 13.3 Açık / bilinen kusurlar
+| # | Konu | Durum |
+|---|---|---|
+| 1 | Grafik, resim, pivot, makro, yorum/not, koşullu biçim, veri doğrulama, filtre, tanımlı ad **korunmaz** (uyarılır; ilgili özellikler Faz 5–6'da modele girince eşlenecek) | ➖ bilinçli (openpyxl sınırı) |
+| 2 | Formül önbellek değeri yazılmaz (Excel yeniden hesaplar; değeri okuyan bazı araçlar boş görür) | ➖ |
+| 3 | Tema renkleri varsayılan Office teması varsayımıyla RGB'ye çevrilir; yeni Excel 365 teması farklı olabilir | ⏳ gerçek dosyada doğrulanacak |
+| 4 | Sütun genişliği/satır yüksekliği dönüşümü yaklaşık (±7 px) | ➖ |
+| 5 | Kurtarma kopyası ana iş parçacığında (100.000 hücrede ≈ 3 sn kısa donma) | ➖ anlık görüntü gerekir |
+| 6 | Yazdırma: üst/alt bilgi, sayfa numarası, el ile sayfa sonu, sütun yineleme yok | ➖ |
+| 7 | CSV: yazarken ayraç/kodlama seçimi yok (`;` + BOM); sütun bazlı tür seçimi yok | ➖ |
+| 8 | `.xls`, `.ods`, parolalı .xlsx açılmaz | ➖ Faz 8 |
+
+### 13.4 Elle test bekleyenler (kullanıcı)
+| # | Ne | Nasıl | Durum |
+|---|---|---|---|
+| 1 | Tabcel'in kaydettiği .xlsx'i gerçek Excel'de aç | `testler/ornekler/butce.xlsx`'i aç → kaydet → Excel'de aç: biçim, birleşim, dondurma, formüller, sayfa yapısı | ⏳ |
+| 2 | Excel'in kaydettiği gerçek bir dosyayı Tabcel'de aç | Kendi bütçe dosyan; tema renkleri, sütun genişlikleri, fontlar | ⏳ |
+| 3 | PDF çıktısı | Dosya ▸ PDF ▸ başka okuyucuda aç; gerçek yazıcıdan çıktı | ⏳ |
+| 4 | Çökme sonrası kurtarma | Değişiklik yap, 2 dk bekle, Görev Yöneticisi'nden sonlandır, yeniden aç | ⏳ |
+| 5 | Büyük dosyada açılış | 100.000 satırlık gerçek dosya; "bekleyin" penceresi | ⏳ |
+| 6 | CSV'yi Türkçe Excel'de aç | Tabcel'in yazdığı `;` + BOM CSV'yi çift tıkla | ⏳ |

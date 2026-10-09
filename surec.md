@@ -9,13 +9,13 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
-| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma | 🔄 4f–4g (§2 madde 9) |
+| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya | 🔄 4g (§2 madde 9) |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1975 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1984 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -41,7 +41,7 @@ Testler: 1975 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
-9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
+9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -195,6 +195,15 @@ Yapılan: aralık bağımlılıkları sütuna göre indekslendi (geniş >8 sütu
 | STİLLİ (10 stil + 4 biçim, 100.000 hücre): ilk çizim / 1 satır / yatay / Ok | — | 24–32 / 10–11 / 7–8 / 12 ms ✅ | 16–40 |
 | STİLLİ: 3 satır / sıçrama / Shift+Ok | — | 17–19 / 40 / 22–25 ms ❌ | 16 |
 Büyük kazanç `window._formul_isareti_kapat`: her seçim değişiminde tüm ızgarayı boşuna yeniden çizdiriyordu (Faz 2'den kalma) → yalnız işaretleme açıkken. Diğer: `paintEvent` geçersiz bölgenin her parçasını ayrı boyar (sınır kutusu değil), Shift+Ok'ta yalnız fark bölgesi, başlıklar `QStaticText`. **Kalan ❌ (sıçrama, Shift+Ok, stilli 3 satır):** tam çizimde ~800 hücrede Python döngüsü + `drawStaticText` ≈ 25–40 ms; aşmak için satır/karo piksel önbelleği gerekir (3l'de gerekirse; kullanıcı kararı bekliyor).
+
+**2026-10-09 — Dosya G/Ç, 100.000 hücre** (5.000 × 20; 3 sütun formül, 4 sütun biçim; `araclar/dosya_olcum.py`; makine yüklü, ±%20)
+| Ölçüm | İlk | Son | Hedef |
+|---|---|---|---|
+| .xlsx aç (model) | 5,8 sn | **3,3 sn** | — |
+| + motor tüm hesap (pencere açılışı) | 2,2 sn | 2,2 sn | toplam < 10 sn ✅ (5,5 sn) |
+| .xlsx kaydet (= kurtarma kopyası) | 7,4 sn | **3,2 sn** | — |
+| .csv yaz / oku / akıllı çözümleme | 0,55 / 0,03 / 1,7 sn | aynı | — |
+Yapılan: kayıtta stil kimliği başına openpyxl `StyleArray` kopyası (hücre başına 5 atama yerine); açılış/kayıtta **bağıl anahtarlı formül özdeşlik önbelleği** (`_FormulOnbellek`: basit formüllerde ilk örnek tam çevrilir, çıktı girdiye özdeşse aynı yapıdaki diğerleri çevrilmeden kabul; yavaş yolla eşdeğerlik testle doğrulandı); dosya açma/kaydetme/CSV içe aktarma `ui/arka_plan.py` ile arka plan iş parçacığında (400 ms'den uzunsa pencere kilitlenir + "bekleyin" penceresi).
 
 ## 8b. Excel web'de doğrulanacaklar (kullanıcı doğrular; sonra teste dönüşür)
 Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel ayara ayarlıyken denenecek. Her satır "belirsiz" — doğrulanana dek kodda varsayım olarak işaretli.
@@ -566,6 +575,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1960 → **1975** (`test_kurtarma.py` 15: Qt'siz katman, pencere akışları, çökme simülasyonu, **gerçek süreç çökmesi**); mevcut hiçbir test değişmedi
 - **Bilerek eksik:** kopya yazımı ana iş parçacığında (büyük dosyada kısa donma → 4f'de arka plana alınacak); pid yeniden kullanımı (çok nadir) çökmüş kopyayı "canlı" gösterebilir; kopya ayarları (aralık/kapatma) için arayüz yok; csv'den açılan belge için kopya .xlsx'tir; birden çok pencere kurtarılırken hepsi ayrı pencerede açılır
 - Sıradaki: **4f** (büyük dosya: arka plan iş parçacığı, paylaşılan formül önbelleği, 100.000×20 < 10 sn)
+
+## [2026-10-09] — Faz 4 / 4f bitti (Sonnet 5.5)
+- Commit `6011867` (4e). **4f:** `araclar/dosya_olcum.py`; `xlsx_io` hızlandırma (stil dizisi kopyası, `_FormulOnbellek`); `ui/arka_plan.py` (`arka_planda`: işlem ayrı `QThread`'de, ana iş parçacığı olay işler, uzarsa pencere devre dışı + ilerleme penceresi, istisna ana iş parçacığında yeniden atılır); dosya aç / kaydet / CSV içe aktar buradan geçer
+- Ölçüm §8: 100.000 hücre açılış 8 sn → **5,5 sn** (hedef < 10 ✅), kayıt 7,4 → 3,2 sn
+- Testler 1975 → **1984** (`test_arka_plan.py` 7, `test_xlsx_io.py` +2: hızlı yol = yavaş yol eşdeğerliği 500+ formülde, büyük dosya gidiş-dönüşü); mevcut hiçbir test değişmedi
+- **Bilerek eksik / sınır:** otomatik kurtarma kopyası hâlâ ana iş parçacığında (100.000 hücrede ≈ 3 sn kısa donma; model eşzamanlı değiştirilebildiği için arka plana alınmadı — anlık görüntü (snapshot) gerekir); PDF/yazdırma arka planda değil; ilerleme yüzdesi yok (belirsiz çubuk); önbellek yalnız basit formüllerde (sayfa başvurulu/tırnaklı/küçük harfli formül yavaş yoldan); 1M hücrelik dosya denenmedi; `Hesaplayici` açılışta formülleri yeniden ayrıştırır (2,2 sn)
+- Sıradaki: **4g** (Faz 4 sonu: `test.md` bölümü, `testler/ornekler/` örnek .xlsx dosyaları (grafikli/resimli dahil), gerçek iş senaryosu, Opus gözden geçirmesi)
 
 *(Yeni girişler en alta eklenir.)*
 
