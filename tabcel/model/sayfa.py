@@ -83,7 +83,25 @@ class Sayfa:
             self._sonuc.pop((satir, sutun), None)
         else:
             self._sonuc[(satir, sutun)] = deger
-        self._bildir("sonuc", anahtar=(satir, sutun), deger=deger)
+        self._bildir("sonuc", anahtar=(satir, sutun), deger=deger,
+                     degisiklikler={(satir, sutun): deger})
+
+    def sonuclari_yaz(self, sonuclar: Dict[Anahtar, Deger]) -> None:
+        """Formül motorunun toplu sonuç yazımı: TEK `sonuc` olayı (`degisiklikler`). Formülü
+        olmayan hücrelerin sonucu yazılmaz (motor bayat bir anahtar verirse sessizce atlanır)."""
+        hucreler, depo = self._hucreler, self._sonuc
+        yazilan = {}
+        for anahtar, deger in sonuclar.items():
+            h = hucreler.get(anahtar)
+            if h is None or h.formul is None:
+                continue
+            if deger is None:
+                depo.pop(anahtar, None)
+            else:
+                depo[anahtar] = deger
+            yazilan[anahtar] = deger
+        if yazilan:
+            self._bildir("sonuc", degisiklikler=yazilan)
 
     def sonuc(self, satir: int, sutun: int) -> Deger:
         return self._sonuc.get((satir, sutun))

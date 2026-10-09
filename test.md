@@ -550,7 +550,7 @@ Gerçek ekran görüntüsü ile sıfırdan çizilen görüntü karşılaştırı
 | 8 | Ekran dışına kaymış hücrenin sağa taşan metni görünür alana uzanmıyor | Nadir | ➖ eksik özellik |
 | 9 | Çoklu seçimde satır/sütun ekle-sil-gizle yalnız son aralığa uygulanır | Excel hepsine uygular | ➖ Faz 3'te |
 
-**Karar bekleyen:** yukarıdaki 1–5. maddeler (performans) Faz 2'ye geçişi engelliyor mu? Önerim: **hayır** — plan.md'nin kendi ölçütü olan "akıcı kaydırma" karşılandı; kalanlar Faz 3'te (biçimlendirmeyle çizim yeniden yapılırken) ele alınabilir. Kullanıcı onayı bekleniyor ⏳.
+**Karar bekleyen:** yukarıdaki 1–5. maddeler (performans) Faz 2'ye geçişi engelliyor mu? Önerim: **hayır** — plan.md'nin kendi ölçütü olan "akıcı kaydırma" karşılandı; kalanlar Faz 3'te (biçimlendirmeyle çizim yeniden yapılırken) ele alınabilir. ✅ **Kullanıcı kabul etti (2026-10-09)** — Faz 3'e.
 
 ---
 

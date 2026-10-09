@@ -13,7 +13,8 @@ from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QInputDialog, Q
 from ..model.adres import (
     MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
 )
-from ..model.girdi import duzenleme_metni, girdi_coz
+from ..formul.ceviri import hucre_girdisi, hucre_metni
+from ..formul.sozcuk import FormulHatasi
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model.komutlar import (
@@ -530,6 +531,8 @@ class Izgara(QAbstractScrollArea):
         if olay.button() != Qt.LeftButton:
             return
         self.duzenlemeyi_bitir()
+        if self.duzenleniyor():
+            return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır
         nokta = olay.position().toPoint()
         kenar = self._kenar_bul(nokta)
         if kenar:
@@ -1094,8 +1097,10 @@ class Izgara(QAbstractScrollArea):
     def duzenleniyor(self) -> bool:
         return self._duzenleyici is not None
 
-    def duzenle_baslat(self, metin: Optional[str]) -> None:
-        """metin None: mevcut içerikle (F2/çift tık, Düzenle modu); aksi halde yazma modu."""
+    def duzenle_baslat(self, metin: Optional[str], *, duzenle_metni: Optional[str] = None,
+                       imlec: Optional[int] = None) -> None:
+        """metin None: Düzenle modu (F2/çift tık) — içerik hücreden ya da `duzenle_metni`nden
+        (hatalı formülün yeniden açılması); aksi halde yazma modu."""
         if self._duzenleyici is not None:
             return
         self._gorunur_yap(self._aktif)
@@ -1105,7 +1110,12 @@ class Izgara(QAbstractScrollArea):
         yazma = metin is not None
         e = _Duzenleyici(self.viewport(), yazma)
         e.setFont(self._yazi_tipi())
-        e.setText(metin if yazma else duzenleme_metni(self.sayfa.hucre(*self._aktif)))
+        if yazma:
+            e.setText(metin)
+        elif duzenle_metni is not None:
+            e.setText(duzenle_metni)
+        else:
+            e.setText(hucre_metni(self.sayfa.hucre(*self._aktif), self.sayfa.kitap))
         e.bitir.connect(self._duzenleme_bitti)
         e.textChanged.connect(self.duzenlemeMetniDegisti.emit)
         e.textChanged.connect(lambda _: self._duzenleyici_yerlestir())
@@ -1118,7 +1128,7 @@ class Izgara(QAbstractScrollArea):
         self.duzenlemeMetniDegisti.emit(e.text())
         if not yazma:
             e.deselect()
-            e.setCursorPosition(len(e.text()))
+            e.setCursorPosition(len(e.text()) if imlec is None else imlec)
 
     def _duzenleyici_yerlestir(self) -> None:
         e = self._duzenleyici
@@ -1171,23 +1181,33 @@ class Izgara(QAbstractScrollArea):
             return
         self._duzenleyici = None
         metin = e.text()
+        imlec = e.cursorPosition()
         e.hide()
         e.deleteLater()
-        if onayla:
-            self.hucre_gir(*self._duzenlenen, metin)
+        if onayla and not self.hucre_gir(*self._duzenlenen, metin):
+            # formül hatalı: Excel gibi düzenleme açık kalır (Düzenle modu, imleç hata yerinde)
+            self._aktif = self._duzenlenen
+            self.duzenle_baslat(None, duzenle_metni=metin, imlec=imlec)
+            return
         self.setFocus()
         self.modDegisti.emit("Hazır")
         if dr or dc:
             r, c = self._aktif
             self.sec((r + dr, c + dc))
 
-    def hucre_gir(self, satir: int, sutun: int, metin: str) -> None:
-        """Yazılan metni çözüp hücreye yazar (geri alınabilir). Değişmediyse bir şey yapmaz."""
-        yeni = girdi_coz(metin)
+    def hucre_gir(self, satir: int, sutun: int, metin: str) -> bool:
+        """Yazılan metni çözüp hücreye yazar (geri alınabilir). Değişmediyse bir şey yapmaz.
+        Formül hatalıysa uyarı verir ve False döner (hiçbir şey yazılmaz)."""
+        try:
+            yeni = hucre_girdisi(metin, self.sayfa.kitap)
+        except FormulHatasi as h:
+            self.uyari.emit(f"Bu formülde bir sorun var: {h}")
+            return False
         if yeni == self.sayfa.hucre(satir, sutun):
-            return
+            return True
         self.yigin.calistir(HucrelerDegis(self.sayfa, {(satir, sutun): yeni}))
         self._guncelle()
+        return True
 
     def secimi_temizle(self) -> None:
         yeni = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)}

@@ -207,7 +207,11 @@ def test_formul_saklanir(izgara):
     izgara.sec((8, 1))
     yaz(izgara, "=TOPLA(A1:A5)")
     tus(izgara.focusWidget(), Qt.Key_Return)
-    assert izgara.sayfa.hucre(8, 1).formul == "=TOPLA(A1:A5)"
+    # Faz 2 (kural 3): kanonik İngilizce saklanır; F2'de yine Türkçe görünür
+    assert izgara.sayfa.hucre(8, 1).formul == "=SUM(A1:A5)"
+    izgara.sec((8, 1))
+    tus(izgara, Qt.Key_F2)
+    assert izgara.focusWidget().text() == "=TOPLA(A1:A5)"
 
 
 def test_delete_ve_geri_al(izgara):

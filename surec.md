@@ -6,8 +6,8 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | Faz | Hedef | Yapılan | Durum |
 |---|---|---|---|
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
-| 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul bekliyor) |
-| 2 | Formül motoru | — | ⏳ **sıradaki** (önce K7 tasarım notu; çekirdek Opus ile) |
+| 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
+| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **sıradaki: Sonnet işleri** (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 322 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md`
+Testler: 497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -29,11 +29,18 @@ Testler: 322 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçl
 4f. ✅ Taşan metin, `####`/sayı kısaltma, Alt+Enter bitti (16 test)
 4g. ✅ Çoklu aralık (Ctrl+tık/sürükle, Shift genişletir, başlık Ctrl+tık; Delete/özet hepsine uygulanır, pano reddeder) + sayfa sekme rengi (sağ tık; renkli şerit)
 4h. ✅ **Faz 1 tamam.** 100.000 hücre ölçümü yapıldı (§8, `test.md` §4); Faz 1 Opus gözden geçirmesi yapıldı (`test.md` §8); K1–K3 hata düzeltmeleri + K4–K6 mimari düzenleme (kullanıcı onayıyla) bitti; Dosya menüsü içeriği Faz 4'e taşındı
-5. **Kullanıcı kararı bekleyen:** `test.md` §6'daki 5 performans ❌'sinin kabulü (öneri: kabul, Faz 3'te ele al)
+5. ✅ `test.md` §6'daki 5 performans ❌'si **kabul edildi** (2026-10-09, kullanıcı); Faz 3'te çizim yeniden yapılırken satır bazlı önbellekle ele alınacak
 5b. (✅ ölçüm yapıldı, yukarıya bakın)
 5c. Her faz sonunda **gerçek iş senaryosu testi** (örnek bütçe/stok/not çizelgesi) ve gidiş-dönüş/regresyon denetimi
-6. **Faz 2 — formül motoru** (çekirdek **Opus ile**: kullanıcı `/model opus` yapar ya da Opus alt ajanı), sonra fonksiyonlar (Sonnet). Başlamadan önce Opus K7 notu: formül yazarken fareyle başvuru seçme ("işaretleme modu") durum makinesi; `focusOutEvent`/`mousePressEvent` onayı buna göre değişecek
-7. Faz 2 giriş koşulları (hazır): `Hucre` yalnız girdi, sonuç `Sayfa.sonuc_ata`, `Hata` türü, kalıcı `sayfa.kimlik`, `kitap.dinle` olayları (`hucre`/`yapi`/`boyut`/`sayfa`), geri alınabilir sayfa komutları, `HucreTasi` Faz 2'de eklenecek (kes-yapıştır = taşıma)
+6. ✅ **Faz 2 çekirdeği bitti (Opus 5.5, 2026-10-09)** — ayrıntı `faz2_tasarim.md`, günlük en altta. **Sıradaki işler Sonnet 5.5 ile** (`faz2_tasarim.md` §7 sözleşmesi), önerilen sıra:
+   - 6a. `formul/adlar.py`: Türkçe adlar — **her biri işlevin kendi tr-tr sayfasından** (alfabetik liste sayfası makine çevirisi hatalı: PMT için "FAİZ_ORANI" gibi); doğrulanamayan §8b-6'ya
+   - 6b. ~80 fonksiyon (`formul/fonksiyonlar/` gruplar; `temel.py` kalıbı; aralıklar için `AralikDeger.sayilar()/toplam()` sıcak yolu), her biri 4 vaka (kural 11)
+   - 6c. Pano: formül kopyalanınca `kaydir.kopyala`; kes-yapıştır → `komutlar.HucreTasi` (model + testleri hazır); kendi biçimimiz kimlikli taşır, dışarıya `ceviri.disa`; dışarıdan gelen `=…` metni `ceviri.hucre_girdisi`
+   - 6d. K7 işaretleme modu + odak kaybında onaylamama + renkli başvuru vurgusu + F4 + otomatik tamamlama/ipucu + Otomatik Toplam (Alt+=) — `faz2_tasarim.md` §6
+   - 6e. Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
+   - 6f. Bilinen küçük sorun: geri al/yinele başka sayfadaki formül düzeltmesine dokununca pencere o sayfaya geçebilir (`_kitap_olayi` + `HucreTasi` sayfalar arası) — 6c ile birlikte bak
+   - 6g. Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
+7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
 1. `surec.md`'yi oku, sıradaki işi al; kapsam `plan.md`'de
@@ -62,6 +69,17 @@ Testler: 322 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçl
 - 2026-10-08: **Opus gözden geçirmesi sonrası mimari (kullanıcı onayı):** (K4) `Hucre` yalnız **girdi** (sabit değer YA DA formül); hesaplanan sonuç `Sayfa._sonuc`'ta (geri al girdiyi geri yükler, motor sonucu yeniden hesaplar); `Hata` değer türü. (K5) Qt'siz **olay katmanı**: `Sayfa` her yazımda `Olay` yayar, `CalismaKitabi.dinle` ile dinlenir; toplu işlem TEK olay. (K6) formülde sayfa başvurusu **kimlikle** tutulur, metinde ad görünür; sayfa ekle/sil/ad/taşı **geri alınabilir komut**, geri al geçmişi silinmez
 - 2026-10-08: `Hucre` eşitliği değer türünü de karşılaştırır (`True != 1.0`); `_kaydir` dolu hücreyi sayfa dışına itmeyi reddeder; kopyala/kes işareti içerik/yapı değişikliğinde iptal olur (boyutlandırma/gizleme ve art arda yapıştırma korur)
 - 2026-10-08: **Model kullanımı:** planlama/mimari/gözden geçirme + formül çekirdeği + sayı biçimi çözümleyici Opus 5.5; geri kalan kod ve testler Sonnet 5.5 (kullanıcı kararı Claude'a bıraktı)
+- 2026-10-09 (Faz 2 çekirdeği, gerekçeler `faz2_tasarim.md`):
+  - Saklanan formül = kanonik İngilizce + başka sayfa başvurusu **kimlikle** `=[3]!A1` (K6 kararının biçimi); yeniden adlandırma formüle dokunmaz, silinen sayfa `#BAŞV!` görünür, geri alınca kendiliğinden düzelir
+  - Var olmayan sayfaya başvurulu formül **reddedilir**, düzenleme açık kalır (Excel dosya iletişim kutusu açar — bilerek fark)
+  - Hatalı formül girilince düzenleme açık kalır, imleç yerinde (Excel gibi); bilinmeyen fonksiyon adı kabul edilir, `#AD?` hesaplanır
+  - **Dizi semantiği Excel 365** (işleçler aralıkta öğe öğe; `=TOPLA(A1:A3*B1:B3)` çalışır); **taşma yok (Faz 8)**: çok hücreli sonuç aralıksa örtük kesişim, diziyse sol üst öğe — Excel 365 taşırır (bilerek fark)
+  - Hesap sırası: satır sırası + okurken erteleme (Excel hesap zinciri gibi), kenar listesi çıkarılmaz; döngüdeki hücreler 0, `motor.donguler`
+  - `yapi` (satır/sütun ekle-sil) ve sayfa ekle/sil olayında grafik baştan kurulur + tümü hesaplanır (basit/doğru; büyük dosyada yavaşsa daraltılacak)
+  - Satır/sütun ekle-sil komutu kitaptaki formül metinlerini de düzeltir, tek geri al adımı
+  - Formül çalışma anı metin⇄sayı dönüşümleri Türkçe kurala göre (`="2,5"+1` = 3,5)
+  - Hata adlarının tek kaynağı `model/gosterim.HATA_TR`; `formul/yerel.py` oradan alır
+- 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
 - **Kalıcı ad:** "Excel" İngilizcede "üstün olmak, sivrilmek" demek; birebir Türkçesi ("Üstün") bir hesap tablosu için anlamsız kaçıyor. Sözcük = "Word"ün birebir karşılığıydı; işlevden giden adaylar vardı; kullanıcı **Tabcel** dedi (karar verildi, ad yine tek sabitte)
@@ -99,7 +117,17 @@ Testler: 322 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçl
 | Sütun sığdır / `kullanilan_aralik` | 726 / 21 ms | 130 / 0 ms ✅ | 500 / 50 |
 
 Yapılan: metin/sayı/`QStaticText` önbelleği, sığan metne kırpma yok, dikey kaydırmada `viewport().scroll()` + yalnız açığa çıkan satırları çizme (**tuzak:** `QAbstractScrollArea.scrollContentsBy` tüm viewport'u geçersiz kılar → boşaltıldı), seçim değişince yalnız eski+yeni bölgeyi boyama, `kullanilan_aralik` önbelleği, sırasız `aralikta`. Doğrulama: `araclar/cizim_dogrula.py` gerçek ekran görüntüsüyle artımlı çizimi tam çizimle karşılaştırır (2 gerçek hata yakalandı ve düzeltildi; kalan fark 1 piksel).
-**Kabul kararı bekliyor:** kalan ❌'ler için öneri "kabul, Faz 3'te çizim yeniden yapılırken ele al" (`test.md` §6).
+**Kabul edildi (2026-10-09, kullanıcı):** kalan ❌'ler Faz 3'te çizim yeniden yapılırken ele alınacak (`test.md` §6).
+
+**2026-10-09 — formül motoru** (`araclar/formul_olcum.py`)
+| Ölçüm | İlk | Son |
+|---|---|---|
+| 50.000 formüllük zincir: toplu yazım + hesap | 6,5 sn | 5,1 sn (çoğu ayrıştırma; Faz 4'te paylaşılan formül/R1C1 önbelleği) |
+| Zincir: baştaki hücre değişti (50.000 yeniden hesap) | 1,2 sn | 1,0 sn |
+| Zincir sonuna bağlı tek değişiklik | 0,3 ms | 0,2 ms |
+| 5.000 satır çizelge (satır TOPLA + birikimli `TOPLA($D$1:D5000)`) yazım | **86 sn** | **1,2 sn** |
+| Aynı çizelgede A1 değişti | **43 sn** | **0,14 sn** |
+Yapılan: topolojik sıralama yerine okurken erteleme (O(n²) kenar çıkarma kalktı), tur boyunca tek sütunlu aralıklar için önek toplam önbelleği (toplama sırası aynı → sonuç birebir aynı), sözcükleyicide yerel başına düzenli ifade önbelleği.
 
 ## 8b. Excel web'de doğrulanacaklar (kullanıcı doğrular; sonra teste dönüşür)
 Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel ayara ayarlıyken denenecek. Her satır "belirsiz" — doğrulanana dek kodda varsayım olarak işaretli.
@@ -108,7 +136,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 1 | Türkçe Excel'de hücreye `TRUE` / `FALSE` yazınca mantıksal olur mu, yoksa yalnızca `DOĞRU` / `YANLIŞ` mi? | İkisi de kabul (`model/girdi.py`) | ⏳ |
 | 2 | `1.5` yazınca ne olur? (tarih "1 Mayıs" mı, metin mi, sayı mı) | Metin kalır (tarih çözümü Faz 3) | ⏳ |
 | 3 | `1.500` → 1500 sayı mı? `5,` → 5 ve `,5` → 0,5 mi? `1.5E3`? | Evet / Evet / bilinmiyor | ⏳ |
-| 4 | Dizi sabitinde ayırıcılar Türkçe'de nedir? (`{1;2;3}` satır/sütun ayrımı, `{1,2;3,4}` karşılığı) | Bilinmiyor — Faz 2'de çeviri katmanı yazılmadan önce doğrulanmalı | ⏳ |
+| 4 | Dizi sabitinde ayırıcılar Türkçe'de nedir? (`{1;2;3}` satır/sütun ayrımı, `{1,2;3,4}` karşılığı) | Sütun `\`, satır `;` → `{1\2;3\4}` (kaynak: Microsoft topluluk forumu + tr-tr "dizi sabitleri" belgesi; resmî kesin değil) — `formul/yerel.py` | ⏳ |
 | 5 | Hata değerlerinin Türkçe yazımı: `#BÖL/0!`, `#AD?`, `#BAŞV!`, `#DEĞER!`, `#YOK`, `#SAYI!`, `#BOŞ!`, `#TAŞMA!`… | plan.md'deki liste (resmî listeyle doğrulanmadı) | ⏳ |
 | 6 | Faz 2 fonksiyonlarının resmî Türkçe adları (özellikle XLOOKUP=ÇAPRAZARA?, XMATCH, TEXTJOIN, IFS, SWITCH, MAXIFS…) | Yazılmadı; Microsoft'un resmî çeviri listesinden alınacak | ⏳ |
 | 7 | 15 anlamlı basamak: 16+ basamaklı sayı girişi, `=0,1+0,2-0,3`, `=1*(0,5-0,4-0,1)`, karşılaştırma `=(0,1+0,2)=0,3` sonuçları | Bilinmiyor | ⏳ |
@@ -116,6 +144,10 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 9 | Çok hücreli seçimde Enter, seçim içinde mi gezer? | Gezmez, aktif hücre bir aşağı (basitleştirme) | ⏳ |
 | 10 | Kopyalanan aralık, seçilen hedefin katı olmadığında (ör. 1×2 kaynak, 2×3 seçim) Excel ne yapar? Hata verir mi, sol üst köşeye mi yapıştırır? | Sol üst köşeye yapıştırır (`yapistirma_plani`) | ⏳ |
 | 11 | Alt+Enter'lı hücre kaydırma kapalıyken tek satırda nasıl görünür (satır sonu hiç yok mu, boşluk mu)? Genel biçimde dar sütunda sayı yuvarlama/bilimsel geçiş eşiği nedir? | Satır sonu görünmez; 0,01 altı bilimsele geçer | ⏳ |
+| 12 | Sayının metne dönüşümü (`=1/3&""`, `=0,00001&""`, `=1E+20&""`): kaç basamak, bilimsel gösterime hangi eşikte geçer? | 15 anlamlı basamak, Python `%.15g` eşiği (1E-05'ten küçükte bilimsel) — `donustur.sayi_metni` | ⏳ |
+| 13 | Döngüsel başvuru: `A1: =B1+1`, `B1: =A1+1` yazınca hücrelerde ne görünür (0 mı, son değer mi)? Döngüye bağlı `C1: =A1*10`? | Döngü üyeleri 0; bağlı hücreler bu 0 ile hesaplanır | ⏳ |
+| 14 | `="1.5"+1`, `="1.1.2026"+1` (tarih metni) Türkçe Excel'de ne verir? | `#DEĞER!` (tarih metni çözümü Faz 3) | ⏳ |
+| 15 | `=A1:A3` ve `=A1:A3*2` tek hücrede (taşma alanı dolu değilken) Excel web'de taşar; taşma engellenince `#TAŞMA!` mı? `#SPILL!`'in Türkçesi? | Taşma yok; örtük kesişim/sol üst (Faz 8) | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -240,5 +272,16 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Performans:** olay katmanı ilk halinde toplu işlemleri ~2× yavaşlattı (100.000 olay) → `toplu_yaz` ile düzeldi; son ölçüm: silme 218 ms, yapıştır 1,08 s, özet 82 ms (gerileme yok)
 - Testler: toplam **322 geçti** (K1–K3 düzeltmesinden sonra 259 → +63). Yeni dosyalar: `test_olay.py`, `test_sayfa_komutlari.py`, `test_pencere_sayfa.py`, `test_toplu_ve_sonuc.py`; K4 testleri `test_sayfa/test_gosterim/test_pano` içinde. Piksel doğrulaması yine 1 piksel
 - `CLAUDE.md` eski ifadeler **değiştirilmedi** (alt ajan isteği yetki sayılmaz); kullanıcı onayıyla güncellenecek
+
+## [2026-10-09] — Faz 2 çekirdeği (Opus 5.5)
+- `faz2_tasarim.md`: katmanlar, saklanan biçim, değerlendirme kuralları, motor, başvuru kaydırma, **K7 işaretleme modu durum makinesi**, Sonnet'e devir sözleşmesi
+- `formul/`: `yerel.py` (EN/SAKLI/TR), `sozcuk.py` (boşluk korumalı sözcükleyici, sayfa önekleri `'A B'!`, `[kimlik]!`), `agac.py` (Excel önceliği, `-2^2=4`, kesişim, dizi sabiti, atlanmış argüman), `degerler.py` (`AralikDeger`, `Dizi`, örtük kesişim, `BEKLIYOR`/`Bekle`, önek toplam önbelleği), `donustur.py`, `degerlendir.py` (365 öğe öğe yayma + `#YOK` doldurma, `0^0`, yakın sıfır düzeltmesi, 15 basamak karşılaştırma), `fonksiyonlar/` (kayıt + `temel.py`: SUM, IF örnek kalıp), `adlar.py` (yalnız TOPLA, EĞER doğrulandı), `ceviri.py` (TR⇄saklanan⇄EN, argüman sayısı denetimi), `motor.py` (`Hesaplayici`), `kaydir.py`
+- `model/`: `Sayfa.sonuclari_yaz` (tek `sonuc` olayı), `SatirEkleSil/SutunEkleSil` formül metinlerini düzeltir (geri alınır), yeni `HucreTasi` komutu
+- Arayüz (en küçük bağlantı): `Pencere.motor`, hücre/formül çubuğu girişi `ceviri.hucre_girdisi`, F2/formül çubuğu `ceviri.hucre_metni` (Türkçe), hatalı formülde düzenleme açık kalır, sonuç olayında yeniden çizim
+- **Regresyon bildirimi (kural 12):** `test_izgara.py::test_formul_saklanir` Faz 1'in geçici davranışını (formül Türkçe saklanır) sınıyordu; kural 3 gereği artık `=SUM(A1:A5)` saklanıyor → test yeni beklenen davranışa güncellendi (gevşetilmedi: F2'de Türkçe görünmesi de eklendi)
+- Ölçüm ve optimizasyon: §8 (birikimli toplam 86 sn → 1,2 sn)
+- Testler: 322 → **497** (yeni: `test_formul_ayristir` 37, `test_degerlendir` 46, `test_yerellestirme` 36, `test_motor` 16, `test_kaydir` 33, `test_formul_arayuz` 7)
+- `CLAUDE.md` dosya yapısı + bilinen sınırlar güncellendi (kullanıcı onayı); performans ❌'leri kabul edildi
+- Sonraki: §2 madde 6a–6g (**Sonnet 5.5**)
 
 *(Yeni girişler en alta eklenir.)*

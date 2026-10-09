@@ -15,7 +15,8 @@ from PySide6.QtWidgets import (
 
 from .. import APP_NAME
 from ..model.adres import AdresHatasi, aralik_coz, hucre_yaz
-from ..model.girdi import duzenleme_metni
+from ..formul.ceviri import hucre_metni
+from ..formul.motor import Hesaplayici
 from ..model.komutlar import (
     GeriAlYigini, SayfaEkle, SayfaSil, SayfaTasi, SayfaYenidenAdlandir,
 )
@@ -66,6 +67,7 @@ class Pencere(QMainWindow):
     def __init__(self, kitap: Optional[CalismaKitabi] = None):
         super().__init__()
         self.kitap = kitap or CalismaKitabi()
+        self.motor = Hesaplayici(self.kitap)          # pencereden önce dinler: sonuçlar hazır olur
         self.yigin = GeriAlYigini()
         self.belge_adi = "Adsız"
         self._izgaralar: Dict[Sayfa, Izgara] = {}
@@ -260,6 +262,11 @@ class Pencere(QMainWindow):
 
     def _kitap_olayi(self, olay: Olay):
         """Modeldeki değişikliklere arayüz tepkisi (doğrudan yazım, geri al ve yinele aynı yoldan gelir)."""
+        if olay.tur == "sonuc":
+            g = self._izgaralar.get(olay.sayfa)
+            if g is not None and olay.sayfa is self._secili_sayfa:
+                g.viewport().update()          # başka hücreden tetiklenen yeniden hesaplama
+            return
         if olay.tur == "sayfa":
             if olay["islem"] == "sil":
                 self._son_indeks = olay["indeks"]
@@ -363,7 +370,7 @@ class Pencere(QMainWindow):
         else:
             self.ad_kutusu.setText(hucre_yaz(*g.aktif))
         if not g.duzenleniyor():
-            self.formul.setText(duzenleme_metni(g.sayfa.hucre(*g.aktif)))
+            self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
         self._ozet_guncelle()
 
     def _uyari(self, metin: str):
@@ -393,13 +400,14 @@ class Pencere(QMainWindow):
 
     def _formul_onayla(self, metin: str):
         g = self.izgara()
-        g.hucre_gir(*g.aktif, metin)
+        if not g.hucre_gir(*g.aktif, metin):
+            return                                  # formül hatalı: formül çubuğunda kalınır
         g.setFocus()
         g.sec((g.aktif[0] + 1, g.aktif[1]))
 
     def _formul_vazgec(self):
         g = self.izgara()
-        self.formul.setText(duzenleme_metni(g.sayfa.hucre(*g.aktif)))
+        self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
         g.setFocus()
 
     def _duzenleme_aynala(self, metin: str):

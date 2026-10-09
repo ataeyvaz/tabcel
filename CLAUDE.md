@@ -19,20 +19,23 @@ Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü he
 11. **Fonksiyon test şablonu (Faz 2 ve sonrası):** her formül fonksiyonu için en az dört test vakası — normal durum, boş hücre/argüman, hata değeri girdisi, metin/sayı karışımı. Referans değer Microsoft belgesinden ya da kullanıcının Excel web'de doğruladığından alınır; emin olunmayan `surec.md` → "Excel web'de doğrulanacaklar" listesine yazılır (tahmin yürütme).
 12. **Regresyon kuralı:** bir değişiklik mevcut bir özelliği/testi bozarsa devam etmeden önce kullanıcıya bildir (neyi bozdu, neden). Testi silerek/gevşeterek geçirme.
 
-## Dosya yapısı (hedef — Faz 1'de oluşur)
+## Dosya yapısı
 ```
 main.py              giriş noktası (komut satırından dosya açma)
-Tabcel.bat            .venv ile konsolsuz başlatma
+Tabcel.bat           .venv ile konsolsuz başlatma
 requirements.txt     bağımlılıklar
-tabcel/__init__.py    APP_NAME, __version__, künye, resource_dir()
-tabcel/model/         Workbook, Sheet, Cell, stiller, adresleme, geri al komutları (Qt yok)
-tabcel/formul/        tokenizer, parser, evaluator, fonksiyonlar, adlar.py (tr⇄en), bağımlılık grafiği (Qt yok)
-tabcel/io/            xlsx_io, csv_io, pdf/yazdırma
-tabcel/ui/            window, grid, formula_bar, sheet_tabs, dialogs, theme, icons, widgets
+tabcel/__init__.py   APP_NAME, __version__, künye, resource_dir()
+tabcel/model/        sayfa (Hucre/Sayfa/CalismaKitabi), adres, girdi, deger (Hata), gosterim, olay,
+                     komutlar (geri al), pano, olcu — Qt yok
+tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustur, degerlendir,
+                     fonksiyonlar/ (kayıt + gruplar), adlar (tr⇄en), ceviri, motor (bağımlılık +
+                     yeniden hesap), kaydir (başvuru kaydırma) — Qt yok
+tabcel/io/           xlsx_io, csv_io, pdf/yazdırma (Faz 4)
+tabcel/ui/           window, grid, theme (ikonlar/widgets sonra)
 testler/             pytest
-araclar/             ikon üretimi vb. yardımcı betikler
-kurulum/             Inno Setup betiği
-plan.md / surec.md   plan ve süreç günlüğü
+araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, cizim_dogrula, test_raporu)
+kurulum/             Inno Setup betiği (Faz 7)
+plan.md / surec.md / test.md / faz2_tasarim.md   plan, süreç günlüğü, test sonuçları, formül motoru tasarımı
 ```
 
 ## Teknoloji ve kısıtlar
@@ -55,4 +58,5 @@ plan.md / surec.md   plan ve süreç günlüğü
 - Ayrıntı: `plan.md` → "Model kullanımı"
 
 ## Bilinen sınırlar
-- Faz 1 sürüyor: model, ızgara, düzenleme var; formül motoru, biçimlendirme, dosya G/Ç henüz yok. Ayrıntı: `surec.md`
+- Faz 1 bitti; Faz 2 çekirdeği bitti (formül motoru, çeviri, bağımlılık, başvuru kaydırma). Sürüyor: fonksiyon kütüphanesi, Türkçe adlar, işaretleme modu (K7). Biçimlendirme, dosya G/Ç henüz yok. Ayrıntı: `surec.md`
+- Taşma (spill) yok (Faz 8): çok hücreli formül sonucu tek değere indirgenir

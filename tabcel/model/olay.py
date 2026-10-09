@@ -7,7 +7,8 @@ dosyadan yükleme de aynı yoldan görülür.
 Türler ve `ayrinti` anahtarları:
 - ``hucre``  : `degisiklikler` {(satır, sütun): (eski Hucre|None, yeni Hucre|None)} — yalnızca gerçekten
   değişen hücreler; toplu işlemler (geri al, yapıştır, silme) TEK olayla gelir
-- ``sonuc``  : `anahtar`, `deger` — formül sonucu yazıldı (geri al yığınına girmez)
+- ``sonuc``  : `degisiklikler` {(satır, sütun): değer} — formül sonuçları yazıldı (geri al yığınına
+  girmez; motor toplu yazar: TEK olay). Tek hücrelik `sonuc_ata` ayrıca `anahtar`, `deger` verir
 - ``yapi``   : `eksen` ('satir'|'sutun'), `nerede`, `fark` (+ekleme / −silme), `silinen` {anahtar: Hucre}
 - ``boyut``  : sütun genişliği / satır yüksekliği / gizleme değişti
 - ``sayfa``  : `islem` ('ekle'|'sil'|'ad'|'tasi'), `indeks`; 'ad' için `eski_ad`, 'tasi' için `eski_indeks`
