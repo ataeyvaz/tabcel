@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1458 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1474 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -390,6 +390,15 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1432 → **1458** (`test_stil.py` 26: interning, öncelik, tek olay, formül motoru tetiklenmez, geri al/yinele, tam satır/sütun, 100.000 hücre < 1,5 sn (hedef 0,3), ekle-sil + geri al, kitap/sayfa silme). Regresyon yok
 - Commit atılmadı (kullanıcı isteyince; Faz 3 çekirdeği + 3a birlikte)
 - Sıradaki: **3b** (pano biçim taşıma `PanoVerisi.stiller`, `HucreTasi` stil, Temizle menüsü, Delete biçimi korur)
+
+## [2026-10-09] — Faz 3 / 3b bitti (Sonnet 5.5)
+- Commit `8eb1103` (Faz 3 çekirdeği + 3a). **3b:** `PanoVerisi.stiller` ({(dr,dc): Stil}, JSON `"st"`; eski stilsiz JSON okunur), `pano_araligi` biçimli boş hücreleri de kapsar (`kullanilan_aralik(bicim_dahil=True)`), `stil_sozluk/stil_sozlukten`, `pano._yerlestir` (tek yerleşim üreteci) + `yapistirma_stilleri`, `html_yaz(satirlar, stiller)` (kalın/italik/çizgi/renk/dolgu/hizalama satır içi CSS; dışarıdan HTML'den biçim okuma **yok**)
+- **Yapıştır:** kendi biçimimiz = içerik + biçim, tek `Grup` (Excel "Tümü": biçimsiz kaynak hedefin biçimini de siler); dışarıdan gelen metin/HTML biçime dokunmaz (`kaynak_satir` yoksa). **Kes-yapıştır:** `HucreTasi` etkin stilleri taşır, kaynak varsayılana döner, hedefte satır/sütun stilini ezer, geri alınca aynen döner; sayfalar arası ve üst üste binen alan dahil
+- **Temizle:** `bicim_komutu(..., sifirla=True)`; ızgarada `bicimleri_temizle()` (içerik kalır), `tumunu_temizle()` (tek `Grup`); hücre sağ tık menüsüne "Biçimleri temizle", "Tümünü temizle" eklendi; Delete biçimi korur (test)
+- **Regresyon bildirimi (kural 12):** `test_izgara.py::test_hucre_menusu` menüdeki eylem listesini tam sınıyordu; menüye iki eylem eklendiği için beklenen liste `[…, "İçeriği temizle", "Biçimleri temizle", "Tümünü temizle"]` oldu (gevşetilmedi, genişletildi)
+- Testler 1458 → **1474** (`test_pano_bicim.py` 16)
+- Bilerek eksik: Özel Yapıştır (Değerler/Biçimler/Formüller) menüsü; birleşimlerin pano/taşıma ile taşınması (3f ile)
+- Sıradaki: **3c** (ızgara çizimi yeniden — Faz 1 performans ❌'leri burada kapanır; ölçüt `faz3_tasarim.md` §7)
 
 *(Yeni girişler en alta eklenir.)*
 

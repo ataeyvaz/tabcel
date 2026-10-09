@@ -82,7 +82,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 
 <!-- OTOMATIK:BASLA -->
 
-**Son çalıştırma: 2026-10-09 — ✅ 1458/1458 test geçti, 0 olumsuz** (süre ≈ 10.6 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
+**Son çalıştırma: 2026-10-09 — ✅ 1474/1474 test geçti, 0 olumsuz** (süre ≈ 10.0 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
 
 | Dosya | Kapsam | Test | ✅ Olumlu | ❌ Olumsuz |
 |---|---|---|---|---|
@@ -106,6 +106,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_olcu.py` | Excel ölçü birimleri: karakter/punto ⇄ piksel | 3 | 3 | 0 |
 | `test_opus_faz2.py` |  | 11 | 11 | 0 |
 | `test_pano.py` | Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı | 25 | 25 | 0 |
+| `test_pano_bicim.py` | Pano biçim taşıma (3b): PanoVerisi.stiller, JSON, HTML CSS, yapıştır/kes-taşı, Temizle menüsü, Delete biçimi korur | 16 | 16 | 0 |
 | `test_pano_formul.py` | Pano ve formül (6c): kopyada başvuru kayması, kes-yapıştır taşıma, dış formül çevirisi | 6 | 6 | 0 |
 | `test_pencere.py` | Ana pencere: ad kutusu, formül çubuğu, durum çubuğu, sayfa sekmeleri, yakınlaştırma | 21 | 21 | 0 |
 | `test_pencere_sayfa.py` | Sayfa sekmeleri ve sayfa komutları arayüzde (ekle/sil/yeniden adlandır/taşı, geri al) | 16 | 16 | 0 |
@@ -116,7 +117,7 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_stil.py` | Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al | 26 | 26 | 0 |
 | `test_toplu_ve_sonuc.py` | Toplu yazım ve girdi/sonuç ayrımı (K4) | 12 | 12 | 0 |
 | `test_yerellestirme.py` | TR ⇄ kanonik çeviri: ayırıcılar, fonksiyon/hata adları, sayfa başvuruları | 37 | 37 | 0 |
-| **Toplam** | | **1458** | **1458** | **0** |
+| **Toplam** | | **1474** | **1474** | **0** |
 
 ### `testler/test_adres.py` — 26/26 ✅
 *Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576)*
@@ -1310,6 +1311,26 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ plan sinir asimi
 - ✅ plan tam sutun secimine tek hucre asiri yayilmaz
 - ✅ k4 pano formul sonucunu metin olarak verir girdiyi json ile
+
+### `testler/test_pano_bicim.py` — 16/16 ✅
+*Pano biçim taşıma (3b): PanoVerisi.stiller, JSON, HTML CSS, yapıştır/kes-taşı, Temizle menüsü, Delete biçimi korur*
+
+- ✅ pano verisi stil ve bos bicimli hucre
+- ✅ pano json stil gidis donus kenar dahil
+- ✅ html dis aktarim satir ici css
+- ✅ yapistirma stilleri desen yinelenir
+- ✅ kopyala yapistir icerik ve bicim
+- ✅ bicimsiz kaynak hedefin bicimini siler tumu
+- ✅ disaridan metin yapistirma bicime dokunmaz
+- ✅ bicim baska oturumdan stil nesnesiyle tasinir — Pano JSON'u Stil alanlarını taşır (kimlik değil): başka havuz/oturum güvenli.
+- ✅ kes yapistir bicimi tasir kaynak varsayilana doner
+- ✅ hucre tasi sayfalar arasi ve satir stili altinda
+- ✅ hucre tasi ust uste biner alan ayni sayfa
+- ✅ delete bicimi korur
+- ✅ bicimleri temizle icerik kalir tek adim
+- ✅ tumunu temizle icerik ve bicim tek adim
+- ✅ bicimleri temizle tam satir satir stilini kaldirir
+- ✅ bicim temizle satir bicimliyken hucreyi varsayilana alir
 
 ### `testler/test_pano_formul.py` — 6/6 ✅
 *Pano ve formül (6c): kopyada başvuru kayması, kes-yapıştır taşıma, dış formül çevirisi*

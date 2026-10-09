@@ -19,6 +19,7 @@ from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 from .girdi import girdi_coz
 from .gosterim import goster
 from .sayfa import Anahtar, Hucre, Sayfa
+from .stil import Stil, stil_sozluk, stil_sozlukten
 
 TOPLU_DOLDURMA_SINIRI = 200_000     # tek hücreyi seçime yayarken en çok hücre
 
@@ -37,6 +38,9 @@ class PanoVerisi:
     oturum: Optional[str] = None                      # verinin geldiği uygulama oturumu
     # (satır farkı, sütun farkı) → İngilizce sayfa adlı formül (başka oturuma taşımak için)
     en_formul: Dict[Tuple[int, int], str] = field(default_factory=dict, compare=False)
+    # (satır farkı, sütun farkı) → Stil: yalnız varsayılandan farklı etkin stiller (Stil nesnesi, kimlik
+    # değil: başka kitap/oturuma güvenli). Boş ama biçimli hücreler de burada olur
+    stiller: Dict[Tuple[int, int], Stil] = field(default_factory=dict, compare=False)
 
     def json_yaz(self) -> str:
         return json.dumps({
@@ -44,6 +48,7 @@ class PanoVerisi:
             "ks": self.kaynak_satir, "kc": self.kaynak_sutun, "o": self.oturum,
             "h": [[dr, dc, h.deger, h.formul, self.en_formul.get((dr, dc))]
                   for (dr, dc), h in sorted(self.hucreler.items())],
+            "st": [[dr, dc, stil_sozluk(st)] for (dr, dc), st in sorted(self.stiller.items())],
         })
 
     @staticmethod
@@ -55,12 +60,14 @@ class PanoVerisi:
             v.hucreler[(dr, dc)] = Hucre(deger, formul)
             if ek and ek[0]:
                 v.en_formul[(dr, dc)] = ek[0]
+        for dr, dc, sozluk in d.get("st", []):
+            v.stiller[(dr, dc)] = stil_sozlukten(sozluk)
         return v
 
 
 def pano_araligi(sayfa: Sayfa, secim: Aralik) -> Aralik:
     """Seçimi kullanılan alanla sınırlar (tam satır/sütun seçimi 1 milyon boş satır kopyalamasın)."""
-    kul = sayfa.kullanilan_aralik()
+    kul = sayfa.kullanilan_aralik(bicim_dahil=True)      # biçimli boş hücreler de kopyalanır
     if kul is None:
         return Aralik(secim.ilk_satir, secim.ilk_sutun, secim.ilk_satir, secim.ilk_sutun)
     return Aralik(secim.ilk_satir, secim.ilk_sutun,
@@ -77,6 +84,13 @@ def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
             sonuc = sayfa.sonuc(r, c)
             if sonuc is not None:
                 v.sonuclar[(r - ar.ilk_satir, c - ar.ilk_sutun)] = sonuc
+    if sayfa._stil or sayfa.satir_stil or sayfa.sutun_stil:
+        stil_kimligi, havuz = sayfa.stil_kimligi, sayfa.havuz
+        for r in range(ar.ilk_satir, ar.son_satir + 1):
+            for c in range(ar.ilk_sutun, ar.son_sutun + 1):
+                k = stil_kimligi(r, c)
+                if k:
+                    v.stiller[(r - ar.ilk_satir, c - ar.ilk_sutun)] = havuz.stil(k)
     return v
 
 
@@ -163,10 +177,34 @@ def tsv_coz(metin: str) -> List[List[str]]:
 
 
 # ---------------------------------------------------------------- HTML
-def html_yaz(satirlar: List[List[str]]) -> str:
+def _css(st: Optional[Stil]) -> str:
+    """Dışarıya (Excel/Word/web) giden HTML için temel satır içi CSS: kalın, italik, çizgiler, renk, dolgu, hizalama."""
+    if st is None:
+        return ""
+    k = []
+    if st.kalin:
+        k.append("font-weight:bold")
+    if st.italik:
+        k.append("font-style:italic")
+    cizgi = [d for d, a in (("underline", st.alti_cizili != "yok"), ("line-through", st.ustu_cizili)) if a]
+    if cizgi:
+        k.append("text-decoration:" + " ".join(cizgi))
+    if st.yazi_rengi:
+        k.append(f"color:{st.yazi_rengi}")
+    if st.dolgu:
+        k.append(f"background:{st.dolgu}")
+    hiza = {"sol": "left", "orta": "center", "sag": "right"}.get(st.yatay)
+    if hiza:
+        k.append(f"text-align:{hiza}")
+    return f' style="{";".join(k)}"' if k else ""
+
+
+def html_yaz(satirlar: List[List[str]], stiller: Optional[Dict[Tuple[int, int], Stil]] = None) -> str:
+    stiller = stiller or {}
     govde = "".join(
-        "<tr>" + "".join(f"<td>{escape(m).replace(chr(10), '<br>')}</td>" for m in s) + "</tr>"
-        for s in satirlar)
+        "<tr>" + "".join(f"<td{_css(stiller.get((r, c)))}>{escape(m).replace(chr(10), '<br>')}</td>"
+                         for c, m in enumerate(s)) + "</tr>"
+        for r, s in enumerate(satirlar))
     return f"<table>{govde}</table>"
 
 
@@ -241,14 +279,9 @@ def _kaydirilmis(h: Hucre, dr: int, dc: int) -> Hucre:
     return h if yeni == h.formul else Hucre(None, yeni)
 
 
-def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,
-                     secim: Optional[Aralik] = None) -> Dict[Anahtar, Optional[Hucre]]:
-    """Yapıştırma sonucu: {(satır, sütun): Hucre | None}. Kaynaktaki boş hücreler hedefi boşaltır.
-    Kaynak konumu biliniyorsa formüllerin göreli başvuruları hedefe göre kayar.
-
-    Seçim kaynağın tam katıysa (ör. tek hücre → büyük seçim) desen seçime yinelenir (Excel gibi).
-    Sayfa sınırını aşıyorsa AdresHatasi.
-    """
+def _yerlestir(veri: PanoVerisi, satir: int, sutun: int, secim: Optional[Aralik]):
+    """Yapıştırma yerleşimi: (satır, sütun, kaynak satır farkı, kaynak sütun farkı) üretir.
+    Seçim kaynağın tam katıysa desen seçime yinelenir. Sayfa sınırını aşarsa AdresHatasi."""
     sr, sc = veri.satir_sayisi, veri.sutun_sayisi
     tekrar_r = tekrar_c = 1
     if secim is not None:
@@ -259,14 +292,34 @@ def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,
             satir, sutun = secim.ilk_satir, secim.ilk_sutun
     if satir + sr * tekrar_r - 1 > MAX_ROW or sutun + sc * tekrar_c - 1 > MAX_COL:
         raise AdresHatasi("Yapıştırılan veri sayfa sınırlarını aşıyor")
-    plan: Dict[Anahtar, Optional[Hucre]] = {}
     for tr in range(tekrar_r):
         for tc in range(tekrar_c):
             for dr in range(sr):
                 for dc in range(sc):
-                    r, c = satir + tr * sr + dr, sutun + tc * sc + dc
-                    h = veri.hucreler.get((dr, dc))
-                    if h is not None and h.formul is not None and veri.kaynak_satir is not None:
-                        h = _kaydirilmis(h, r - (veri.kaynak_satir + dr), c - (veri.kaynak_sutun + dc))
-                    plan[(r, c)] = h
+                    yield satir + tr * sr + dr, sutun + tc * sc + dc, dr, dc
+
+
+def yapistirma_stilleri(veri: PanoVerisi, satir: int, sutun: int, secim: Optional[Aralik],
+                        havuz) -> Dict[Anahtar, int]:
+    """Yapıştırmanın biçim planı {(satır, sütun): stil kimliği} (Excel "Tümü": kaynakta biçimsiz hücre
+    hedefin biçimini de varsayılana döndürür). Veride hiç stil yoksa boş sözlük DEĞİL, her hedef için 0
+    döner; çağıran hedefte biçim yoksa atlayabilir."""
+    kimlikler = {anahtar: havuz.kimlik(st) for anahtar, st in veri.stiller.items()}
+    return {(r, c): kimlikler.get((dr, dc), 0) for r, c, dr, dc in _yerlestir(veri, satir, sutun, secim)}
+
+
+def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,
+                     secim: Optional[Aralik] = None) -> Dict[Anahtar, Optional[Hucre]]:
+    """Yapıştırma sonucu: {(satır, sütun): Hucre | None}. Kaynaktaki boş hücreler hedefi boşaltır.
+    Kaynak konumu biliniyorsa formüllerin göreli başvuruları hedefe göre kayar.
+
+    Seçim kaynağın tam katıysa (ör. tek hücre → büyük seçim) desen seçime yinelenir (Excel gibi).
+    Sayfa sınırını aşıyorsa AdresHatasi.
+    """
+    plan: Dict[Anahtar, Optional[Hucre]] = {}
+    for r, c, dr, dc in _yerlestir(veri, satir, sutun, secim):
+        h = veri.hucreler.get((dr, dc))
+        if h is not None and h.formul is not None and veri.kaynak_satir is not None:
+            h = _kaydirilmis(h, r - (veri.kaynak_satir + dr), c - (veri.kaynak_sutun + dc))
+        plan[(r, c)] = h
     return plan

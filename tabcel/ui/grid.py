@@ -21,7 +21,7 @@ from ..formul.sozcuk import FormulHatasi
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model.komutlar import (
-    GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, SatirEkleSil, SutunEkleSil,
+    BicimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
 from ..model.sayfa import Hucre, Sayfa
@@ -856,7 +856,7 @@ class Izgara(QAbstractScrollArea):
         Izgara._pano_durumu = {"sayfa": self.sayfa, "aralik": ar, "kesildi": kesilen, "jeton": jeton}
         md = QMimeData()
         md.setText(pano.tsv_yaz(satirlar))
-        md.setHtml(pano.html_yaz(satirlar))
+        md.setHtml(pano.html_yaz(satirlar, veri.stiller))
         md.setData(self.MIME_HUCRELER, veri.json_yaz().encode("utf-8"))
         md.setData(self.MIME_JETON, jeton.encode("ascii"))
         QApplication.clipboard().setMimeData(md)
@@ -945,7 +945,13 @@ class Izgara(QAbstractScrollArea):
             except AdresHatasi:
                 self.uyari.emit("Yapıştırılan veri sayfa sınırlarını aşıyor.")
                 return
-            self.yigin.calistir(HucrelerDegis(self.sayfa, plan))
+            komutlar = [HucrelerDegis(self.sayfa, plan)]
+            s = self.sayfa
+            if veri.kaynak_satir is not None and (veri.stiller or s._stil or s.satir_stil or s.sutun_stil):
+                # kendi biçimimiz: içerik + biçim (Excel "Tümü"); dışarıdan gelen metin biçime dokunmaz
+                komutlar.append(BicimDegis(s, hucreler=pano.yapistirma_stilleri(
+                    veri, sec.ilk_satir, sec.ilk_sutun, sec, s.havuz)))
+            self.yigin.calistir(komutlar[0] if len(komutlar) == 1 else Grup(komutlar))
         satirlar = [k[0] for k in plan]
         sutunlar = [k[1] for k in plan]
         self.sec((min(satirlar), min(sutunlar)), (max(satirlar), max(sutunlar)))
@@ -968,6 +974,8 @@ class Izgara(QAbstractScrollArea):
         self._pano_eylemleri(m)
         m.addSeparator()
         m.addAction("İçeriği temizle", self.secimi_temizle)
+        m.addAction("Biçimleri temizle", self.bicimleri_temizle)
+        m.addAction("Tümünü temizle", self.tumunu_temizle)
         return m
 
     # --- gizli satır/sütun atlama ---
@@ -1495,6 +1503,30 @@ class Izgara(QAbstractScrollArea):
         yeni = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)}
         if yeni:
             self.yigin.calistir(HucrelerDegis(self.sayfa, yeni))
+            self._guncelle()
+
+    def bicimleri_temizle(self) -> None:
+        """Seçimin biçimini varsayılana döndürür; içerik kalır (tek geri al adımı)."""
+        try:
+            kmt = bicim_komutu(self.sayfa, self.secimler, sifirla=True)
+        except AdresHatasi as h:
+            self.uyari.emit(str(h))
+            return
+        if not kmt.bos_mu():
+            self.yigin.calistir(kmt)
+            self._guncelle()
+
+    def tumunu_temizle(self) -> None:
+        """İçerik + biçim (Temizle ▸ Tümü); tek geri al adımı."""
+        icerik = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)}
+        try:
+            kmt = bicim_komutu(self.sayfa, self.secimler, sifirla=True)
+        except AdresHatasi as h:
+            self.uyari.emit(str(h))
+            return
+        komutlar = ([HucrelerDegis(self.sayfa, icerik)] if icerik else []) + ([] if kmt.bos_mu() else [kmt])
+        if komutlar:
+            self.yigin.calistir(komutlar[0] if len(komutlar) == 1 else Grup(komutlar))
             self._guncelle()
 
     def geri_al(self) -> None:

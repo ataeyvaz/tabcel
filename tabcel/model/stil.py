@@ -101,6 +101,28 @@ VARSAYILAN = Stil()
 _ALANLAR = {f.name for f in fields(Stil)}
 
 
+def stil_sozluk(stil: Stil) -> Dict[str, Any]:
+    """Yalnız varsayılandan farklı alanlar (JSON'a uygun; kenar {yön: [çizgi, renk]})."""
+    d: Dict[str, Any] = {}
+    for f in fields(Stil):
+        v = getattr(stil, f.name)
+        if f.name == "kenar":
+            k = {y: list(getattr(v, y)) for y in KENAR_YONLERI if getattr(v, y)}
+            if k:
+                d["kenar"] = k
+        elif v != getattr(VARSAYILAN, f.name):
+            d[f.name] = v
+    return d
+
+
+def stil_sozlukten(d: Dict[str, Any]) -> Stil:
+    d = dict(d)
+    kenar = d.pop("kenar", None)
+    if kenar:
+        d["kenar"] = Kenarlik(**{y: tuple(c) for y, c in kenar.items()})
+    return Stil(**d)
+
+
 class StilYama:
     """Kısmi stil: yalnız verilen alanlar uygulanır (`uygula(stil) -> Stil`). Hashlenebilir.
 
