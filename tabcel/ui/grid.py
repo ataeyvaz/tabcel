@@ -13,15 +13,16 @@ from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QInputDialog, Q
 from ..model.adres import (
     MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
 )
+from ..formul import ceviri
 from ..formul.ceviri import hucre_girdisi, hucre_metni
 from ..formul.sozcuk import FormulHatasi
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model.komutlar import (
-    GeriAlYigini, Grup, HucrelerDegis, OlcuDegis, SatirEkleSil, SutunEkleSil,
+    GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
-from ..model.sayfa import Sayfa
+from ..model.sayfa import Hucre, Sayfa
 from . import theme
 
 
@@ -87,6 +88,7 @@ class Izgara(QAbstractScrollArea):
     TOPLU_SINIR = 20000                   # tek işlemde en çok satır/sütun (gizle, boyutlandır)
     MIME_HUCRELER = "application/x-tabcel-hucreler"
     MIME_JETON = "application/x-tabcel-jeton"
+    _OTURUM = uuid.uuid4().hex            # bu uygulama oturumu (sayfa kimlikleri yalnız burada geçerli)
     _pano_durumu: Optional[dict] = None   # tüm ızgaralarda ortak: kopyalanan/kesilen aralık
 
     SATIR_BASLIK_GENISLIGI = 46
@@ -734,6 +736,10 @@ class Izgara(QAbstractScrollArea):
             return
         ar = pano.pano_araligi(self.sayfa, self.secim)
         veri = pano.pano_verisi_al(self.sayfa, ar)
+        veri.oturum = Izgara._OTURUM
+        for anahtar, h in veri.hucreler.items():
+            if h.formul is not None:
+                veri.en_formul[anahtar] = ceviri.disa(h.formul, self.sayfa.kitap)
         satirlar = pano.metin_satirlari(veri)
         jeton = uuid.uuid4().hex
         Izgara._pano_durumu = {"sayfa": self.sayfa, "aralik": ar, "kesildi": kesilen, "jeton": jeton}
@@ -766,16 +772,39 @@ class Izgara(QAbstractScrollArea):
             return None
         try:
             if md.hasFormat(self.MIME_HUCRELER):
-                return pano.PanoVerisi.json_oku(bytes(md.data(self.MIME_HUCRELER)).decode("utf-8"))
+                veri = pano.PanoVerisi.json_oku(bytes(md.data(self.MIME_HUCRELER)).decode("utf-8"))
+                if veri.oturum != Izgara._OTURUM:        # sayfa kimlikleri bu oturumda geçersiz
+                    veri = self._baska_oturumdan(veri)
+                return veri
             if md.hasHtml() and "<table" in md.html().lower():
                 satirlar = pano.html_tablo_coz(md.html())
                 if satirlar:
-                    return pano.metinden_pano_verisi(satirlar)
+                    return pano.metinden_pano_verisi(satirlar, self._dis_girdi)
             if md.hasText() and md.text() != "":
-                return pano.metinden_pano_verisi(pano.tsv_coz(md.text()))
+                return pano.metinden_pano_verisi(pano.tsv_coz(md.text()), self._dis_girdi)
         except (ValueError, KeyError, TypeError):
             return None
         return None
+
+    def _dis_girdi(self, metin: str):
+        """Dışarıdan gelen metin hücreye elle yazılmış gibi çözülür; `=…` Türkçe formül saklanan
+        biçime çevrilir, çözülemeyen formül düz metin olarak kalır."""
+        try:
+            return hucre_girdisi(metin, self.sayfa.kitap)
+        except FormulHatasi:
+            return Hucre(metin)
+
+    def _baska_oturumdan(self, veri: "pano.PanoVerisi") -> "pano.PanoVerisi":
+        """Başka uygulama oturumundan gelen kendi biçimimiz: formüller İngilizce biçimden çevrilir,
+        kaynak konumu korunur (göreli başvurular yine kayar)."""
+        for anahtar, h in list(veri.hucreler.items()):
+            if h.formul is None:
+                continue
+            try:
+                veri.hucreler[anahtar] = Hucre(None, ceviri.iceri(veri.en_formul[anahtar], self.sayfa.kitap))
+            except (KeyError, FormulHatasi):
+                veri.hucreler[anahtar] = Hucre(h.formul)
+        return veri
 
     def yapistirilabilir(self) -> bool:
         md = QApplication.clipboard().mimeData()
@@ -786,23 +815,26 @@ class Izgara(QAbstractScrollArea):
         if veri is None:
             return
         sec = self.secim
-        try:
-            plan = pano.yapistirma_plani(veri, sec.ilk_satir, sec.ilk_sutun, sec)
-        except AdresHatasi:
-            self.uyari.emit("Yapıştırılan veri sayfa sınırlarını aşıyor.")
-            return
-        komutlar = []
         d = Izgara._pano_durumu
-        kesme = bool(d and d["kesildi"])
+        kesme = bool(d and d["kesildi"]) and veri.oturum == Izgara._OTURUM
         if kesme:
+            # kes-yapıştır = taşıma: taşınan bölgeye işaret eden formüller de yeni yere kayar
             ar = d["aralik"]
-            temizle = {(r, c): None for r, c, _ in d["sayfa"].aralikta(ar)}
-            if temizle:
-                komutlar.append(HucrelerDegis(d["sayfa"], temizle))
-        komutlar.append(HucrelerDegis(self.sayfa, plan))
-        self.yigin.calistir(Grup(komutlar))
-        if kesme:
+            kutu = (ar.ilk_satir, ar.ilk_sutun, ar.son_satir, ar.son_sutun)
+            r0, c0 = sec.ilk_satir, sec.ilk_sutun
+            if r0 + veri.satir_sayisi - 1 > MAX_ROW or c0 + veri.sutun_sayisi - 1 > MAX_COL:
+                self.uyari.emit("Yapıştırılan veri sayfa sınırlarını aşıyor.")
+                return
+            self.yigin.calistir(HucreTasi(d["sayfa"], kutu, self.sayfa, (r0, c0)))
             Izgara._pano_durumu = None       # kesilen yalnızca bir kez yapıştırılır
+            plan = {(r0, c0): None, (r0 + veri.satir_sayisi - 1, c0 + veri.sutun_sayisi - 1): None}
+        else:
+            try:
+                plan = pano.yapistirma_plani(veri, sec.ilk_satir, sec.ilk_sutun, sec)
+            except AdresHatasi:
+                self.uyari.emit("Yapıştırılan veri sayfa sınırlarını aşıyor.")
+                return
+            self.yigin.calistir(HucrelerDegis(self.sayfa, plan))
         satirlar = [k[0] for k in plan]
         sutunlar = [k[1] for k in plan]
         self.sec((min(satirlar), min(sutunlar)), (max(satirlar), max(sutunlar)))

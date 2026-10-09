@@ -7,7 +7,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 |---|---|---|---|
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
-| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **6a, 6b bitti (Sonnet)**; sıradaki: 6c–6g (§2 madde 6) |
+| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **6a, 6b, 6c bitti (Sonnet)**; sıradaki: 6d–6g (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1160 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1166 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -35,10 +35,10 @@ Testler: 1160 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
 6. ✅ **Faz 2 çekirdeği bitti (Opus 5.5, 2026-10-09)** — ayrıntı `faz2_tasarim.md`, günlük en altta. **Sıradaki işler Sonnet 5.5 ile** (`faz2_tasarim.md` §7 sözleşmesi), önerilen sıra:
    - 6a. ✅ `formul/adlar.py`: 116 Türkçe ad, her biri işlevin kendi tr-tr sayfasından doğrulandı (2026-10-09; ayrıntı günlük)
    - 6b. ✅ 115 fonksiyon, 8 grup dosyası, her biri 4+ vaka (kural 11). **Eksik: `TEXT` (METNEÇEVİR)** — sayı biçimi çözümleyicisine (Faz 3, Opus) bağlı; adı `adlar.py`'de hazır. Metin tarihleri (`"1.1.2026"`) da Faz 3
-   - 6c. Pano: formül kopyalanınca `kaydir.kopyala`; kes-yapıştır → `komutlar.HucreTasi` (model + testleri hazır); kendi biçimimiz kimlikli taşır, dışarıya `ceviri.disa`; dışarıdan gelen `=…` metni `ceviri.hucre_girdisi`
+   - 6c. ✅ (2026-10-09) Pano: formül kopyalanınca `kaydir.kopyala`; kes-yapıştır → `komutlar.HucreTasi` (model + testleri hazır); kendi biçimimiz kimlikli taşır, dışarıya `ceviri.disa`; dışarıdan gelen `=…` metni `ceviri.hucre_girdisi`
    - 6d. K7 işaretleme modu + odak kaybında onaylamama + renkli başvuru vurgusu + F4 + otomatik tamamlama/ipucu + Otomatik Toplam (Alt+=) — `faz2_tasarim.md` §6
    - 6e. Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
-   - 6f. Bilinen küçük sorun: geri al/yinele başka sayfadaki formül düzeltmesine dokununca pencere o sayfaya geçebilir (`_kitap_olayi` + `HucreTasi` sayfalar arası) — 6c ile birlikte bak
+   - 6f. Bilinen küçük sorun: geri al/yinele başka sayfadaki formül düzeltmesine dokununca pencere o sayfaya geçebilir (`_kitap_olayi` + `HucreTasi` sayfalar arası) — 6c'de ayrıca bakılmadı, hâlâ açık
    - 6g. Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
@@ -298,5 +298,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Regresyon bildirimi (kural 12):** `test_yerellestirme.py::test_turkcesi_olmayan_fonksiyon_ingilizce_gorunur` ROUND'un Türkçe adı yok varsayımına dayanıyordu; artık YUVARLA doğrulandı → test adı olmayan bir fonksiyona (`SQRTPI`) çevrildi, amaç korundu, ROUND→YUVARLA kontrolü eklendi
 - Yeni doğrulanacaklar: §8b 16–21. Testler 498 → **1160** (`test_fonk_sayisal.py`, `test_fonk_metin_tarih.py`, ortak düzen `testler/_fonk.py`)
 - Sonraki: 6c (pano) → 6d (işaretleme modu) → 6e → 6f → 6g; ardından Opus gözden geçirmesi (özellikle `ortak.kriter`, tarih 1900 sistemi)
+
+## [2026-10-09] — Faz 2: Pano ve formül (Sonnet 5.5, 6c)
+- `PanoVerisi` kaynak konumu (`kaynak_satir/sutun`), oturum kimliği ve `en_formul` (İngilizce, sayfa adlı) taşır. `pano.yapistirma_plani` formülü hedefe göre `kaydir.kopyala` ile kaydırır (kat/yayma dahil; `$`'lı sabit)
+- Kes-yapıştır artık `HucreTasi`: taşınan bölgeye işaret eden formüller yeni yere kayar, taşınan formülün kendi başvuruları kaymaz, tek geri al adımı, sayfalar arası da. Kes yalnız aynı oturumda taşıma sayılır; sayfa sınırı aşımı uyarı verir
+- Dışarıdan gelen `=…` metni (TSV/HTML) `ceviri.hucre_girdisi` ile saklanan biçime çevrilir; çözülemeyen formül düz metin kalır. Başka uygulama oturumundan gelen kendi biçimimiz `en_formul`'dan `ceviri.iceri` ile çevrilir (sayfa kimlikleri oturuma özgü)
+- **Regresyon bildirimi (kural 12):** `test_izgara.py::test_kopyala_yapistir_deger_ve_formul` formülün kopyada *kaymadığı* geçici Faz 1 davranışını sınıyordu (`=A1+A2` aynı kalıyordu); artık B2→D8 `=C7+C8` bekleniyor (Excel davranışı). Test gevşetilmedi, doğru davranışa çevrildi
+- Yeni: `testler/test_pano_formul.py` (6 test). Testler 1160 → **1166**
+- Bilerek eksik: dışarıya giden düz metin formül hücresinde hesaplanmış değerdir (Excel gibi); sonucu henüz hesaplanmamış formülde saklanan biçim çıkar. Biçim/Özel Yapıştır Faz 3
+- Sonraki: 6d (işaretleme modu)
 
 *(Yeni girişler en alta eklenir.)*

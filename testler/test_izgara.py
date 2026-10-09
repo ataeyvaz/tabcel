@@ -509,7 +509,7 @@ def test_kopyala_yapistir_deger_ve_formul(izgara):
     izgara.sec((7, 3))
     tus(izgara, Qt.Key_V, Qt.ControlModifier)
     assert izgara.sayfa.deger(7, 3) == 1.0 and izgara.sayfa.deger(8, 3) == 2.0
-    assert izgara.sayfa.hucre(8, 4).formul == "=A1+A2"
+    assert izgara.sayfa.hucre(8, 4).formul == "=C7+C8"      # göreli başvurular (6, 2) kayar (Faz 2, 6c)
     assert izgara.sayfa.deger(1, 1) == 1.0                  # kaynak yerinde
     assert izgara.secim == Aralik(7, 3, 8, 4)               # yapıştırılan bölge seçilir
     izgara.geri_al()

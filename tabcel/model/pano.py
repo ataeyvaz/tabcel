@@ -4,8 +4,9 @@ Kendi içinde tam (değer + formül; biçim Faz 3'te), dışarıya/dışarıdan 
 (Excel, Google E-Tablolar, Sözcük, web tabloları). Dışarıdan gelen metin hücreye elle
 yazılmış gibi çözülür (`girdi_coz`).
 
-Bilerek eksik: formül kopyalanınca göreli başvuruların kayması Faz 2'de (başvuru
-kaydırma ile birlikte); şimdilik formül metni olduğu gibi taşınır.
+Formül kopyalanınca göreli başvurular kayar (`formul.kaydir.kopyala`); kes-yapıştır
+`komutlar.HucreTasi` ile yapılır (grid). Kendi biçimimiz formülü saklanan biçimde (sayfa
+kimlikli) taşır; başka oturumdan gelirse `en_formul` (İngilizce, sayfa adlı) kullanılır.
 """
 import json
 import re
@@ -30,19 +31,30 @@ class PanoVerisi:
     hucreler: Dict[Tuple[int, int], Hucre] = field(default_factory=dict)   # (satır farkı, sütun farkı)
     # formül hücrelerinin hesaplanmış sonuçları (yalnızca dışarıya metin verirken; kendi biçimimize girmez)
     sonuclar: Dict[Tuple[int, int], object] = field(default_factory=dict, compare=False)
+    # kaynağın sol üst köşesi (formül kopyalanırken başvuru kaydırması için); bilinmiyorsa None
+    kaynak_satir: Optional[int] = None
+    kaynak_sutun: Optional[int] = None
+    oturum: Optional[str] = None                      # verinin geldiği uygulama oturumu
+    # (satır farkı, sütun farkı) → İngilizce sayfa adlı formül (başka oturuma taşımak için)
+    en_formul: Dict[Tuple[int, int], str] = field(default_factory=dict, compare=False)
 
     def json_yaz(self) -> str:
         return json.dumps({
             "s": self.satir_sayisi, "c": self.sutun_sayisi,
-            "h": [[dr, dc, h.deger, h.formul] for (dr, dc), h in sorted(self.hucreler.items())],
+            "ks": self.kaynak_satir, "kc": self.kaynak_sutun, "o": self.oturum,
+            "h": [[dr, dc, h.deger, h.formul, self.en_formul.get((dr, dc))]
+                  for (dr, dc), h in sorted(self.hucreler.items())],
         })
 
     @staticmethod
     def json_oku(metin: str) -> "PanoVerisi":
         d = json.loads(metin)
-        v = PanoVerisi(int(d["s"]), int(d["c"]))
-        for dr, dc, deger, formul in d["h"]:
+        v = PanoVerisi(int(d["s"]), int(d["c"]), kaynak_satir=d.get("ks"),
+                       kaynak_sutun=d.get("kc"), oturum=d.get("o"))
+        for dr, dc, deger, formul, *ek in d["h"]:
             v.hucreler[(dr, dc)] = Hucre(deger, formul)
+            if ek and ek[0]:
+                v.en_formul[(dr, dc)] = ek[0]
         return v
 
 
@@ -57,7 +69,8 @@ def pano_araligi(sayfa: Sayfa, secim: Aralik) -> Aralik:
 
 
 def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
-    v = PanoVerisi(ar.son_satir - ar.ilk_satir + 1, ar.son_sutun - ar.ilk_sutun + 1)
+    v = PanoVerisi(ar.son_satir - ar.ilk_satir + 1, ar.son_sutun - ar.ilk_sutun + 1,
+                   kaynak_satir=ar.ilk_satir, kaynak_sutun=ar.ilk_sutun)
     for r, c, h in sayfa.aralikta(ar):
         v.hucreler[(r - ar.ilk_satir, c - ar.ilk_sutun)] = h
         if h.formul is not None:
@@ -82,13 +95,15 @@ def metin_satirlari(v: PanoVerisi) -> List[List[str]]:
             for r in range(v.satir_sayisi)]
 
 
-def metinden_pano_verisi(satirlar: List[List[str]]) -> Optional[PanoVerisi]:
+def metinden_pano_verisi(satirlar: List[List[str]], coz=girdi_coz) -> Optional[PanoVerisi]:
+    """`coz(metin) -> Hucre | None`: hücreye elle yazılmış gibi çözer (arayüz, formülü saklanan
+    biçime çeviren `ceviri.hucre_girdisi`'ni verir; hatalı formül metin olarak kalır)."""
     if not satirlar:
         return None
     v = PanoVerisi(len(satirlar), max(len(s) for s in satirlar))
     for r, satir in enumerate(satirlar):
         for c, metin in enumerate(satir):
-            h = girdi_coz(metin)
+            h = coz(metin)
             if h is not None:
                 v.hucreler[(r, c)] = h
     return v
@@ -218,9 +233,18 @@ def html_tablo_coz(html: str) -> List[List[str]]:
 
 
 # ---------------------------------------------------------------- yapıştırma
+def _kaydirilmis(h: Hucre, dr: int, dc: int) -> Hucre:
+    if h.formul is None or (dr == 0 and dc == 0):
+        return h
+    from ..formul.kaydir import kopyala                 # model → formul yalnız burada
+    yeni = kopyala(h.formul, dr, dc)
+    return h if yeni == h.formul else Hucre(None, yeni)
+
+
 def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,
                      secim: Optional[Aralik] = None) -> Dict[Anahtar, Optional[Hucre]]:
     """Yapıştırma sonucu: {(satır, sütun): Hucre | None}. Kaynaktaki boş hücreler hedefi boşaltır.
+    Kaynak konumu biliniyorsa formüllerin göreli başvuruları hedefe göre kayar.
 
     Seçim kaynağın tam katıysa (ör. tek hücre → büyük seçim) desen seçime yinelenir (Excel gibi).
     Sayfa sınırını aşıyorsa AdresHatasi.
@@ -240,5 +264,9 @@ def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,
         for tc in range(tekrar_c):
             for dr in range(sr):
                 for dc in range(sc):
-                    plan[(satir + tr * sr + dr, sutun + tc * sc + dc)] = veri.hucreler.get((dr, dc))
+                    r, c = satir + tr * sr + dr, sutun + tc * sc + dc
+                    h = veri.hucreler.get((dr, dc))
+                    if h is not None and h.formul is not None and veri.kaynak_satir is not None:
+                        h = _kaydirilmis(h, r - (veri.kaynak_satir + dr), c - (veri.kaynak_sutun + dc))
+                    plan[(r, c)] = h
     return plan
