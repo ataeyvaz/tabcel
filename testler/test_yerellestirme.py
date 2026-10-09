@@ -86,4 +86,14 @@ def test_ingilizce_disa_ve_iceri(kitap):
 
 
 def test_turkcesi_olmayan_fonksiyon_ingilizce_gorunur(kitap):
-    assert gosterime("=ROUND(1.25,1)", kitap) == "=ROUND(1,25;1)"
+    assert gosterime("=SQRTPI(1.25)", kitap) == "=SQRTPI(1,25)"
+    assert gosterime("=ROUND(1.25,1)", kitap) == "=YUVARLA(1,25;1)"
+
+
+def test_tum_adlar_gidis_donus():
+    from tabcel.formul.adlar import EN_TR, turkcesi, ingilizcesi
+    assert len(set(EN_TR.values())) == len(EN_TR)            # Türkçe adlar tekil
+    for en, tr in EN_TR.items():
+        assert ingilizcesi(tr) == en
+        assert ingilizcesi(tr.lower() if "İ" not in tr else tr) in (en, None)
+        assert turkcesi(en) == tr

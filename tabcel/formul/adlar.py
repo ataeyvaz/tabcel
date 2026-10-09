@@ -12,8 +12,17 @@ from .yerel import tr_buyuk
 
 # İngilizce → Türkçe. Doğrulama: işlevin tr-tr sayfası (tarih).
 EN_TR: Dict[str, str] = {
-    "SUM": "TOPLA",          # 2026-10-09, tr-tr alfabetik liste + "TOPLA işlevi"
-    "IF": "EĞER",            # 2026-10-09, tr-tr alfabetik liste + "EĞER işlevi"
+    # 2026-10-09: her ad, işlevin kendi tr-tr sayfasının başlığı + sözdizimi/örnek satırıyla
+    # doğrulandı (support.microsoft.com/tr-tr/excel/functions/<ad>-function; IS* ailesi "E işlevleri"
+    # sayfası; EĞERSAY ve BUL: Microsoft tr-tr sayfaları). Alfabetik liste sayfasına güvenilmedi.
+    "SUM": "TOPLA", "SUMIF": "ETOPLA", "SUMIFS": "ÇOKETOPLA", "SUMPRODUCT": "TOPLA.ÇARPIM", "PRODUCT": "ÇARPIM", "ROUND": "YUVARLA", "ROUNDUP": "YUKARIYUVARLA", "ROUNDDOWN": "AŞAĞIYUVARLA", "INT": "TAMSAYI", "MOD": "MOD", "ABS": "MUTLAK", "SQRT": "KAREKÖK", "POWER": "KUVVET", "PI": "Pİ", "RAND": "S_SAYI_ÜRET", "RANDBETWEEN": "RASTGELEARADA", "CEILING": "TAVANAYUVARLA", "FLOOR": "TABANAYUVARLA", "TRUNC": "NSAT", "SIGN": "İŞARET", "EXP": "ÜS", "LN": "LN", "LOG": "LOG", "LOG10": "LOG10",
+    "AVERAGE": "ORTALAMA", "AVERAGEIF": "EĞERORTALAMA", "AVERAGEIFS": "ÇOKEĞERORTALAMA", "COUNT": "BAĞ_DEĞ_SAY", "COUNTA": "BAĞ_DEĞ_DOLU_SAY", "COUNTBLANK": "BOŞLUKSAY", "COUNTIF": "EĞERSAY", "COUNTIFS": "ÇOKEĞERSAY", "MAX": "MAK", "MIN": "MİN", "MAXIFS": "ÇOKEĞERMAK", "MINIFS": "ÇOKEĞERMİN", "MEDIAN": "ORTANCA", "MODE": "ENÇOK_OLAN", "STDEV": "STDSAPMA", "VAR": "VAR", "LARGE": "BÜYÜK", "SMALL": "KÜÇÜK", "RANK": "RANK",
+    "IF": "EĞER", "IFS": "ÇOKEĞER", "AND": "VE", "OR": "YADA", "NOT": "DEĞİL", "XOR": "ÖZELVEYA", "IFERROR": "EĞERHATA", "IFNA": "EĞERYOKSA", "SWITCH": "İLKEŞLENEN", "TRUE": "DOĞRU", "FALSE": "YANLIŞ",
+    "VLOOKUP": "DÜŞEYARA", "HLOOKUP": "YATAYARA", "XLOOKUP": "ÇAPRAZARA", "INDEX": "İNDİS", "MATCH": "KAÇINCI", "XMATCH": "ÇAPRAZEŞLEŞTİR", "CHOOSE": "ELEMAN", "ROW": "SATIR", "COLUMN": "SÜTUN", "ROWS": "SATIRSAY", "COLUMNS": "SÜTUNSAY", "INDIRECT": "DOLAYLI", "OFFSET": "KAYDIR",
+    "CONCATENATE": "BİRLEŞTİR", "CONCAT": "ARALIKBİRLEŞTİR", "TEXTJOIN": "METİNBİRLEŞTİR", "LEFT": "SOLDAN", "RIGHT": "SAĞDAN", "MID": "PARÇAAL", "LEN": "UZUNLUK", "UPPER": "BÜYÜKHARF", "LOWER": "KÜÇÜKHARF", "PROPER": "YAZIM.DÜZENİ", "TRIM": "KIRP", "FIND": "BUL", "SEARCH": "MBUL", "SUBSTITUTE": "YERİNEKOY", "REPLACE": "DEĞİŞTİR", "TEXT": "METNEÇEVİR", "VALUE": "SAYIYAÇEVİR", "REPT": "YİNELE", "EXACT": "ÖZDEŞ",
+    "TODAY": "BUGÜN", "NOW": "ŞİMDİ", "DATE": "TARİH", "TIME": "ZAMAN", "YEAR": "YIL", "MONTH": "AY", "DAY": "GÜN", "HOUR": "SAAT", "MINUTE": "DAKİKA", "SECOND": "SANİYE", "WEEKDAY": "HAFTANINGÜNÜ", "WEEKNUM": "HAFTASAY", "EDATE": "SERİTARİH", "EOMONTH": "SERİAY", "DATEDIF": "TARİHFARKI", "DAYS": "GÜNSAY", "NETWORKDAYS": "TAMİŞGÜNÜ", "WORKDAY": "İŞGÜNÜ",
+    "ISNUMBER": "ESAYIYSA", "ISTEXT": "EMETİNSE", "ISBLANK": "EBOŞSA", "ISERROR": "EHATALIYSA", "ISNA": "EYOKSA", "ISLOGICAL": "EMANTIKSALSA",
+    "PMT": "DEVRESEL_ÖDEME", "FV": "GD", "PV": "BD", "RATE": "FAİZ_ORANI", "NPV": "NBD", "IRR": "İÇ_VERİM_ORANI",
 }
 
 TR_EN: Dict[str, str] = {tr_buyuk(tr): en for en, tr in EN_TR.items()}

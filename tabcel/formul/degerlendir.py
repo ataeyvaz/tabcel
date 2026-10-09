@@ -13,7 +13,7 @@ from . import fonksiyonlar
 from .agac import (
     KESISIM, Ad, Bos, Cagri, DiziSabit, Dugum, Ikili, Ref, Sabit, Tekli, Yuzde,
 )
-from .degerler import BOS_ARG, AralikDeger, Dizi, skalere
+from .degerler import BOS_ARG, AralikDeger, Dizi, _boyut, _okuyucu, _yay, skalere
 from .donustur import karsilastir, metne, sayi_sonucu, sayiya
 
 
@@ -100,45 +100,6 @@ def _yakin_sifir(v: float, a, c) -> float:
 
 
 # --- öğe öğe işlemler ---
-def _boyut(v):
-    if isinstance(v, AralikDeger):
-        r1, c1, r2, c2 = v.kirpilmis() if (v.r2 == MAX_ROW or v.c2 == MAX_COL) else (
-            v.r1, v.c1, v.r2, v.c2)
-        return r2 - r1 + 1, c2 - c1 + 1
-    if isinstance(v, Dizi):
-        return v.satir_sayisi, v.sutun_sayisi
-    return None
-
-
-def _okuyucu(v):
-    if isinstance(v, AralikDeger):
-        if v.tek_hucre():
-            x = v.hucre_degeri(v.r1, v.c1)
-            return lambda i, j: x
-        if v.r2 == MAX_ROW or v.c2 == MAX_COL:
-            r1, c1, _, _ = v.kirpilmis()
-        else:
-            r1, c1 = v.r1, v.c1
-        return lambda i, j: v.hucre_degeri(r1 + i, c1 + j)
-    if isinstance(v, Dizi):
-        return v.deger
-    x = None if v is BOS_ARG else v
-    return lambda i, j: x
-
-
-def _yay(okuyucu, boyut, R, C):
-    """Excel 365 yayma kuralı: 1 satırlı/sütunlu taraf genişletilir; boyu yetmeyen yerde #YOK."""
-    if boyut is None:
-        return okuyucu
-    r, c = boyut
-
-    def oku(i, j):
-        if (r != 1 and i >= r) or (c != 1 and j >= c):
-            return D.YOK
-        return okuyucu(0 if r == 1 else i, 0 if c == 1 else j)
-    return oku
-
-
 def _ogeler(islem, a, b):
     ba, bb = _boyut(a), _boyut(b)
     if ba is None and bb is None:

@@ -1,4 +1,4 @@
-# Tabcel — süreç ve durum (2026-10-08)
+# Tabcel — süreç ve durum (2026-10-09)
 
 Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. Ayrıntılı tarihli günlük en altta (Sözcük'teki gibi).
 
@@ -7,7 +7,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 |---|---|---|---|
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
-| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **sıradaki: Sonnet işleri** (§2 madde 6) |
+| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **6a, 6b bitti (Sonnet)**; sıradaki: 6c–6g (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1160 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -33,8 +33,8 @@ Testler: 497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçl
 5b. (✅ ölçüm yapıldı, yukarıya bakın)
 5c. Her faz sonunda **gerçek iş senaryosu testi** (örnek bütçe/stok/not çizelgesi) ve gidiş-dönüş/regresyon denetimi
 6. ✅ **Faz 2 çekirdeği bitti (Opus 5.5, 2026-10-09)** — ayrıntı `faz2_tasarim.md`, günlük en altta. **Sıradaki işler Sonnet 5.5 ile** (`faz2_tasarim.md` §7 sözleşmesi), önerilen sıra:
-   - 6a. `formul/adlar.py`: Türkçe adlar — **her biri işlevin kendi tr-tr sayfasından** (alfabetik liste sayfası makine çevirisi hatalı: PMT için "FAİZ_ORANI" gibi); doğrulanamayan §8b-6'ya
-   - 6b. ~80 fonksiyon (`formul/fonksiyonlar/` gruplar; `temel.py` kalıbı; aralıklar için `AralikDeger.sayilar()/toplam()` sıcak yolu), her biri 4 vaka (kural 11)
+   - 6a. ✅ `formul/adlar.py`: 116 Türkçe ad, her biri işlevin kendi tr-tr sayfasından doğrulandı (2026-10-09; ayrıntı günlük)
+   - 6b. ✅ 115 fonksiyon, 8 grup dosyası, her biri 4+ vaka (kural 11). **Eksik: `TEXT` (METNEÇEVİR)** — sayı biçimi çözümleyicisine (Faz 3, Opus) bağlı; adı `adlar.py`'de hazır. Metin tarihleri (`"1.1.2026"`) da Faz 3
    - 6c. Pano: formül kopyalanınca `kaydir.kopyala`; kes-yapıştır → `komutlar.HucreTasi` (model + testleri hazır); kendi biçimimiz kimlikli taşır, dışarıya `ceviri.disa`; dışarıdan gelen `=…` metni `ceviri.hucre_girdisi`
    - 6d. K7 işaretleme modu + odak kaybında onaylamama + renkli başvuru vurgusu + F4 + otomatik tamamlama/ipucu + Otomatik Toplam (Alt+=) — `faz2_tasarim.md` §6
    - 6e. Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
@@ -138,7 +138,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 3 | `1.500` → 1500 sayı mı? `5,` → 5 ve `,5` → 0,5 mi? `1.5E3`? | Evet / Evet / bilinmiyor | ⏳ |
 | 4 | Dizi sabitinde ayırıcılar Türkçe'de nedir? (`{1;2;3}` satır/sütun ayrımı, `{1,2;3,4}` karşılığı) | Sütun `\`, satır `;` → `{1\2;3\4}` (kaynak: Microsoft topluluk forumu + tr-tr "dizi sabitleri" belgesi; resmî kesin değil) — `formul/yerel.py` | ⏳ |
 | 5 | Hata değerlerinin Türkçe yazımı: `#BÖL/0!`, `#AD?`, `#BAŞV!`, `#DEĞER!`, `#YOK`, `#SAYI!`, `#BOŞ!`, `#TAŞMA!`… | plan.md'deki liste (resmî listeyle doğrulanmadı) | ⏳ |
-| 6 | Faz 2 fonksiyonlarının resmî Türkçe adları (özellikle XLOOKUP=ÇAPRAZARA?, XMATCH, TEXTJOIN, IFS, SWITCH, MAXIFS…) | Yazılmadı; Microsoft'un resmî çeviri listesinden alınacak | ⏳ |
+| 6 | Faz 2 fonksiyonlarının resmî Türkçe adları | **Bitti (2026-10-09):** her ad kendi tr-tr sayfasından doğrulandı (ÇAPRAZARA, ÇAPRAZEŞLEŞTİR, METİNBİRLEŞTİR, ÇOKEĞER, İLKEŞLENEN, ÇOKEĞERMAK…). Tek şüphe: MAXIFS sayfa başlığı çevrilmemiş, ÇOKEĞERMAK sözdizimi/örneklerden; kullanıcı Excel web'de gözle teyit etsin | ✅/⏳ |
 | 7 | 15 anlamlı basamak: 16+ basamaklı sayı girişi, `=0,1+0,2-0,3`, `=1*(0,5-0,4-0,1)`, karşılaştırma `=(0,1+0,2)=0,3` sonuçları | Bilinmiyor | ⏳ |
 | 8 | 1900 artık yıl hatası: `=TARİH(1900;2;29)`, `=HAFTANINGÜNÜ(1)`, `=HAFTANINGÜNÜ(59)`, `=GÜN(60)` ve `AY(60)` sonuçları | 60 = 29.2.1900 kabul | ⏳ |
 | 9 | Çok hücreli seçimde Enter, seçim içinde mi gezer? | Gezmez, aktif hücre bir aşağı (basitleştirme) | ⏳ |
@@ -148,6 +148,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 13 | Döngüsel başvuru: `A1: =B1+1`, `B1: =A1+1` yazınca hücrelerde ne görünür (0 mı, son değer mi)? Döngüye bağlı `C1: =A1*10`? | Döngü üyeleri 0; bağlı hücreler bu 0 ile hesaplanır | ⏳ |
 | 14 | `="1.5"+1`, `="1.1.2026"+1` (tarih metni) Türkçe Excel'de ne verir? | `#DEĞER!` (tarih metni çözümü Faz 3) | ⏳ |
 | 15 | `=A1:A3` ve `=A1:A3*2` tek hücrede (taşma alanı dolu değilken) Excel web'de taşar; taşma engellenince `#TAŞMA!` mı? `#SPILL!`'in Türkçesi? | Taşma yok; örtük kesişim/sol üst (Faz 8) | ⏳ |
+| 16 | `COUNT(1,,3)`: atlanmış argüman sayılır mı? `COUNTA` atlanmış? | Sayılır (her ikisi) | ⏳ |
+| 17 | `COUNTIF(A:A;5)` metin "5" hücresini de sayar mı? Boş ölçüt hücresi (`COUNTIF(A:A;B1)`, B1 boş) | Sayar; boş ölçüt 0 sayılır | ⏳ |
+| 18 | `VLOOKUP(x;t;2;)` (son argüman virgül ama boş) FALSE mu? Sıralı olmayan veride yaklaşık eşleşme sonucu (Excel ikili arama yapar, biz doğrusal tarama) | FALSE; doğrusal tarama | ⏳ |
+| 19 | `WEEKNUM(0)`, `EDATE(0;1)`, `EOMONTH(0;…)` (1900 sahte günleri), seri 60 üstünde tarih aritmetiği | WEEKNUM(0)=0; seri 0/60 komşu güne yuvarlanır | ⏳ |
+| 20 | `RANK` ve `MODE` Türkçe sürümde ad: RANK/ENÇOK_OLAN sayfaları var; `RANK.EŞİT` / `MODE.SNGL` ekleri yazılmadı | Yalnız eski adlar | ⏳ |
+| 21 | `COUNTBLANK`/`COUNTIF(…;"")` tam sütunda (A:A) 1.048.576'ya kadar boşları sayar; biz yalnız kullanılan alan (COUNTIF) / tüm satırlar (COUNTBLANK) | Kullanılan alan | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -283,5 +289,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler: 322 → **497** (yeni: `test_formul_ayristir` 37, `test_degerlendir` 46, `test_yerellestirme` 36, `test_motor` 16, `test_kaydir` 33, `test_formul_arayuz` 7)
 - `CLAUDE.md` dosya yapısı + bilinen sınırlar güncellendi (kullanıcı onayı); performans ❌'leri kabul edildi
 - Sonraki: §2 madde 6a–6g (**Sonnet 5.5**)
+
+## [2026-10-09] — Faz 2: Türkçe adlar ve fonksiyon kütüphanesi (Sonnet 5.5, 6a + 6b)
+- **6a:** `formul/adlar.py` 116 ad. Doğrulama yöntemi: `support.microsoft.com/tr-tr/excel/functions/<ad>-function` sayfalarının başlığı + sözdizimi/örnek satırları betikle karşılaştırıldı (alfabetik liste güvenilmez: ör. PMT sayfası DEVRESEL_ÖDEME, listede FAİZ_ORANI). IS* ailesi "E işlevleri" sayfasından (ESAYIYSA, EMETİNSE, EBOŞSA, EHATALIYSA, EYOKSA, EMANTIKSALSA), EĞERSAY ve BUL ilgili tr-tr sayfalarından. Dikkat çekenler: FLOOR=TABANAYUVARLA (sayfada tek "TABAN" artığı var), TRUNC=NSAT, MAXIFS=ÇOKEĞERMAK (başlık çevrilmemiş), SWITCH=İLKEŞLENEN, XLOOKUP=ÇAPRAZARA, XMATCH=ÇAPRAZEŞLEŞTİR, CONCAT=ARALIKBİRLEŞTİR, PROPER=YAZIM.DÜZENİ, PI=Pİ
+- **6b:** `fonksiyonlar/` altında `ortak.py` (öğe öğe yayan `@skaler` kaydı, ölçüt çözümleyici `kriter`, aralık hizalama), `matematik`, `istatistik`, `mantik`, `bilgi`, `metin`, `tarih` (1900 sistemi + sahte 29.2.1900), `arama`, `finans`. Aralık/dizi verilince tek değerli fonksiyonlar Excel 365 gibi dizi döndürür (`=TOPLA(YUVARLA(A1:A3/3;1))`). Öğe öğe yardımcılar (`_boyut/_okuyucu/_yay`) `degerlendir.py`'den `degerler.py`'ye taşındı (davranış aynı; döngüsel içe aktarmayı önlemek için)
+- Altın değerler Microsoft belge örneklerinden (PMT −1037,03; FV 2581,40; PV −59.777,15; RATE 0,77 %; NPV 1188,44; IRR −2,12 % / 8,66 %) ve bağımsız hesapla doğrulandı
+- Yakalanan gerçek hata: SUMIFS/AVERAGEIFS/MAXIFS/MINIFS'te toplam aralığı ölçüt listesiyle kayıyordu (testle bulundu, düzeltildi)
+- **Regresyon bildirimi (kural 12):** `test_yerellestirme.py::test_turkcesi_olmayan_fonksiyon_ingilizce_gorunur` ROUND'un Türkçe adı yok varsayımına dayanıyordu; artık YUVARLA doğrulandı → test adı olmayan bir fonksiyona (`SQRTPI`) çevrildi, amaç korundu, ROUND→YUVARLA kontrolü eklendi
+- Yeni doğrulanacaklar: §8b 16–21. Testler 498 → **1160** (`test_fonk_sayisal.py`, `test_fonk_metin_tarih.py`, ortak düzen `testler/_fonk.py`)
+- Sonraki: 6c (pano) → 6d (işaretleme modu) → 6e → 6f → 6g; ardından Opus gözden geçirmesi (özellikle `ortak.kriter`, tarih 1900 sistemi)
 
 *(Yeni girişler en alta eklenir.)*

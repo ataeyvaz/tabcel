@@ -47,3 +47,5 @@ def bul(ad: str) -> Optional[Tanim]:
 
 # Gruplar içe aktarılınca kayda girer
 from . import temel  # noqa: E402,F401
+from . import matematik, istatistik, mantik, bilgi, metin  # noqa: E402,F401
+from . import tarih, arama, finans  # noqa: E402,F401
