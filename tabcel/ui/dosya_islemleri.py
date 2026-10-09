@@ -5,14 +5,14 @@ import os
 import weakref
 from typing import List, Optional
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu, QMessageBox, QToolButton,
 )
 
 from .. import APP_NAME
-from ..io import csv_io, son_dosyalar, xlsx_io
+from ..io import csv_io, kurtarma, son_dosyalar, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
 from ..model.komutlar import SayfaYapisiDegis
 from ..model.sayfa import CalismaKitabi
@@ -35,7 +35,15 @@ class DosyaIslemleri:
     _tutulan: List["DosyaIslemleri"] = []                 # yeni()/dosya_ac() ile açılanlar: kapanana dek canlı
 
     # ------------------------------------------------------------------ kurulum
+    OTOKAYIT_MS = 120_000                                     # kurtarma kopyası aralığı (2 dakika)
+
     def _dosya_kur(self) -> None:
+        self.kurtarma_kimligi = kurtarma.yeni_kimlik()
+        self._kurtarilan = False                              # kurtarma kopyasından açıldı, henüz kaydedilmedi
+        self._son_otokayit = None
+        self._otokayit_zamanlayici = QTimer(self)
+        self._otokayit_zamanlayici.timeout.connect(self.otokayit_yap)
+        self._otokayit_zamanlayici.start(self.OTOKAYIT_MS)
         self.yol: Optional[str] = None
         self.kaynak_yol: Optional[str] = None               # .csv'den açıldıysa o dosya (kayıt yolu değil)
         self.rapor: Rapor = Rapor()
@@ -104,6 +112,8 @@ class DosyaIslemleri:
     # ------------------------------------------------------------------ durum
     def degisti_mi(self) -> bool:
         """Son kayıt/açılıştan beri geri al yığını değişti mi (geri alıp kayıt noktasına dönülürse hayır)."""
+        if getattr(self, "_kurtarilan", False):
+            return True
         temiz = getattr(self, "_temiz_damga", None)          # kurulum sırasında henüz yok
         return temiz is not None and not self.yigin.damga_esit(self.yigin.damga(), temiz)
 
@@ -118,6 +128,9 @@ class DosyaIslemleri:
 
     def _isaretle_temiz(self) -> None:
         self._temiz_damga = self.yigin.damga()
+        self._kurtarilan = False
+        self._son_otokayit = None
+        kurtarma.sil(self.kurtarma_kimligi)                   # kaydedildi: kurtarma kopyası gereksiz
         self._baslik_guncelle()
 
     # ------------------------------------------------------------------ yeni / aç
@@ -288,7 +301,71 @@ class DosyaIslemleri:
             return self.kaydet()
         return c == "kaydetme"
 
+    # ------------------------------------------------------------------ otomatik kurtarma (4e)
+    def otokayit_yap(self) -> bool:
+        """Değişmiş belgenin kurtarma kopyasını yazar (değişiklik yoksa ya da son kopyadan beri aynıysa
+        yazmaz). Hata sessizce yutulur: otomatik işlem kullanıcıyı bölmez. Yazıldıysa True."""
+        if not self.degisti_mi():
+            return False
+        damga = self.yigin.damga()
+        if self._son_otokayit is not None and self.yigin.damga_esit(damga, self._son_otokayit):
+            return False
+        try:
+            kurtarma.kopya_yaz(self.kitap, self.kurtarma_kimligi, self.belge_adi, self.yol or self.kaynak_yol)
+        except (OSError, XlsxHatasi):
+            return False
+        self._son_otokayit = damga
+        return True
+
+    def _kurtarma_sorusu(self, liste):
+        """(eylem, seçilenler); eylem 'ac' | 'sil' | 'sonra'. Testlerde yamalanır."""
+        from .kurtarma_penceresi import KurtarmaPenceresi
+        d = KurtarmaPenceresi(liste, self)
+        d.exec()
+        return d.eylem(), d.secilenler()
+
+    def kurtarma_denetle(self) -> int:
+        """Çökmüş oturumlardan kalan kopyaları önerir; açılan belge sayısını verir."""
+        liste = kurtarma.bekleyenler()
+        if not liste:
+            return 0
+        eylem, secilen = self._kurtarma_sorusu(liste)
+        if eylem == "sil":
+            for k in secilen:
+                kurtarma.sil(k.kimlik)
+            return 0
+        if eylem != "ac":
+            return 0                                          # "sonra": dosyalar kalır, sonraki açılışta yine sorulur
+        acilan = 0
+        for k in secilen:
+            if self.kurtarilani_ac(k) is not None:
+                acilan += 1
+        return acilan
+
+    def kurtarilani_ac(self, k):
+        from .window import Pencere
+        try:
+            kitap, rapor = kurtarma.ac(k)
+        except XlsxHatasi as e:
+            QMessageBox.critical(self, APP_NAME, f"“{k.ad}” kurtarılamadı: {e}\nKopya silinmedi: {k.dosya}")
+            return None
+        p = Pencere(kitap)
+        p.kurtarma_kimligi = k.kimlik                         # aynı kopyayı güncellemeye devam eder
+        kurtarma.sahiplen(k.kimlik)
+        p.kaynak_yol = k.yol                                  # kayıt yolu DEĞİL: Farklı Kaydet'te öneri olur
+        p.rapor = rapor
+        p.rapor.ekle("Bu belge otomatik kurtarma kopyasından açıldı; kaydedilmemiş değişiklikleri içerir. "
+                     "Kaybolmaması için kaydedin.")
+        p._kurtarilan = True
+        p._belge_adi_guncelle()
+        p._bilgi_goster()
+        DosyaIslemleri._tutulan.append(p)
+        p._dosya_gorunur_yap()
+        return p
+
     def _pencere_kapandi(self) -> None:
+        self._otokayit_zamanlayici.stop()
+        kurtarma.sil(self.kurtarma_kimligi)                   # bilerek kapatıldı: kopya gereksiz
         DosyaIslemleri._acik_pencereler.discard(self)
         if self in DosyaIslemleri._tutulan:
             DosyaIslemleri._tutulan.remove(self)

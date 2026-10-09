@@ -9,13 +9,13 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
-| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır | 🔄 4e–4g (§2 madde 9) |
+| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma | 🔄 4f–4g (§2 madde 9) |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1960 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1975 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -41,7 +41,7 @@ Testler: 1960 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
-9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e otomatik kayıt + kurtarma kopyası · 4f büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
+9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -559,6 +559,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1924 → **1960** (`test_sayfalama.py` 19 Qt'siz + xlsx gidiş-dönüş, `test_yazdir.py` 17: piksel denetimi, PDF sayfa sayısı/MediaBox/yön, hata yolları, menü, pencere); mevcut hiçbir test değişmedi. Ekran görüntüsü incelendi (birleşik başlık, yeşil başlık şeridi, kılavuz, %/₺ hizası)
 - **Bilerek eksik:** üst/alt bilgi, sayfa numarası, el ile sayfa sonu, yazdırma başlığında sütun yineleme, sayfa sırası seçeneği (önce sağa), çift çizgi aralığı, döndürülmüş metin, birleşimin sayfa sınırında bölünmesi (sol üst hücre başka sayfadaysa o parça çizilmez), gerçek yazıcıda çıktı ve PDF'in başka okuyucularda görünümü **elle test bekliyor**, `####` ölçüsü yaklaşık
 - Sıradaki: **4e** (otomatik kayıt + kurtarma kopyası)
+
+## [2026-10-09] — Faz 4 / 4e bitti (Sonnet 5.5)
+- Commit `52156ad` (4d). **4e:** `io/kurtarma.py` (Qt'siz: `kopya_yaz`, `bekleyenler`, `ac`, `sil`, `sahiplen`, `surec_canli_mi` — Windows `OpenProcess`/`GetExitCodeProcess`), `ui/kurtarma_penceresi.py`, `DosyaIslemleri.otokayit_yap/kurtarma_denetle/kurtarilani_ac`, 2 dakikalık zamanlayıcı (`OTOKAYIT_MS`), `main.py` açılışta `kurtarma_denetle()`
+- Kararlar: "otomatik kaydetme" = **kurtarma kopyası** (Excel AutoRecover): kullanıcının dosyasına HİÇ dokunulmaz, kopya `veri_klasoru()/recovery/<kimlik>.xlsx` + `.json`; yalnız **değişmiş** belge ve son kopyadan beri yeni değişiklik varsa yazılır; kaydedince ya da kullanıcı bilerek kapatınca (Kaydetme/Kaydet) silinir; çökmüş sürecin (pid ölü) kopyaları açılışta önerilir (Seçilenleri Aç / Sil / Sonra Sor — "Sonra" dosyaları korur); kurtarılan belge **kayıt yolsuz** açılır (özgün dosyanın üzerine yanlışlıkla yazılmasın; `kaynak_yol` Farklı Kaydet önerisi olur), "kaydedilmemiş" sayılır ve kopya kaydedilene dek durur; bozuk kopya silinmez (uyarı); bozuk üst veri atlanır
+- Testler 1960 → **1975** (`test_kurtarma.py` 15: Qt'siz katman, pencere akışları, çökme simülasyonu, **gerçek süreç çökmesi**); mevcut hiçbir test değişmedi
+- **Bilerek eksik:** kopya yazımı ana iş parçacığında (büyük dosyada kısa donma → 4f'de arka plana alınacak); pid yeniden kullanımı (çok nadir) çökmüş kopyayı "canlı" gösterebilir; kopya ayarları (aralık/kapatma) için arayüz yok; csv'den açılan belge için kopya .xlsx'tir; birden çok pencere kurtarılırken hepsi ayrı pencerede açılır
+- Sıradaki: **4f** (büyük dosya: arka plan iş parçacığı, paylaşılan formül önbelleği, 100.000×20 < 10 sn)
 
 *(Yeni girişler en alta eklenir.)*
 

@@ -24,6 +24,7 @@ def main() -> int:
         pencereler.append(Pencere(CalismaKitabi()))
     for p in pencereler:
         p.show()
+    pencereler[0].kurtarma_denetle()               # çökme sonrası kurtarma önerisi
     return app.exec()
 
 
