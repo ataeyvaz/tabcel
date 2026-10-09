@@ -1913,3 +1913,79 @@ Salt okunur Opus 5.5 alt ajanı (70 araç çağrısı, çalıştırarak doğrula
 
 **Ders:** Microsoft tr-tr işlev sayfalarının **başlığı** (makine çevirisi) güvenilmez; ad yalnızca **sözdizimi/örnek satırından** doğrulanmalı (`araclar`'a taşınabilir: toplu doğrulama betiği `araclar/adlar_dogrula.py`).
 
+
+---
+
+## 11. Faz 3 — biçimlendirme, sayı biçimleri, doldurma, dondurma (2026-10-09)
+
+**Sonuç: 1809 test, hepsi geçiyor** (Faz 2 sonunda 1236 → Faz 3 ile +573; ara kilometre taşı 1787 3j, 1801 3k, +8 senaryo).
+
+### 11.1 Kapsam
+| Alan | Katman | Durum | Test dosyası |
+|---|---|---|---|
+| Stil modeli, havuz (interning), etkin stil önceliği, `BicimDegis`, ekle-sil kaydırması | A | ✅ | `test_stil` |
+| Sayı biçimi çözümleyici (Genel, bölümler, koşul, renk, tarih/saat, kesir, bilimsel, yerel⇄kanonik) | A | ✅ | `test_sayi_bicimi`, `test_bicim_kodlari` |
+| Izgara çizimi (dolgu, kenarlık, yazı, hizalama, önbellek, artımlı = tam çizim) | B/E | ✅ | `test_izgara_stil` |
+| Pano: biçim + birleşim taşıma, kes-yapıştır | B | ✅ | `test_pano_bicim`, `test_birlesim_pano` |
+| Biçim çubuğu, Hücreleri Biçimlendir, kısayollar | B | ✅ | `test_bicim_cubugu`, `test_bicim_islem`, `test_bicim_penceresi` |
+| Birleştirilmiş hücreler (model, gezinme, çizim, ekle-sil, pano) | A/B | ✅ | `test_birlesim`, `test_birlesim_arayuz` |
+| Akıllı giriş (yüzde, para, kesir, saat, tarih), Metin biçimi | A/B | ✅ | `test_akilli_giris` |
+| Doldurma (seri türleri, tutamaç, Ctrl+D/R/Enter) | A/B | ✅ | `test_doldur`, `test_doldur_arayuz` |
+| Dondurma, kılavuz çizgisi | B/E | ✅ | `test_dondurma` |
+| Metni kaydır, otomatik satır yüksekliği, Alt+Enter | B/E | ✅ | `test_kaydir_metin` |
+| Biçim boyacısı | A/B | ✅ | `test_bicim_boyaci` |
+| **Gerçek iş senaryosu: biçimli aylık bütçe** | B/E | ✅ | `test_senaryo_bicimli` (8): birleşik başlık, başlık dolgusu/yazı, para ve yüzde görünümü, tarih girişi, ay adı doldurma (+geri al), boyacıyla biçim taşıma (+geri al), kopyala-yapıştırda biçim + formül kayması (+geri al), dondurma sayfaya özel, para biçimli hücreye değer girişi, kaydırılmış metin satır yüksekliği |
+| Görsel (biçimli çizelge ekran görüntüsü) | E | ✅ | birleşik başlık, yeşil başlık şeridi, boyanmış satır, fırça düğmesi görüldü. **Not:** ekransız ortamda yazı tipi yok (kutucuk glifleri); metin görünümü gerçek pencerede elle doğrulanmalı |
+| Gerçek Excel'de aynı çizelge | F | ⏳ | kullanıcı |
+
+### 11.2 Performans (`araclar/performans_olcum.py`, 100.000 hücre; ayrıntı `surec.md` §8)
+Düz sayfa: dikey 1 satır/kare ✅, yatay 7,2 ms ✅, Ok tuşu 8,4 ms ✅, özet 79 ms ✅. Stilli (10 stil + 4 biçim): ilk çizim 25,8 ms ✅, 1 satır 10,8 ✅, yatay 6,7 ✅, Ok 12,5 ✅.
+**Hâlâ hedefi aşan 6 ölçüm (kabul bekliyor):** ilk çizim `grab` 46 ms; dikey sıçrama 27 / stilli 37 ms; Shift+Ok 19,7 / stilli 23,4 ms; stilli 3 satır/kare 17 ms (sınırda). Neden: tam çizimde ~800 hücrede Python döngüsü; çözüm satır/karo piksel önbelleği (Faz 4+ ya da kullanıcı kararı).
+
+### 11.3 Açık / bilinen kusurlar
+| # | Konu | Durum |
+|---|---|---|
+| 1 | Hizalama `doldur`/`iki_yana`/`secim_ortasi` yaklaşık; girinti 9 px/düzey doğrulanmadı | ➖ |
+| 2 | İç düzenleyici kaydırılmış metni çok satırlı göstermez; Otomatik Sığdır sütun genişliği kaydırmayı hesaba katmaz | ➖ |
+| 3 | Dışarıdan yapıştırılan tarih metni Excel gibi çözülmez (yalnız elle yazım akıllı) | ➖ bilinçli (surec §4 3g) |
+| 4 | Dondurma bölmesi sayfa başından (Excel kaydırılmış pencereden); sürükle-böl yok; dondurma/kılavuz .xlsx'e Faz 4'te | ➖ |
+| 5 | Doldurma: Ctrl+sürükle, Seri… penceresi, seçenekler düğmesi, otomatik kaydırma yok | ➖ |
+| 6 | Boyacı birleşim/boyut taşımaz; tam sütun hedef reddedilir | ➖ |
+| 7 | Türkçe Excel kısayol doğrulaması ve §8b-30…33 (biçim kodu harfleri, ÖÖ/ÖS, kısaltmalar) | ⏳ kullanıcı |
+
+### 11.4 Elle test bekleyenler (kullanıcı)
+| # | Ne | Nasıl | Durum |
+|---|---|---|---|
+| 1 | Gerçek pencerede yazı tipleri/hizalama/kenarlık görünümü | Biçimli bütçeyi aç, ekran görüntüsü karşılaştır | ⏳ |
+| 2 | Doldurma tutamacı, çift tık, sürükleme hissi | Ay adı / sayı serisi sürükle | ⏳ |
+| 3 | Biçim boyacısı: tek tık, çift tık, Esc | Fırça düğmesi | ⏳ |
+| 4 | Dondurma + kaydırma, kılavuz kapama | Görünüm menüsü | ⏳ |
+| 5 | Metni kaydır + otomatik satır yüksekliği | Uzun metin, sütun daralt | ⏳ |
+| 6 | Bütçeyi Excel web'de kur, görünen biçimleri karşılaştır | `test_senaryo_bicimli.py` verisiyle | ⏳ |
+
+---
+
+## 12. Faz 3 gözden geçirmesi (Opus 5.5) — 2026-10-09
+
+Salt okunur Opus 5.5 alt ajanı (57 araç çağrısı; model düzeyinde 1500 tohum × 45 rastgele işlemle geri al/yinele, 55 bilinen Excel sayı biçimi örneği, 60.000 rastgele biçim kodu, 600.000 sayılık yuvarlama karşılaştırması). **Tavsiye: koşullu evet** (1–6 düzeltilmeden Faz 3 kapanmasın; 7–8 aynı tur). Bulgular bizde yeniden üretilip düzeltildi; gerileme testleri `testler/test_opus_faz3.py` (54 test). Testler 1809 → **1863**, hiçbir mevcut test değişmedi.
+
+| # | Önem | Bulgu | Sonuç |
+|---|---|---|---|
+| 1 | KRİTİK | `'12.10.2026`, `'15%`, `'₺100`, `'14:30`… F2+Enter'da tarihe/sayıya dönüşüyordu (`duzenleme_metni` `'` kararını `girdi_coz` ile veriyordu, `hucre_gir` `akilli_coz`) | ✅ önek kararı `akilli_coz` ile |
+| 2 | KRİTİK | Yüzde biçimli sayı F2+Enter'da bozuluyordu (`1E-05%`, 12 basamağa kırpma) | ✅ ondalık (Decimal) aritmetikle yazım/çözüm, gidiş-dönüş birebir |
+| 3 | KRİTİK | Doldurma 13+ basamakta yanlış (EAN-13, 1e15+1): `_temiz` `%.12g` | ✅ `.15g` + tam sayılar olduğu gibi |
+| 4 | KRİTİK | \|x\| ≥ 1e26'da `decimal.InvalidOperation`, `paintEvent` her seferinde yarıda kalıyordu | ✅ `bicimle`/`sigdir` 400 basamaklı bağlamda; ızgara `ArithmeticError/ValueError`'ı Genel'e düşürür. **Kalan:** `0%` + 1,7e308 (Excel sınırı 9,99E+307 üstü) model düzeyinde hâlâ `InvalidOperation` atar, ızgarada yakalanır |
+| 5 | ORTA | `1E400` → `inf` saklanıyordu | ✅ metin kalır (Excel'in davranışı doğrulanmadı) |
+| 6 | KRİTİK | Kaydırılmış metin yerleşim önbelleği sınırsız (400.000 `QTextLayout` ≈ +1,8 GB; sütun sürüklerken her fare hareketinde tüm sayfa yeniden yerleşiyordu) | ✅ otomatik yükseklik yalnız tamsayı yüksekliği saklar; çizim önbelleği 4000 girdiyle sınırlı; sütun sürüklerken yeniden hesap yok, bırakınca bir kez |
+| 7 | ORTA | Tam satır biçimi sütun biçimiyle kesişimi eziyordu (B kırmızı + 3. satır kalın → B3 dolgusu kayboldu) | ✅ kesişimlere açık kayıt (tam sütun dalının simetriği) |
+| 8 | ORTA | Ctrl+A ile biçim, 13+ biçimli satır varken kesişimleri sessizce atlıyordu | ✅ tüm sayfada satır stilleri de güncellenir; kısmi seçimde sınır aşılırsa sessiz geçme yerine uyarı (`AdresHatasi`) |
+| 12 | DÜŞÜK | `kanonige("Genel m")` `KeyError`, `"Genel a"` → `"General m"` | ✅ `BicimHatasi` |
+| 13 | DÜŞÜK | `-₺-5` → +5 | ✅ çift işarette metin kalır |
+| 14 | DÜŞÜK | Belge sayısı eski; `test_senaryo_bicimli.py` takipsiz | ✅ belge güncellendi, dosya commit'e girer |
+| 9 | DÜŞÜK | ≥1e12 değerlerde hızlı yol/genel yol 2. ondalıkta farklı yuvarlıyor (600.000 örnekte 324 fark) | ➖ **Excel'in hangisini gösterdiği belirsiz** (§8b-46) |
+| 10 | DÜŞÜK | Son satır/sütundaki biçim, ekleme ile sayfa dışına itilince siliniyor, geri al getirmiyor | ➖ açık (bilinen sınır) |
+| 11 | DÜŞÜK | Muhasebe biçiminde Ondalık Artır sıfır bölümünü `"-"??.0` yapıyor | ➖ Excel davranışı belirsiz (§8b-48) |
+
+**Temiz çıkanlar:** geri al/yinele model düzeyinde 1500 tohum × 45 işlem, **0 sapma** (stil depoları, birleşimler, ölçüler); pano gidiş-dönüşü (formül kayması, stil, birleşim, kes-yapıştır); sayı biçimi 55 bilinen Excel örneğinin hepsi; akıllı giriş sınırları; doldurma ay sonu kırpma; kural 2; testlerde yutulan hata/skip yok; 100.000 hücrede kalın uygulama 301 ms, geri al 127 ms, boyacı 200.000 hücre 389 ms.
+
+**İncelenmeyenler:** biçim çubuğu/Hücreleri Biçimlendir arayüz ayrıntıları; dondurma, kenarlık önceliği, birleşim çiziminin piksel doğruluğu; METNEÇEVİR; gerçek yazı tipiyle zamanlama; `paintEvent` istisnasının gerçek olay döngüsünde uygulamayı kapatıp kapatmadığı (düzeltme bunu gereksiz kıldı).

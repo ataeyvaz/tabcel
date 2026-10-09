@@ -19,7 +19,8 @@ Belirsizlikler (surec.md §8b'ye aktarılacak, kodda varsayım):
 """
 import math
 from dataclasses import dataclass
-from decimal import ROUND_HALF_UP, Decimal
+import functools
+from decimal import ROUND_HALF_UP, Decimal, localcontext
 from fractions import Fraction
 from functools import lru_cache
 from typing import List, NamedTuple, Optional, Tuple
@@ -471,6 +472,8 @@ def _bolum_kur(metin: str, yerel: bool) -> Bolum:
             kalan.append(t)
     turler = {t[0] for t in kalan}
     if "genel" in turler:
+        if turler & {"t", "gecen", "ampm"}:
+            raise BicimHatasi("Genel ile tarih/saat harfleri bir arada kullanılamaz")
         tur = "genel"
     elif turler & {"t", "gecen", "ampm"}:
         tur = "tarih"
@@ -955,6 +958,18 @@ def _bolum_sec(kod: BicimKodu, x: float):
     return sb[0], False
 
 
+def _genis_baglam(fn):
+    """Decimal işlemleri 28 basamakta taşıyordu (|x| ≥ 1e26 → InvalidOperation); float'ın tüm
+    aralığı (≈1e308 + ondalık basamaklar) sığsın diye geniş duyarlıkta çalıştırır."""
+    @functools.wraps(fn)
+    def sarmal(*a, **k):
+        with localcontext() as c:
+            c.prec = 400
+            return fn(*a, **k)
+    return sarmal
+
+
+@_genis_baglam
 def bicimle(deger, kod: Optional[str] = "General", yerel: bool = False) -> BicimSonucu:
     """Değeri biçim koduyla Türkçe gösterim metnine çevirir.
 
@@ -1006,6 +1021,7 @@ def bicimle(deger, kod: Optional[str] = "General", yerel: bool = False) -> Bicim
 
 
 # ------------------------------------------------------------------ sütuna sığdırma
+@_genis_baglam
 def sigdir(deger, kod: Optional[str], sigar, yerel: bool = False) -> Optional[str]:
     """Hücre metnini sütun genişliğine göre verir; `sigar(metin)` metin sığıyorsa True.
 

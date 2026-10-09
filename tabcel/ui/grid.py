@@ -55,7 +55,7 @@ class _Sar:
 
 class _FontGirdisi:
     """Bir stilin yazı tipi + ölçüm/çizim önbellekleri (metin genişliği, QStaticText, sığdırılmış sayı)."""
-    __slots__ = ("font", "olcer", "yukseklik", "gen", "statik", "sayilar", "dolgu", "kenarli", "sar")
+    __slots__ = ("font", "olcer", "yukseklik", "gen", "statik", "sayilar", "dolgu", "kenarli", "sar", "sar_h")
 
     def __init__(self, font: QFont, stil: Stil):
         self.dolgu = stil.dolgu                       # hücre dolgusu / kenarlığı var mı (her çizimde sorulmasın)
@@ -66,7 +66,8 @@ class _FontGirdisi:
         self.gen: Dict[str, int] = {}
         self.statik: Dict[str, QStaticText] = {}
         self.sayilar: Dict[tuple, tuple] = {}
-        self.sar: Dict[tuple, _Sar] = {}              # (metin, genişlik, hizalama) → sarılmış yerleşim
+        self.sar: Dict[tuple, _Sar] = {}              # (metin, genişlik, hizalama) → sarılmış yerleşim (çizim)
+        self.sar_h: Dict[tuple, int] = {}             # aynı anahtar → yalnız yükseklik (otomatik satır yüksekliği)
 
 
 class _Duzenleyici(QLineEdit):
@@ -298,10 +299,19 @@ class Izgara(QAbstractScrollArea):
         kullanımda yeniden hesaplanır."""
         self._oto_ok = False
 
-    def _sar(self, fe: "_FontGirdisi", metin: str, genislik: int, hiza) -> _Sar:
-        """Metni `genislik` pikselde sarar (kelime sınırında, uzun kelime gerekirse her yerde; \\n satır sonu)."""
+    _SAR_SINIRI = 4000              # çizim yerleşim önbelleğinde en çok girdi (QTextLayout ağırdır)
+    _SAR_H_SINIRI = 200000
+
+    def _sar(self, fe: "_FontGirdisi", metin: str, genislik: int, hiza, yalniz_yukseklik: bool = False) -> _Sar:
+        """Metni `genislik` pikselde sarar (kelime sınırında, uzun kelime gerekirse her yerde; \n satır sonu).
+        `yalniz_yukseklik`: yalnız yükseklik gerekir (otomatik satır yüksekliği) — yerleşim saklanmaz, yalnız
+        tamsayı yükseklik önbelleğe girer; sayfadaki tüm kaydırılmış hücreler için layout biriktirmez."""
         anahtar = (metin, genislik, int(hiza.value) if hasattr(hiza, "value") else int(hiza))
         sar = fe.sar.get(anahtar)
+        if sar is None and yalniz_yukseklik:
+            h = fe.sar_h.get(anahtar)
+            if h is not None:
+                return _Sar(None, h)
         if sar is None:
             lay = QTextLayout(metin.replace("\r\n", "\n").replace("\r", "\n").replace("\n", "\u2028"), fe.font)
             opt = QTextOption()
@@ -318,7 +328,15 @@ class Izgara(QAbstractScrollArea):
                 satir.setPosition(QPointF(0, y))
                 y += satir.height()
             lay.endLayout()
-            sar = fe.sar[anahtar] = _Sar(lay, int(math.ceil(y)))
+            sar = _Sar(lay, int(math.ceil(y)))
+            if yalniz_yukseklik:
+                if len(fe.sar_h) > self._SAR_H_SINIRI:
+                    fe.sar_h.clear()
+                fe.sar_h[anahtar] = sar.h
+            else:
+                if len(fe.sar) > self._SAR_SINIRI:
+                    fe.sar.clear()
+                fe.sar[anahtar] = sar
         return sar
 
     def _oto_hesapla(self) -> None:
@@ -367,7 +385,7 @@ class Izgara(QAbstractScrollArea):
                     metin = v if kod == "General" else self._bicimle(v, kod).metin
                     bayrak = yatay_bayrak.get(stil.yatay, Qt.AlignLeft)
                     ind = stil.girinti * girinti_px if (stil.girinti and bayrak != Qt.AlignHCenter) else 0
-                    sar = self._sar(fe, metin, g - 2 * pad - ind, bayrak)
+                    sar = self._sar(fe, metin, g - 2 * pad - ind, bayrak, True)
                     gerek = sar.h + ek
                     if gerek > oto.get(r, 0):
                         oto[r] = gerek
@@ -689,7 +707,7 @@ class Izgara(QAbstractScrollArea):
         if s is None:
             try:
                 s = sayi_bicimi.bicimle(deger, kod)
-            except sayi_bicimi.BicimHatasi:
+            except (sayi_bicimi.BicimHatasi, ArithmeticError, OverflowError, ValueError):
                 s = sayi_bicimi.bicimle(deger, "General")
             self._bicim_onb[anahtar] = s
         return s
@@ -858,7 +876,7 @@ class Izgara(QAbstractScrollArea):
             renk, hiz = s.renk, s.hizalama
             try:
                 metin = None if s.diyez else sayi_bicimi.sigdir(v, kod, sigar)
-            except sayi_bicimi.BicimHatasi:
+            except (sayi_bicimi.BicimHatasi, ArithmeticError, OverflowError, ValueError):
                 metin = sayiyi_sigdir(v, sigar)
         if metin is None:
             w = gen.get("#")
@@ -1809,7 +1827,6 @@ class Izgara(QAbstractScrollArea):
         fark = ((p.x() if b["eksen"] == "sutun" else p.y()) - b["p0"]) / self.yakinlastirma
         if b["eksen"] == "sutun":
             yeni = olcu.genislik_sinirla(b["o0"] + fark)
-            self._oto_ok = False                       # genişlik değişince sarılmış satırlar yeniden ölçülür
             for c in b["dizin"]:
                 self.sayfa.sutun_genislik[c] = yeni
         else:
@@ -1824,6 +1841,9 @@ class Izgara(QAbstractScrollArea):
         b, self._boyut = self._boyut, None
         if not b:
             return
+        if b["eksen"] == "sutun":
+            self._oto_ok = False                       # genişlik değişti: sarılmış satırlar bırakınca yeniden ölçülür
+            self.viewport().update()
         yeni = self.sayfa.boyut_durumu()
         if yeni != b["eski"]:
             self.yigin.calistir(OlcuDegis(self.sayfa, eski=b["eski"], yeni=yeni))

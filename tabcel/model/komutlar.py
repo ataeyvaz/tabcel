@@ -258,12 +258,24 @@ def bicim_komutu(sayfa: Sayfa, araliklar, yama: Optional[StilYama] = None, sifir
                     for c in range(c1, c2 + 1):
                         if (r, c) not in hucre:
                             hucre[(r, c)] = uygula(sayfa.stil_kimligi(r, c))
+            elif tam_satir:                      # tüm sayfa: biçimli satırların kendi stili de değişir
+                for r, k in sayfa.satir_stil.items():
+                    satir[r] = uygula(k)
+            else:
+                raise AdresHatasi("Seçimde çok sayıda biçimli satır var; daha az sütun seçin")
         elif tam_satir:
             for r in range(r1, r2 + 1):
                 satir[r] = uygula(sayfa.satir_stil.get(r, 0))
             for (r, c), k in sayfa._stil.items():
                 if r1 <= r <= r2:
                     hucre[(r, c)] = uygula(k)
+            # biçimli sütunlarla kesişim: satır stili sütun stilini örtmesin (tam sütun dalının simetriği)
+            if len(sayfa.sutun_stil) * (r2 - r1 + 1) > BICIM_KESISIM_SINIRI:
+                raise AdresHatasi("Seçimde çok sayıda biçimli sütun var; daha az satır seçin")
+            for c in sayfa.sutun_stil:
+                for r in range(r1, r2 + 1):
+                    if (r, c) not in hucre:
+                        hucre[(r, c)] = uygula(sayfa.stil_kimligi(r, c))
         else:
             if (r2 - r1 + 1) * (c2 - c1 + 1) > BICIM_ALAN_SINIRI:
                 raise AdresHatasi("Seçim biçimlendirme için çok büyük; tam satır/sütun seçin")

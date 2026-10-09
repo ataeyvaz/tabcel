@@ -33,7 +33,9 @@ def _tr_buyuk(s: str) -> str:
 
 def _temiz(v: float) -> float:
     """Kayan nokta artığını at (1,0000000000002 → 1)."""
-    return float(f"{v:.12g}")
+    if v == int(v) and abs(v) < 2 ** 53:         # tam sayılar (EAN-13, 1e15+1) olduğu gibi kalır
+        return v
+    return float(f"{v:.15g}")
 
 
 def _yon_ve_serit(kaynak: Aralik, hedef: Aralik) -> Tuple[bool, bool]:

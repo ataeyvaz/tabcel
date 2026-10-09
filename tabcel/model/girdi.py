@@ -14,7 +14,9 @@ Kurallar:
   göstermemek için düz çözümleyici olarak durur.
 """
 import datetime as _dt
+import math
 import re
+from decimal import Decimal as _Ondalik, InvalidOperation as _Ondalik_Hata
 from typing import Optional, Tuple
 
 from .sayfa import Hucre
@@ -32,9 +34,10 @@ def sayi_coz(metin: str) -> Optional[float]:
     if not _SAYI_RE.match(m) or not any(ch.isdigit() for ch in m):
         return None
     try:
-        return float(m.replace(".", "").replace(",", "."))
+        v = float(m.replace(".", "").replace(",", "."))
     except ValueError:
         return None
+    return v if math.isfinite(v) else None       # 1E400 → inf saklanmaz, metin kalır
 
 
 def _mantiksal_coz(metin: str) -> Optional[bool]:
@@ -154,9 +157,9 @@ def sayisal_akilli(metin: str, bugun: Optional[_dt.date] = None) -> Optional[Tup
             n = sayi_coz(g.group(1))
             if n is not None:
                 d = _ondalik_sayisi(g.group(1))
-                return n / 100, "0" + ("." + "0" * d if d else "") + "%"
+                return _yuzde_bol(g.group(1), n), "0" + ("." + "0" * d if d else "") + "%"
     g = _PARA_ON.match(m)
-    if g and g.group(4):
+    if g and g.group(4) and not (g.group(1) and g.group(3)):     # `-₺-5` çift işaret: metin kalır
         n = sayi_coz(g.group(3) + g.group(4))
         if n is not None:
             if g.group(1) == "-":
@@ -218,6 +221,25 @@ def sayi_yaz(n: float) -> str:
     return repr(n).replace(".", ",").replace("e", "E")
 
 
+def _yuzde_bol(metin: str, n: float) -> float:
+    """`metin` sayısının %100'e bölümü, ondalık aritmetikle (n/100 kayan nokta artığı bırakır;
+    düzenleme metniyle gidiş-dönüş birebir olsun)."""
+    try:
+        d = _Ondalik(metin.strip().replace(".", "").replace(",", "."))
+        return float(d / 100)
+    except (_Ondalik_Hata, ValueError):
+        return n / 100
+
+
+def _yuzde_yaz(v: float) -> str:
+    """Yüzde biçimli hücrenin düzenleme metni: v×100, tam duyarlıklı, bilimsel gösterimsiz, `%` olmadan."""
+    d = _Ondalik(repr(v)) * 100
+    s = format(d, "f")
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+    return s.replace(".", ",")
+
+
 def _bicimli_duzenleme(v: float, kod: str) -> Optional[str]:
     """Tarih/saat ve yüzde biçimli hücrenin düzenleme metni (Excel gibi: tarih `gg.aa.yyyy`, yüzde `15%`).
     Biçim buna uymuyorsa None."""
@@ -236,7 +258,7 @@ def _bicimli_duzenleme(v: float, kod: str) -> Optional[str]:
             return bicimle(v, "dd.mm.yyyy").metin
         return bicimle(v, "dd.mm.yyyy hh:mm:ss").metin
     if kod.endswith("%") and "E" not in kod and ";" not in kod:
-        return sayi_yaz(round(v * 100, 10)) + "%"
+        return _yuzde_yaz(v) + "%"
     return None
 
 
@@ -260,7 +282,7 @@ def duzenleme_metni(hucre: Optional[Hucre], kod: Optional[str] = None) -> str:
         return sayi_yaz(v)
     if isinstance(v, str):
         # Metin başka türe çözülecekse (sayı gibi görünen metin) başına ' konur.
-        yeni = girdi_coz(v)
+        yeni = akilli_coz(v)[0]        # hucre_gir ile aynı çözümleyici (yüzde/tarih/para… da ' gerektirir)
         if v == "" or v.startswith(("'", "=")) or yeni is None or yeni.deger != v:
             return "'" + v
         return v

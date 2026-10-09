@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅; sıradaki: 3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1801 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1863 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1801 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -244,6 +244,11 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 43 | Akıllı giriş: `1.5` → 1 Mayıs mı (§8b-2)? `1/2` → tarih mi? `1.234,5` girilince otomatik `#,##0` biçimi uygulanır mı | Uygulandı (3g): `1.5` → tarih, `1/2` → 1 Şubat (gün/ay), `1.234,5` → biçim uygulanmaz (Genel kalır). Ayrıca: yüzde `15,5%` → `0.0%`, para yalnız yazılan ondalık kadar (varsa 2), bilimsel `0.00E+00`, 24+ saat metin | ⏳ |
 | 44 | Türkçe Excel'de Kalın/İtalik/Altı çizili kısayolları | Sözcük'teki karar izlenecek (Ctrl+B/I/U) | ⏳ |
 | 45 | Para/Yüzde/Binlik düğmelerinin kodları ve kısayolları (Ctrl+Shift+4/5/1); Excel'in "Binlik Ayracı" düğmesi `#,##0.00` mı Muhasebe tarzı mı; çoklu seçimde Ondalık Artır etkin hücreye mi hücre hücre mi | `"₺"#,##0.00`, `0%`, `#,##0.00`; etkin hücreden | ⏳ |
+| 46 | ≥1e12 değerde 2 ondalık yuvarlama: `5691075034743,234` `0.00` ile ekranda `,24` (hızlı yol) mı `,23` (15 basamak kuralı) mı? | Hızlı yol `,24`, genel yol `,23` — tutarsız | ⏳ |
+| 47 | ISO tarih girişi `2026-10-12`; `12.10` / `12/10` önerilen biçim (`d mmmm` mi `d.mmm` mi?); `1 3/2` kabul mü? | ISO metin kalır; `d mmmm`; kabul | ⏳ |
+| 48 | Muhasebe biçiminde Ondalık Artır: sıfır bölümü (`"-"??`) nasıl değişir? | `"-"??.0` | ⏳ |
+| 49 | `-₺-5`, `1E400` Excel'de ne olur (metin mi, hata mı)? | Metin kalır | ⏳ |
+| 50 | Kes-yapıştırda satır/sütun stilli kaynak hücreler; tam sütun kesilince sütun biçimi taşınır mı? | Hücre biçimi varsayılana döner / taşınmaz | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -518,6 +523,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1787 → **1801** (`test_bicim_boyaci.py` 14: 7 Qt'siz model, 7 arayüz). **Regresyon:** çubuk genişliği testi (`test_ekran_goruntusu_boyutlari`, ≤1100 px) 1119'a çıkıp kırıldı → test değişmedi; yazı tipi kutusu 128→112, sayı kutusu 128→116 px yapıldı, düğmenin ayracı konmadı
 - **Bilerek eksik:** birleşim/sütun genişliği boyanmaz; tam sütun/satır hedef (>200.000 hücre) reddedilir; kaynak çevresinde kayan çerçeve yok; sayfalar arası boyama yok. Ekran görüntüsü alınmadı (görsel denetim 3l'de)
 - Sıradaki: **3l** (Faz 3 sonu: test.md, iş senaryosu, ölçüm, Opus gözden geçirmesi)
+
+## [2026-10-09] — Faz 3 / 3l bitti (Sonnet 5.5 + Opus 5.5 gözden geçirme)
+- Commit `d151151` (3k). **3l:** `test_senaryo_bicimli.py` (8, biçimli bütçe), `test.md` §11–§12, performans ölçümü (§8: 6 ❌ kalan — sıçrama/Shift+Ok/stilli 3 satır/ilk grab; kullanıcı kararı bekliyor), ekran görüntüsü (birleşik başlık, başlık dolgusu, boyacı, fırça düğmesi; ekransız ortamda yazı tipi yok)
+- **Opus gözden geçirmesi:** 14 bulgu, 11'i düzeltildi (bkz. `test.md` §12; `test_opus_faz3.py` 54 test); 9/10/11 açık (§8b-46, 48 ve bilinen sınır). Testler 1809 → **1863**; mevcut hiçbir test değişmedi
+- Kararlar: yüzde düzenleme metni Decimal ile (bilimsel yazım yok); doldurma tam sayıları olduğu gibi bırakır; `bicimle`/`sigdir` 400 basamaklı Decimal bağlamı; kaydırılmış metin için yerleşim önbelleği 4000 girdi, otomatik yükseklik yalnız yükseklik saklar ve sütun sürüklerken değil bırakınca hesaplanır; kısmi seçimde çok sayıda biçimli satır/sütun kesişimi sessiz atlanmaz, uyarı verir
+- **Açık:** son satır/sütun biçimi ekleme ile dışarı itilince geri alınmıyor; ≥1e12 yuvarlama tutarsızlığı; 6 performans ❌ kararı; Faz 3 elle testler (`test.md` §11.4)
+- Sıradaki: kullanıcı onayı → **Faz 4** (.xlsx/.csv/PDF/yazdır/otomatik kayıt)
 
 *(Yeni girişler en alta eklenir.)*
 
