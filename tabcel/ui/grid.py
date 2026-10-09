@@ -22,6 +22,7 @@ from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model import sayi_bicimi
 from ..model.sayi_bicimi import BicimSonucu
+from ..model import doldur as doldurma
 from ..model.stil import VARSAYILAN, Stil, StilYama
 from ..model.komutlar import (
     BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
@@ -153,6 +154,9 @@ class _Duzenleyici(QLineEdit):
                 return
         if k in (Qt.Key_Return, Qt.Key_Enter) and olay.modifiers() & Qt.AltModifier:
             self.insert("\n")             # Alt+Enter: hücre içinde yeni satır
+        elif k in (Qt.Key_Return, Qt.Key_Enter) and olay.modifiers() & Qt.ControlModifier:
+            self.tum_secim = True                  # Ctrl+Enter: girdi tüm seçime yazılır
+            self._son(True, 0, 0)
         elif k in (Qt.Key_Return, Qt.Key_Enter):
             self._son(True, -1 if shift else 1, 0)
         elif k in (Qt.Key_Tab, Qt.Key_Backtab):
@@ -222,6 +226,7 @@ class Izgara(QAbstractScrollArea):
         self._isaret_capa: Optional[Tuple[int, int]] = None  # işaret aralığının sabit / hareketli ucu
         self._isaret_ucu: Optional[Tuple[int, int]] = None
         self._isaret_yaziyor = False
+        self._doldur: Optional[dict] = None                # doldurma tutamacı sürüklemesi: {kaynak, hedef}
         self.veri_kaybi_onayi = None                       # () -> bool: birleştirme veri silecekse pencere sorar
         self.uzak_sayfa: Optional[Sayfa] = None            # formül başka sayfadan yazılıyorsa asıl sayfa
         self.dis_duzenleyici: Optional[QLineEdit] = None   # formül çubuğu (pencere verir): aynı işaretleme modu
@@ -811,6 +816,16 @@ class Izgara(QAbstractScrollArea):
             p.setPen(QPen(QColor(theme.ACCENT), 2))
             p.drawRect(ar.adjusted(0, 0, -2, -2))
         self._basvuru_vurgulari_ciz(p, sutunlar, tum_satirlar)
+        if self._doldur and self._doldur["hedef"] is not None and sutunlar and tum_satirlar:
+            k, h = self._doldur["kaynak"], self._doldur["hedef"]
+            birlesik = Aralik(min(k.ilk_satir, h.ilk_satir), min(k.ilk_sutun, h.ilk_sutun),
+                              max(k.son_satir, h.son_satir), max(k.son_sutun, h.son_sutun))
+            self._secim_cercevesi(p, birlesik, sutunlar, tum_satirlar,
+                                QPen(QColor(theme.TEXT), 1, Qt.DashLine), tek_hucre=True)
+        tut = self._tutamac_dikdortgeni()
+        if tut is not None and tut.intersects(kirp):
+            p.fillRect(tut, QColor("#ffffff"))
+            p.fillRect(tut.adjusted(1, 1, -1, -1), QColor(theme.ACCENT))
 
         # başlıklar
         # (yalnızca açığa çıkan bölgeye değenler: artımlı kaydırmada sütun başlıkları yeniden çizilmez)
@@ -1016,6 +1031,11 @@ class Izgara(QAbstractScrollArea):
         if self.duzenleniyor():
             return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır
         nokta = olay.position().toPoint()
+        if self._tutamacta_mi(nokta):
+            self._surukleme = "doldur"
+            self._doldur = {"kaynak": self.secim, "hedef": None}
+            self.setFocus()
+            return
         kenar = self._kenar_bul(nokta)
         if kenar:
             self._boyut_basla(kenar, nokta)
@@ -1053,6 +1073,9 @@ class Izgara(QAbstractScrollArea):
         if self._surukleme == "boyut":
             self._boyut_surukle(p)
             return
+        if self._surukleme == "doldur":
+            self._doldur_surukle(p)
+            return
         if not self._surukleme:
             return
         if self._surukleme == "isaret":
@@ -1083,6 +1106,8 @@ class Izgara(QAbstractScrollArea):
     def mouseReleaseEvent(self, olay):
         if self._surukleme == "boyut":
             self._boyut_bitir()
+        elif self._surukleme == "doldur":
+            self._doldur_bitir()
         self._surukleme = None
         self._koru = False
         self.suruklemeBitti.emit()
@@ -1195,6 +1220,10 @@ class Izgara(QAbstractScrollArea):
             self.satirlari_sil() if self._tam_satir_secimi() else self.sutunlari_sil()
         elif ctrl and k in (Qt.Key_Plus, Qt.Key_Equal) and (self._tam_satir_secimi() or self._tam_sutun_secimi()):
             self.satirlari_ekle() if self._tam_satir_secimi() else self.sutunlari_ekle()
+        elif ctrl and not shift and k == Qt.Key_D:
+            self.asagi_doldur()
+        elif ctrl and not shift and k == Qt.Key_R:
+            self.saga_doldur()
         elif ctrl and k == Qt.Key_C or (ctrl and k == Qt.Key_Insert):
             self.kopyala()
         elif ctrl and k == Qt.Key_X or (shift and k == Qt.Key_Delete):
@@ -1212,6 +1241,110 @@ class Izgara(QAbstractScrollArea):
             self.duzenle_baslat(olay.text())
         else:
             super().keyPressEvent(olay)
+
+    # --- doldurma ---
+    def _tutamac_dikdortgeni(self) -> Optional[QRect]:
+        """Seçimin sağ alt köşesindeki doldurma tutamacı (6×6); çoklu seçimde/düzenlerken yok."""
+        if self._ekler or self._duzenleyici is not None or self._surukleme in ("boyut", "isaret"):
+            return None
+        sec = self.secim
+        if sec.ilk_satir == 1 and sec.son_satir == MAX_ROW or sec.ilk_sutun == 1 and sec.son_sutun == MAX_COL:
+            return None                                      # tüm sütun/satır seçiminde tutamaç anlamsız
+        r = self.hucre_dikdortgeni(sec.son_satir, sec.son_sutun)
+        if r is None:
+            return None
+        return QRect(r.x() + r.width() - 5, r.y() + r.height() - 5, 6, 6)
+
+    def _tutamacta_mi(self, p: QPoint) -> bool:
+        t = self._tutamac_dikdortgeni()
+        return t is not None and t.adjusted(-2, -2, 2, 2).contains(p)
+
+    def doldur(self, kaynak: Aralik, hedef: Aralik, seri: bool = True) -> bool:
+        """Kaynak bölgeyi hedefe doldurur (seri ya da kopya); içerik + biçim tek geri al adımı."""
+        if self.sayfa.birlesim_kesisen(hedef):
+            self.uyari.emit("Birleşik hücrelerin bulunduğu alana doldurulamaz.")
+            return False
+        try:
+            hucreler, stiller = (doldurma.seri_plani if seri else doldurma.kopya_plani)(
+                self.sayfa, kaynak, hedef)
+        except ValueError:
+            return False
+        self.yigin.calistir(Grup([HucrelerDegis(self.sayfa, hucreler),
+                                  BicimDegis(self.sayfa, hucreler=stiller)]))
+        birlesik = Aralik(min(kaynak.ilk_satir, hedef.ilk_satir), min(kaynak.ilk_sutun, hedef.ilk_sutun),
+                          max(kaynak.son_satir, hedef.son_satir), max(kaynak.son_sutun, hedef.son_sutun))
+        geri = hedef.ilk_satir < kaynak.ilk_satir or hedef.ilk_sutun < kaynak.ilk_sutun
+        if geri:
+            self.sec((birlesik.son_satir, birlesik.son_sutun), (birlesik.ilk_satir, birlesik.ilk_sutun))
+        else:
+            self.sec((birlesik.ilk_satir, birlesik.ilk_sutun), (birlesik.son_satir, birlesik.son_sutun))
+        self._guncelle()
+        return True
+
+    def asagi_doldur(self) -> bool:
+        """Ctrl+D: seçimin ilk satırı kalanına kopyalanır (tek satırda üstteki satır)."""
+        return self._ctrl_dr(True)
+
+    def saga_doldur(self) -> bool:
+        """Ctrl+R: seçimin ilk sütunu kalanına kopyalanır (tek sütunda soldaki sütun)."""
+        return self._ctrl_dr(False)
+
+    def _ctrl_dr(self, dikey: bool) -> bool:
+        if self._ekler:
+            self.uyari.emit("Bu komut birden çok seçimde kullanılamaz.")
+            return False
+        sec = self.secim
+        if sec.ilk_satir == 1 and sec.son_satir == MAX_ROW or sec.ilk_sutun == 1 and sec.son_sutun == MAX_COL:
+            sec = pano.pano_araligi(self.sayfa, sec)         # tam satır/sütun: kullanılan alanla sınırla
+        try:
+            plan = doldurma.asagi_yukari_dolu_plani(self.sayfa, sec, dikey)
+        except ValueError:
+            return False
+        if plan is None:
+            return False
+        hucreler, stiller = plan
+        if any(self.sayfa.birlesim(r, c) for r, c in hucreler):
+            self.uyari.emit("Birleşik hücrelerin bulunduğu alana doldurulamaz.")
+            return False
+        self.yigin.calistir(Grup([HucrelerDegis(self.sayfa, hucreler),
+                                  BicimDegis(self.sayfa, hucreler=stiller)]))
+        self._guncelle()
+        return True
+
+    def tutamac_cift_tik(self) -> bool:
+        """Tutamağa çift tık: komşu sütundaki verinin sonuna kadar aşağı doldurur."""
+        if self._ekler:
+            return False
+        sec = self.secim
+        son = doldurma.bitisik_son_satir(self.sayfa, sec)
+        if son is None:
+            return False
+        return self.doldur(sec, Aralik(sec.son_satir + 1, sec.ilk_sutun, son, sec.son_sutun))
+
+    def _doldur_surukle(self, p: QPoint) -> None:
+        satir, sutun = self._noktadan(QPoint(max(p.x(), self._baslik_g()), max(p.y(), self._baslik_y())))
+        d = self._doldur
+        if d is None or not satir or not sutun:
+            return
+        k = d["kaynak"]
+        dr = satir - k.son_satir if satir > k.son_satir else (satir - k.ilk_satir if satir < k.ilk_satir else 0)
+        dc = sutun - k.son_sutun if sutun > k.son_sutun else (sutun - k.ilk_sutun if sutun < k.ilk_sutun else 0)
+        hedef = None
+        if abs(dr) >= abs(dc) and dr:
+            hedef = (Aralik(k.son_satir + 1, k.ilk_sutun, satir, k.son_sutun) if dr > 0
+                     else Aralik(satir, k.ilk_sutun, k.ilk_satir - 1, k.son_sutun))
+        elif dc:
+            hedef = (Aralik(k.ilk_satir, k.son_sutun + 1, k.son_satir, sutun) if dc > 0
+                     else Aralik(k.ilk_satir, sutun, k.son_satir, k.ilk_sutun - 1))
+        if hedef != d["hedef"]:
+            d["hedef"] = hedef
+            self.viewport().update()
+
+    def _doldur_bitir(self) -> None:
+        d, self._doldur = self._doldur, None
+        self.viewport().update()
+        if d and d["hedef"] is not None:
+            self.doldur(d["kaynak"], d["hedef"])
 
     def _birlesim_kaynagi(self, konum: Tuple[int, int], yon: Tuple[int, int]) -> Tuple[int, int]:
         """Birleşik hücreden `yon` yönünde adım atılırken başlangıç: birleşimin o yöndeki kenarı."""
@@ -1424,7 +1557,9 @@ class Izgara(QAbstractScrollArea):
     def _imlec_guncelle(self, p: QPoint) -> None:
         kenar = self._kenar_bul(p)
         sekil = Qt.ArrowCursor
-        if kenar:
+        if self._tutamacta_mi(p):
+            sekil = Qt.CrossCursor
+        elif kenar:
             sekil = Qt.SplitHCursor if kenar[0] == "sutun" else Qt.SplitVCursor
         self.viewport().setCursor(sekil)
 
@@ -1929,9 +2064,10 @@ class Izgara(QAbstractScrollArea):
         self.viewport().update()
         metin = e.text()
         imlec = e.cursorPosition()
+        tum = bool(getattr(e, "tum_secim", False))
         e.hide()
         e.deleteLater()
-        if onayla and not self.hucre_gir(*self._duzenlenen, metin):
+        if onayla and not self.hucre_gir(*self._duzenlenen, metin, secime_yay=tum):
             # formül hatalı: Excel gibi düzenleme açık kalır (Düzenle modu, imleç hata yerinde)
             self._aktif = self._duzenlenen
             self.duzenle_baslat(None, duzenle_metni=metin, imlec=imlec)
@@ -1942,12 +2078,41 @@ class Izgara(QAbstractScrollArea):
             r, c = self._aktif
             self.sec((r + dr, c + dc))
 
+    SECIME_YAYMA_SINIRI = 500_000
+
+    def _secime_yay(self, satir: int, sutun: int, yeni, kod) -> bool:
+        """Ctrl+Enter: girdi seçimdeki tüm hücrelere yazılır (formül göreli kayar); tek geri al adımı.
+        Seçim tek hücreyse False döner (olağan yol). Tek aralık/çoklu aralık desteklenir."""
+        toplam = sum((a.son_satir - a.ilk_satir + 1) * (a.son_sutun - a.ilk_sutun + 1) for a in self.secimler)
+        if toplam <= 1:
+            return False
+        if toplam > self.SECIME_YAYMA_SINIRI:
+            self.uyari.emit("Seçim bu işlem için çok büyük.")
+            return True
+        plan = {}
+        for a in self.secimler:
+            for r in range(a.ilk_satir, a.son_satir + 1):
+                for c in range(a.ilk_sutun, a.son_sutun + 1):
+                    if self.sayfa.birlesim(r, c) and (r, c) != (satir, sutun):
+                        continue
+                    plan[(r, c)] = doldurma.kaydirilmis(yeni, r - satir, c - sutun)
+        komutlar = [HucrelerDegis(self.sayfa, plan)]
+        if kod is not None:
+            havuz, yama = self.sayfa.havuz, StilYama(sayi_bicimi=kod)
+            genel = {k: havuz.yama_uygula(self.sayfa.stil_kimligi(*k), yama) for k in plan
+                     if self.sayfa.stil(*k).sayi_bicimi == "General"}
+            if genel:
+                komutlar.append(BicimDegis(self.sayfa, hucreler=genel))
+        self.yigin.calistir(komutlar[0] if len(komutlar) == 1 else Grup(komutlar))
+        self._guncelle()
+        return True
+
     def aktif_duzenleme_metni(self) -> str:
         """Etkin hücrenin düzenleme/formül çubuğu metni (tarih ve yüzde biçimli hücre o yazımla)."""
         return hucre_metni(self.sayfa.hucre(*self._aktif), self.sayfa.kitap,
                            self.sayfa.stil(*self._aktif).sayi_bicimi)
 
-    def hucre_gir(self, satir: int, sutun: int, metin: str) -> bool:
+    def hucre_gir(self, satir: int, sutun: int, metin: str, secime_yay: bool = False) -> bool:
         """Yazılan metni çözüp hücreye yazar (geri alınabilir). Değişmediyse bir şey yapmaz.
         Formül hatalıysa uyarı verir ve False döner (hiçbir şey yazılmaz)."""
         kod = None
@@ -1962,6 +2127,8 @@ class Izgara(QAbstractScrollArea):
                 return False
             if kod is not None and self.sayfa.stil(satir, sutun).sayi_bicimi != "General":
                 kod = None                              # biçim yalnız Genel hücreye önerilir (Excel)
+        if secime_yay and self._secime_yay(satir, sutun, yeni, kod):
+            return True
         if yeni == self.sayfa.hucre(satir, sutun) and kod is None:
             return True
         komut = HucrelerDegis(self.sayfa, {(satir, sutun): yeni})
@@ -2074,6 +2241,11 @@ class Izgara(QAbstractScrollArea):
         self.degisti.emit()
 
     def mouseDoubleClickEvent(self, olay):
+        if olay.button() == Qt.LeftButton and self._tutamacta_mi(olay.position().toPoint()):
+            self._doldur = None
+            self._surukleme = None
+            self.tutamac_cift_tik()
+            return
         kenar = self._kenar_bul(olay.position().toPoint())
         if kenar and olay.button() == Qt.LeftButton:
             self._boyut = None
