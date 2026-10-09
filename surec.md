@@ -7,7 +7,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 |---|---|---|---|
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
-| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **6a, 6b, 6c bitti (Sonnet)**; sıradaki: 6d–6g (§2 madde 6) |
+| 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | 🔄 **6a–6c bitti, 6d büyük ölçüde bitti (Sonnet)**; sıradaki: 6d kalanları, 6e–6g (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | — | ⏳ |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1166 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1213 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -36,7 +36,7 @@ Testler: 1166 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6a. ✅ `formul/adlar.py`: 116 Türkçe ad, her biri işlevin kendi tr-tr sayfasından doğrulandı (2026-10-09; ayrıntı günlük)
    - 6b. ✅ 115 fonksiyon, 8 grup dosyası, her biri 4+ vaka (kural 11). **Eksik: `TEXT` (METNEÇEVİR)** — sayı biçimi çözümleyicisine (Faz 3, Opus) bağlı; adı `adlar.py`'de hazır. Metin tarihleri (`"1.1.2026"`) da Faz 3
    - 6c. ✅ (2026-10-09) Pano: formül kopyalanınca `kaydir.kopyala`; kes-yapıştır → `komutlar.HucreTasi` (model + testleri hazır); kendi biçimimiz kimlikli taşır, dışarıya `ceviri.disa`; dışarıdan gelen `=…` metni `ceviri.hucre_girdisi`
-   - 6d. K7 işaretleme modu + odak kaybında onaylamama + renkli başvuru vurgusu + F4 + otomatik tamamlama/ipucu + Otomatik Toplam (Alt+=) — `faz2_tasarim.md` §6
+   - 6d. 🔄 (2026-10-09; kalanlar günlükte) K7 işaretleme modu + odak kaybında onaylamama + renkli başvuru vurgusu + F4 + otomatik tamamlama/ipucu + Otomatik Toplam (Alt+=) — `faz2_tasarim.md` §6
    - 6e. Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. Bilinen küçük sorun: geri al/yinele başka sayfadaki formül düzeltmesine dokununca pencere o sayfaya geçebilir (`_kitap_olayi` + `HucreTasi` sayfalar arası) — 6c'de ayrıca bakılmadı, hâlâ açık
    - 6g. Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
@@ -307,5 +307,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Yeni: `testler/test_pano_formul.py` (6 test). Testler 1160 → **1166**
 - Bilerek eksik: dışarıya giden düz metin formül hücresinde hesaplanmış değerdir (Excel gibi); sonucu henüz hesaplanmamış formülde saklanan biçim çıkar. Biçim/Özel Yapıştır Faz 3
 - Sonraki: 6d (işaretleme modu)
+
+## [2026-10-09] — Faz 2: İşaretleme modu ve formül düzenleme (Sonnet 5.5, 6d)
+- Yeni `formul/isaretleme.py` (Qt'siz): `eklenebilir` (imleç `=`, `(`, `;`, işleç sonrası mı), `basvurular`/`renkli_basvurular` (8 renkli Excel paleti), `basvuru_metni` (seçim → `A1`, `A1:B3`, `A:C`, `2:5`, sayfa önekli), `f4` (A1→$A$1→A$1→$A1→A1; sayfa öneki korunur), `ad_oneki`/`oneriler`/`ipucu`
+- `Izgara`: formül yazarken tıklama/sürükleme/Shift+tık **onaylamadan** işaret başvurusunu değiştirir; Gir modunda oklar (Shift: aralık) işaret hücresini gezdirir, Düzenle modunda imleç; F2 Gir⇄Düzenle; yazılan karakter işareti dondurur; **odak kaybı**: pencere/menü geçişi (`ActiveWindow/Popup`) onaylamaz, fare tıklaması işaret modundaysa onaylamaz; ızgarada başvuru başına renkli çerçeve (`_basvuru_vurgulari_ciz`)
+- **Formül çubuğu aynı modu paylaşır:** `Izgara.dis_duzenleyici` (pencere odakta/yazarken verir); tıklama/ok/F4 çalışır, çubuğa odak varken özet yenilemesi metni ezmez
+- **Alt+=** Otomatik Toplam: üstteki (yoksa soldaki) bitişik sayı bloğu → `=TOPLA(A1:A5)` düzenlemede açılır, Enter onaylar; blok yoksa `=TOPLA()` imleç içeride. **Otomatik tamamlama:** fonksiyon adı öneri listesi (Türkçe adlar, ↑↓ seç, **Tab** kabul `ADI(`, Esc listeyi kapatır, Enter hücreyi onaylar — Excel gibi); **ipucu:** `ADI(arg1; [arg2]; …)` araç ipucu
+- Ekran görüntüsü incelendi (renkli çerçeveler + öneri listesi doğru)
+- Testler 1166 → **1213** (`test_isaretleme.py` 27, `test_isaretleme_arayuz.py` 20). Regresyon yok
+- **6d'den kalanlar (açık):** (1) formül yazarken **başka sayfa sekmesine tıklayıp** başvuru ekleme (`Sayfa2!A1`; düzenleyici o sayfanın ızgarasında yaşıyor, sekme değişince gizleniyor — formül çubuğu yoluyla çözmek düşünülebilir); şimdilik sekme tıklaması düzenlemeyi etkilemiyor/onaylamıyor olabilir, **elle denenmedi**; (2) düzenleyicide **renkli metin** (yalnız ızgara çerçeveleri renkli; QLineEdit alt dizgi renklendirmeyi desteklemiyor, özel çizim gerekir); (3) çok hücreli seçimde Alt+= (Excel altına/sağına toplam yazar); (4) ipucunda gerçek argüman adları yok (kayıt yalnız en az/en çok sayı tutuyor); (5) Enter'ın seçim içinde gezmesi §8b-9 gibi basitleştirme
 
 *(Yeni girişler en alta eklenir.)*

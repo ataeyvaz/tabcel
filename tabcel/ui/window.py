@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
 
 from .. import APP_NAME
 from ..model.adres import AdresHatasi, aralik_coz, hucre_yaz
+from ..formul import isaretleme
 from ..formul.ceviri import hucre_metni
 from ..formul.motor import Hesaplayici
 from ..model.komutlar import (
@@ -53,12 +54,32 @@ class _FormulCubugu(QLineEdit):
     """Enter: onayla; Esc: vazgeç."""
     onayla = Signal(str)
     vazgec = Signal()
+    odakAldi = Signal()
+    okIsaret = Signal(int, int, bool)       # işaret modunda ok tuşu: satır, sütun farkı, Shift
+
+    def __init__(self, *a):
+        super().__init__(*a)
+        self.isaret_denetimi = None         # () -> bool (ızgara verir)
+
+    def focusInEvent(self, olay):
+        super().focusInEvent(olay)
+        self.odakAldi.emit()
 
     def keyPressEvent(self, olay):
-        if olay.key() in (Qt.Key_Return, Qt.Key_Enter):
+        k = olay.key()
+        oklar = {Qt.Key_Up: (-1, 0), Qt.Key_Down: (1, 0), Qt.Key_Left: (0, -1), Qt.Key_Right: (0, 1)}
+        if k in (Qt.Key_Return, Qt.Key_Enter):
             self.onayla.emit(self.text())
-        elif olay.key() == Qt.Key_Escape:
+        elif k == Qt.Key_Escape:
             self.vazgec.emit()
+        elif k == Qt.Key_F4:
+            yeni, imlec = isaretleme.f4(self.text(), self.cursorPosition())
+            if yeni != self.text():
+                self.setText(yeni)
+                self.setCursorPosition(imlec)
+                self.textEdited.emit(yeni)
+        elif k in oklar and self.isaret_denetimi is not None and self.isaret_denetimi():
+            self.okIsaret.emit(oklar[k][0], oklar[k][1], bool(olay.modifiers() & Qt.ShiftModifier))
         else:
             super().keyPressEvent(olay)
 
@@ -135,6 +156,9 @@ class Pencere(QMainWindow):
         self.formul = _FormulCubugu()
         self.formul.onayla.connect(self._formul_onayla)
         self.formul.vazgec.connect(self._formul_vazgec)
+        self.formul.odakAldi.connect(self._formul_odak)
+        self.formul.textEdited.connect(self._formul_duzenlendi)
+        self.formul.okIsaret.connect(self._formul_isaret_ok)
         f.addWidget(self.ad_kutusu)
         f.addWidget(fx)
         f.addWidget(self.formul, 1)
@@ -369,7 +393,9 @@ class Pencere(QMainWindow):
                                    f"{sec.son_sutun - sec.ilk_sutun + 1}Sü")
         else:
             self.ad_kutusu.setText(hucre_yaz(*g.aktif))
-        if not g.duzenleniyor():
+        isaretleniyor = g.dis_duzenleyici is not None and g._isaret is not None
+        if not g.duzenleniyor() and not self.formul.hasFocus() and not isaretleniyor:
+            self._formul_isareti_kapat()
             self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
         self._ozet_guncelle()
 
@@ -398,15 +424,38 @@ class Pencere(QMainWindow):
         g.setFocus()
         self._arayuzu_guncelle()
 
+    def _formul_odak(self):
+        """Formül çubuğuna girilince ızgara başvuru işaretlemeyi buraya yönlendirir (K7)."""
+        g = self.izgara()
+        g.dis_duzenleyici = self.formul
+        self.formul.isaret_denetimi = g._isaret_modu
+
+    def _formul_duzenlendi(self, _metin: str):
+        g = self.izgara()
+        g.dis_duzenleyici = self.formul
+        self.formul.isaret_denetimi = g._isaret_modu
+        g._metin_degisti()
+
+    def _formul_isaret_ok(self, dr: int, dc: int, shift: bool):
+        self.izgara()._isaret_ok(dr, dc, shift)
+
+    def _formul_isareti_kapat(self):
+        for g in self._izgaralar.values():
+            g.dis_duzenleyici = None
+            g.isaret_sifirla()
+            g.viewport().update()
+
     def _formul_onayla(self, metin: str):
         g = self.izgara()
         if not g.hucre_gir(*g.aktif, metin):
             return                                  # formül hatalı: formül çubuğunda kalınır
+        self._formul_isareti_kapat()
         g.setFocus()
         g.sec((g.aktif[0] + 1, g.aktif[1]))
 
     def _formul_vazgec(self):
         g = self.izgara()
+        self._formul_isareti_kapat()
         self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
         g.setFocus()
 

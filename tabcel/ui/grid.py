@@ -8,12 +8,14 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen, QStaticText
-from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QInputDialog, QLineEdit, QMenu
+from PySide6.QtWidgets import (
+    QAbstractScrollArea, QApplication, QInputDialog, QLineEdit, QListWidget, QMenu, QToolTip,
+)
 
 from ..model.adres import (
     MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
 )
-from ..formul import ceviri
+from ..formul import ceviri, isaretleme
 from ..formul.ceviri import hucre_girdisi, hucre_metni
 from ..formul.sozcuk import FormulHatasi
 from ..model.deger import Hata
@@ -33,16 +35,69 @@ class _Duzenleyici(QLineEdit):
     F2/çift tık modunda oklar kutu içinde imleci gezdirir (Excel'in Düzenle modu).
     """
     bitir = Signal(bool, int, int)   # onayla, satır farkı, sütun farkı
+    okIsaret = Signal(int, int, bool)   # işaret modunda ok tuşu: satır farkı, sütun farkı, Shift
+    modDegisti = Signal(str)            # F2: Gir ⇄ Düzenle
 
     def __init__(self, parent, yazma_modu: bool):
         super().__init__(parent)
         self.yazma_modu = yazma_modu
+        self.isaret_denetimi = None      # () -> bool: şu an başvuru işaretlenebilir mi (ızgara verir)
         self._bitti = False
         self.setFrame(False)
+        self._oneri_bas = 0              # önerinin değiştireceği metnin başlangıcı
+        self._liste = QListWidget(parent)    # fonksiyon adı önerileri (odak almaz)
+        self._liste.setFocusPolicy(Qt.NoFocus)
+        self._liste.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self._liste.hide()
+        self.textChanged.connect(self._oneri_guncelle)
+        self.destroyed.connect(self._liste.deleteLater)
+
+    # --- otomatik tamamlama / ipucu ---
+    def oneri_acik(self) -> bool:
+        return self._liste.isVisible()
+
+    def _oneri_guncelle(self, _=None) -> None:
+        self._liste.hide()
+        QToolTip.hideText()
+        if self._bitti or not self.text().startswith("="):
+            return
+        imlec = self.cursorPosition()
+        ad = isaretleme.ad_oneki(self.text(), imlec)
+        liste = isaretleme.oneriler(ad[1]) if ad else []
+        if ad and liste and not (len(liste) == 1 and liste[0].casefold() == ad[1].casefold()):
+            self._oneri_bas = ad[0]
+            self._liste.clear()
+            self._liste.addItems(liste)
+            self._liste.setCurrentRow(0)
+            self.liste_konumla()
+            self._liste.show()
+            self._liste.raise_()
+            return
+        ipucu = isaretleme.ipucu(self.text(), imlec)
+        if ipucu:
+            QToolTip.showText(self.mapToGlobal(self.rect().bottomLeft()), ipucu, self)
+
+    def liste_konumla(self) -> None:
+        satir_y = self.fontMetrics().height() + 6
+        self._liste.setGeometry(self.x(), self.y() + self.height(), max(self.width(), 160),
+                                min(self._liste.count(), 8) * satir_y + 4)
+
+    def oneri_kabul(self) -> None:
+        oge = self._liste.currentItem()
+        if oge is None:
+            return
+        imlec = self.cursorPosition()
+        metin = self.text()
+        yeni = oge.text() + "("
+        self._liste.hide()
+        self.setText(metin[:self._oneri_bas] + yeni + metin[imlec:])
+        self.setCursorPosition(self._oneri_bas + len(yeni))
 
     def _son(self, onayla: bool, dr: int = 0, dc: int = 0):
         if not self._bitti:
             self._bitti = True
+            self._liste.hide()
+            QToolTip.hideText()
             self.bitir.emit(onayla, dr, dc)
 
     def event(self, olay):
@@ -54,6 +109,17 @@ class _Duzenleyici(QLineEdit):
 
     def keyPressEvent(self, olay):
         k, shift = olay.key(), bool(olay.modifiers() & Qt.ShiftModifier)
+        if self._liste.isVisible():                  # öneri listesi açıkken
+            if k in (Qt.Key_Down, Qt.Key_Up):
+                n = self._liste.count()
+                self._liste.setCurrentRow((self._liste.currentRow() + (1 if k == Qt.Key_Down else -1)) % n)
+                return
+            if k in (Qt.Key_Tab, Qt.Key_Backtab):
+                self.oneri_kabul()
+                return
+            if k == Qt.Key_Escape:
+                self._liste.hide()
+                return
         if k in (Qt.Key_Return, Qt.Key_Enter) and olay.modifiers() & Qt.AltModifier:
             self.insert("\n")             # Alt+Enter: hücre içinde yeni satır
         elif k in (Qt.Key_Return, Qt.Key_Enter):
@@ -62,15 +128,31 @@ class _Duzenleyici(QLineEdit):
             self._son(True, 0, -1 if (k == Qt.Key_Backtab or shift) else 1)
         elif k == Qt.Key_Escape:
             self._son(False)
+        elif k == Qt.Key_F4:
+            yeni, imlec = isaretleme.f4(self.text(), self.cursorPosition())
+            if yeni != self.text():
+                self.setText(yeni)
+                self.setCursorPosition(imlec)
+        elif k == Qt.Key_F2 and self.text().startswith("="):
+            self.yazma_modu = not self.yazma_modu
+            self.modDegisti.emit("Gir" if self.yazma_modu else "Düzenle")
         elif self.yazma_modu and k in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Left, Qt.Key_Right):
             d = {Qt.Key_Up: (-1, 0), Qt.Key_Down: (1, 0),
                  Qt.Key_Left: (0, -1), Qt.Key_Right: (0, 1)}[k]
-            self._son(True, *d)
+            if self.isaret_denetimi is not None and self.isaret_denetimi():
+                self.okIsaret.emit(d[0], d[1], shift)
+            else:
+                self._son(True, *d)
         else:
             super().keyPressEvent(olay)
 
     def focusOutEvent(self, olay):
         super().focusOutEvent(olay)
+        neden = olay.reason()
+        if neden in (Qt.ActiveWindowFocusReason, Qt.PopupFocusReason):
+            return                        # pencere dışına geçiş / menü: onaylama, açık bırak (Excel gibi)
+        if neden == Qt.MouseFocusReason and self.isaret_denetimi is not None and self.isaret_denetimi():
+            return                        # hücreye tıklama başvuru işaretler; ızgara odağı geri verir
         self._son(True)
 
 
@@ -104,6 +186,11 @@ class Izgara(QAbstractScrollArea):
         self.yigin = yigin if yigin is not None else GeriAlYigini()
         self._duzenleyici: Optional[_Duzenleyici] = None
         self._duzenlenen = (1, 1)
+        self._isaret: Optional[Tuple[int, int]] = None      # son işaretlenen başvurunun metin aralığı
+        self._isaret_capa: Optional[Tuple[int, int]] = None  # işaret aralığının sabit / hareketli ucu
+        self._isaret_ucu: Optional[Tuple[int, int]] = None
+        self._isaret_yaziyor = False
+        self.dis_duzenleyici: Optional[QLineEdit] = None   # formül çubuğu (pencere verir): aynı işaretleme modu
         self._ekler: List[Aralik] = []         # Ctrl ile eklenen önceki aralıklar (birincil aralık hariç)
         self._koru = False                      # fare düğmesi basılıyken çoklu seçim korunur
         self._genislik_onb: Dict[str, int] = {}     # metin → piksel genişliği (kaydırmada yeniden ölçülmesin)
@@ -439,6 +526,7 @@ class Izgara(QAbstractScrollArea):
         if ar:
             p.setPen(QPen(QColor(theme.ACCENT), 2))
             p.drawRect(ar.adjusted(0, 0, -2, -2))
+        self._basvuru_vurgulari_ciz(p, sutunlar, tum_satirlar)
 
         # başlıklar
         # (yalnızca açığa çıkan bölgeye değenler: artımlı kaydırmada sütun başlıkları yeniden çizilmez)
@@ -532,6 +620,11 @@ class Izgara(QAbstractScrollArea):
     def mousePressEvent(self, olay):
         if olay.button() != Qt.LeftButton:
             return
+        if self._isaret_modu():
+            satir, sutun = self._noktadan(olay.position().toPoint())
+            if satir is not None and sutun is not None:
+                self._isaret_tikla(satir, sutun, bool(olay.modifiers() & Qt.ShiftModifier))
+                return
         self.duzenlemeyi_bitir()
         if self.duzenleniyor():
             return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır
@@ -574,6 +667,12 @@ class Izgara(QAbstractScrollArea):
             self._boyut_surukle(p)
             return
         if not self._surukleme:
+            return
+        if self._surukleme == "isaret":
+            satir, sutun = self._noktadan(QPoint(max(p.x(), self._baslik_g()), max(p.y(), self._baslik_y())))
+            if satir and sutun and self._isaret is not None:
+                self._isaret_ucu = (satir, sutun)
+                self._isaret_yaz_secim()
             return
         satir, sutun = self._noktadan(QPoint(max(p.x(), self._baslik_g()),
                                              max(p.y(), self._baslik_y())))
@@ -692,6 +791,8 @@ class Izgara(QAbstractScrollArea):
             self.secimi_temizle()
         elif k == Qt.Key_Backspace:
             self.duzenle_baslat("")
+        elif (m & Qt.AltModifier) and not ctrl and k == Qt.Key_Equal:
+            self.otomatik_toplam()
         elif ctrl and k == Qt.Key_9:
             self.satirlari_gizle()
         elif ctrl and k == Qt.Key_0:
@@ -1149,7 +1250,11 @@ class Izgara(QAbstractScrollArea):
         else:
             e.setText(hucre_metni(self.sayfa.hucre(*self._aktif), self.sayfa.kitap))
         e.bitir.connect(self._duzenleme_bitti)
+        e.isaret_denetimi = self._isaret_modu
+        e.okIsaret.connect(self._isaret_ok)
+        e.modDegisti.connect(self.modDegisti.emit)
         e.textChanged.connect(self.duzenlemeMetniDegisti.emit)
+        e.textChanged.connect(self._metin_degisti)
         e.textChanged.connect(lambda _: self._duzenleyici_yerlestir())
         self._duzenleyici = e
         self._duzenlenen = self._aktif
@@ -1175,6 +1280,109 @@ class Izgara(QAbstractScrollArea):
         genislik = min(max(ar.width() - 1, gerekli), self.viewport().width() - ar.x())
         e.setGeometry(ar.x(), ar.y(), max(genislik, 1), ar.height() - 1)
         e.show()
+        if e.oneri_acik():
+            e.liste_konumla()
+
+    # --- Otomatik Toplam (Alt+=) ---
+    def _sayisal_mi(self, r: int, c: int) -> bool:
+        d = self.sayfa.deger(r, c)
+        return isinstance(d, (int, float)) and not isinstance(d, bool)
+
+    def otomatik_toplam(self) -> None:
+        """Alt+=: etkin hücrenin üstündeki (yoksa solundaki) bitişik sayı bloğunu toplayan
+        `=TOPLA(...)` ile düzenlemeyi başlatır; Enter onaylar. Blok yoksa `=TOPLA()` ve imleç içeride."""
+        if self.duzenleniyor():
+            return
+        r, c = self._aktif
+        k = r - 1
+        while k >= 1 and self._sayisal_mi(k, c):
+            k -= 1
+        if k < r - 1:
+            ar = Aralik(k + 1, c, r - 1, c)
+        else:
+            k = c - 1
+            while k >= 1 and self._sayisal_mi(r, k):
+                k -= 1
+            ar = Aralik(r, k + 1, r, c - 1) if k < c - 1 else None
+        govde = isaretleme.basvuru_metni(ar) if ar is not None else ""
+        metin = ceviri.hucre_metni(Hucre(None, f"=SUM({govde})"), self.sayfa.kitap)
+        self.duzenle_baslat(metin)
+        if ar is None and self._duzenleyici is not None:
+            self._duzenleyici.setCursorPosition(len(metin) - 1)
+
+    # --- işaretleme modu (K7): formül yazarken fareyle/okla başvuru seçme ---
+    def _metin_degisti(self, _=None) -> None:
+        if not self._isaret_yaziyor:
+            self._isaret = self._isaret_capa = self._isaret_ucu = None    # yazılan karakter "dondurur"
+        self.viewport().update()                                           # renkli başvuru çerçeveleri
+
+    def _hedef(self) -> Optional[QLineEdit]:
+        """Başvuru işaretlenecek metin kutusu: hücre içi düzenleyici, yoksa formül çubuğu."""
+        return self._duzenleyici if self._duzenleyici is not None else self.dis_duzenleyici
+
+    def isaret_sifirla(self) -> None:
+        self._isaret = self._isaret_capa = self._isaret_ucu = None
+
+    def _isaret_modu(self) -> bool:
+        e = self._hedef()
+        if e is None:
+            return False
+        metin, imlec = e.text(), e.cursorPosition()
+        if self._isaret is not None and self._isaret[1] == imlec and metin.startswith("="):
+            return True                    # az önce eklenen başvuru: tıklama/ok onu değiştirir
+        return isaretleme.eklenebilir(metin, imlec)
+
+    def isaret_yaz(self, aralik: Aralik, sayfa_adi: Optional[str] = None) -> None:
+        """Düzenleyicideki işaret başvurusunu (yoksa imleç konumuna yenisini) `aralik` ile değiştirir."""
+        e = self._hedef()
+        if e is None:
+            return
+        metin, imlec = e.text(), e.cursorPosition()
+        bas, son = self._isaret if self._isaret and self._isaret[1] == imlec else (imlec, imlec)
+        yeni = isaretleme.basvuru_metni(aralik, sayfa_adi)
+        self._isaret_yaziyor = True
+        try:
+            e.setText(metin[:bas] + yeni + metin[son:])
+            e.setCursorPosition(bas + len(yeni))
+        finally:
+            self._isaret_yaziyor = False
+        self._isaret = (bas, bas + len(yeni))
+
+    def _isaret_yaz_secim(self) -> None:
+        (r1, c1), (r2, c2) = self._isaret_capa, self._isaret_ucu
+        self.isaret_yaz(Aralik(min(r1, r2), min(c1, c2), max(r1, r2), max(c1, c2)))
+
+    def _isaret_tikla(self, satir: int, sutun: int, shift: bool) -> None:
+        if shift and self._isaret is not None and self._isaret_capa is not None:
+            self._isaret_ucu = (satir, sutun)
+        else:
+            self._isaret_capa = self._isaret_ucu = (satir, sutun)
+        self._isaret_yaz_secim()
+        self._surukleme = "isaret"
+        self._hedef().setFocus()
+
+    def _isaret_ok(self, dr: int, dc: int, shift: bool) -> None:
+        if self._isaret is None or self._isaret_ucu is None:
+            self._isaret_capa = self._isaret_ucu = (
+                self._duzenlenen if self._duzenleyici is not None else self._aktif)
+        r, c = self._isaret_ucu
+        yeni = (min(max(r + dr, 1), MAX_ROW), min(max(c + dc, 1), MAX_COL))
+        self._isaret_ucu = yeni
+        if not shift:
+            self._isaret_capa = yeni
+        self._gorunur_yap(yeni)
+        self._isaret_yaz_secim()
+
+    def _basvuru_vurgulari_ciz(self, p, sutunlar, satirlar) -> None:
+        e = self._hedef()
+        if e is None or not e.text().startswith("=") or not sutunlar or not satirlar:
+            return
+        for _, _, b, renk in isaretleme.renkli_basvurular(e.text()):
+            if b.sayfa is not None and not (isinstance(b.sayfa, str)
+                                            and b.sayfa.casefold() == self.sayfa.ad.casefold()):
+                continue
+            self._secim_cercevesi(p, Aralik(b.r1, b.c1, b.r2, b.c2), sutunlar, satirlar,
+                                  QPen(QColor(renk), 2), tek_hucre=True)
 
     def duzenlemeyi_bitir(self, onayla: bool = True) -> None:
         if self._duzenleyici is not None:
@@ -1212,6 +1420,8 @@ class Izgara(QAbstractScrollArea):
         if e is None:
             return
         self._duzenleyici = None
+        self._isaret = self._isaret_capa = self._isaret_ucu = None
+        self.viewport().update()
         metin = e.text()
         imlec = e.cursorPosition()
         e.hide()
