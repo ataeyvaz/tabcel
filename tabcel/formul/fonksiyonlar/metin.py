@@ -1,4 +1,4 @@
-"""Metin fonksiyonları (TEXT, sayı biçimi çözümleyicisiyle Faz 3'te). Qt yok."""
+"""Metin fonksiyonları (TEXT = METNEÇEVİR sayı biçimi çözümleyicisiyle). Qt yok."""
 import math
 import re
 
@@ -6,6 +6,7 @@ from ...model import deger as D
 from ...model.deger import Hata
 from ..degerler import skalere
 from ..donustur import mantiga, metne, sayi_metninden
+from ...model.sayi_bicimi import BicimHatasi, bicimle, kanonige
 from ..yerel import tr_buyuk, tr_kucuk
 from . import fonksiyon
 from .ortak import _joker_regex, duz, ham, skaler
@@ -171,6 +172,35 @@ def _value(b, v):
         return v
     n = sayi_metninden(v)
     return D.DEGER_HATASI if n is None else n
+
+
+@skaler("TEXT", "hm")
+def _text(b, v, kod):
+    """METNEÇEVİR: sayıyı biçim koduyla metne çevirir. Biçim Türkçe yazımla verilir (`"gg.aa.yyyy"`,
+    `"#.##0,00"`); çözülemezse kanonik yazım denenir (surec.md §8b-41). Metin sayıya benziyorsa
+    çevrilir, benzemiyorsa olduğu gibi döner (Excel)."""
+    if isinstance(v, Hata):
+        return v
+    if kod.strip() == "":
+        return ""
+    if v is None:
+        v = 0.0
+    if isinstance(v, bool):
+        return "DOĞRU" if v else "YANLIŞ"
+    if isinstance(v, str):
+        n = sayi_metninden(v)
+        if n is None:
+            return v
+        v = n
+    try:
+        kanonik = kanonige(kod)
+    except BicimHatasi:
+        kanonik = kod
+    try:
+        s = bicimle(float(v), kanonik)
+    except BicimHatasi:
+        return D.DEGER_HATASI
+    return D.DEGER_HATASI if s.diyez else s.metin
 
 
 @skaler("REPT", "ms")

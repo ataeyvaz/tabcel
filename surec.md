@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3f ✅; sıradaki: 3g–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3g ✅; sıradaki: 3h–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1606 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1698 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1606 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -103,6 +103,11 @@ Testler: 1606 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - Çizim: `_yerlesim` birleşik hücreleri atlar, `_birlesimleri_ciz` iç çizgileri örter, sol üst hücrenin dolgu/kenarlık/metnini tüm alanda çizer (kısmen ekran dışı, gizli sütunlu da); birleşim yokken ek maliyet yalnız bir boş-liste denetimi. Soldaki metin kapsanan hücrelere taşmaz
   - Ekle-sil: içine ekleme büyütür, silme küçültür, tamamen silinen ya da tek hücreye inen kalkar; geri al listeyi aynen yükler. Pano: tamamen kopyalanan birleşim göreli yapışır (desen yinelenirse her yinelemede), hedefteki eski birleşim kalkar (Excel "Tümü"); hedef bir birleşimi **kısmen** keserse yapıştırma/taşıma reddedilir ("kısmen kapsıyor" uyarısı — Excel'in kendi iletisi farklı). Kes-yapıştır birleşimi taşır, geri alınır
   - Biçim çubuğu daraltıldı (yazı tipi/sayı kutuları 128 px) ki Birleştir düğmesi eklenince 1100 px'te tek satır kalsın
+- 2026-10-09 (Faz 3 / 3g):
+  - `akilli_coz` yalnız **hücreye elle yazarken** (`hucre_gir`) ve formülde metin→sayı dönüşümünde kullanılır. **`girdi_coz` değişmedi** (tasarım §6'dan sapma): dışarıdan yapıştırılan metin biçimsiz geldiği için tarihi seri sayı olarak (46307) göstermemek adına yapıştırma düz çözümleyicide kaldı (Excel dışarıdan gelen tarihi de çözer — bilerek fark; yapıştırma planına biçim eklenirse kalkar)
+  - Önerilen sayı biçimi yalnız hücre **Genel** iken uygulanır, değer+biçim tek geri al adımı. Metin (`@`) biçimli hücre her girdiyi metin tutar (formül dahil). Tarih/yüzde biçimli hücrenin düzenleme metni `gg.aa.yyyy` / `15%` gösterilir ve geri aynı değere çözülür (değişmeden onaylayınca komut yok)
+  - Tarih: gün.ay[.yıl] (`.` `/` `-`, aynı ayraç), `12 Ekim [2026]`, ay adı tam/kısa; isteğe bağlı saatle; iki haneli yıl 00–29→20xx; geçersiz gün/ay metin kalır; yıl yoksa içinde bulunulan yıl. Saat 0–23 (AM/PM/ÖÖ/ÖS ile 1–12), 24+ saat metin
+  - **METNEÇEVİR** (`TEXT`) eklendi (adı `adlar.py`'de hazırdı; 6b'deki eksik kapandı)
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -178,7 +183,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | # | Soru | Şu anki varsayım (kodda) | Sonuç |
 |---|---|---|---|
 | 1 | Türkçe Excel'de hücreye `TRUE` / `FALSE` yazınca mantıksal olur mu, yoksa yalnızca `DOĞRU` / `YANLIŞ` mi? | İkisi de kabul (`model/girdi.py`) | ⏳ |
-| 2 | `1.5` yazınca ne olur? (tarih "1 Mayıs" mı, metin mi, sayı mı) | Metin kalır (tarih çözümü Faz 3) | ⏳ |
+| 2 | `1.5` yazınca ne olur? (tarih "1 Mayıs" mı, metin mi, sayı mı) | **Tarih** (1 Mayıs, bu yıl; 3g'de uygulandı; `1.50`/`1.500` tarih değil) | ⏳ |
 | 3 | `1.500` → 1500 sayı mı? `5,` → 5 ve `,5` → 0,5 mi? `1.5E3`? | Evet / Evet / bilinmiyor | ⏳ |
 | 4 | Dizi sabitinde ayırıcılar Türkçe'de nedir? (`{1;2;3}` satır/sütun ayrımı, `{1,2;3,4}` karşılığı) | Sütun `\`, satır `;` → `{1\2;3\4}` (kaynak: Microsoft topluluk forumu + tr-tr "dizi sabitleri" belgesi; resmî kesin değil) — `formul/yerel.py` | ⏳ |
 | 5 | Hata değerlerinin Türkçe yazımı: `#BÖL/0!`, `#AD?`, `#BAŞV!`, `#DEĞER!`, `#YOK`, `#SAYI!`, `#BOŞ!`, `#TAŞMA!`… | plan.md'deki liste (resmî listeyle doğrulanmadı) | ⏳ |
@@ -190,7 +195,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 11 | Alt+Enter'lı hücre kaydırma kapalıyken tek satırda nasıl görünür (satır sonu hiç yok mu, boşluk mu)? Genel biçimde dar sütunda sayı yuvarlama/bilimsel geçiş eşiği nedir? | Satır sonu görünmez; 0,01 altı bilimsele geçer | ⏳ |
 | 12 | Sayının metne dönüşümü (`=1/3&""`, `=0,00001&""`, `=1E+20&""`): kaç basamak, bilimsel gösterime hangi eşikte geçer? | 15 anlamlı basamak, Python `%.15g` eşiği (1E-05'ten küçükte bilimsel) — `donustur.sayi_metni` | ⏳ |
 | 13 | Döngüsel başvuru: `A1: =B1+1`, `B1: =A1+1` yazınca hücrelerde ne görünür (0 mı, son değer mi)? Döngüye bağlı `C1: =A1*10`? | Döngü üyeleri 0; bağlı hücreler bu 0 ile hesaplanır | ⏳ |
-| 14 | `="1.5"+1`, `="1.1.2026"+1` (tarih metni) Türkçe Excel'de ne verir? | `#DEĞER!` (tarih metni çözümü Faz 3) | ⏳ |
+| 14 | `="1.5"+1`, `="1.1.2026"+1` (tarih metni) Türkçe Excel'de ne verir? | `="1.5"+1` ve `="1.1.2026"+1` tarih + 1 (3g: `donustur.sayi_metninden` akıllı çözümleyiciyi kullanır) | ⏳ |
 | 15 | `=A1:A3` ve `=A1:A3*2` tek hücrede (taşma alanı dolu değilken) Excel web'de taşar; taşma engellenince `#TAŞMA!` mı? `#SPILL!`'in Türkçesi? | Taşma yok; örtük kesişim/sol üst (Faz 8) | ⏳ |
 | 16 | `COUNT(1,,3)`: atlanmış argüman sayılır mı? `COUNTA` atlanmış? | Sayılır (her ikisi) | ⏳ |
 | 17 | `COUNTIF(A:A;5)` metin "5" hücresini de sayar mı? Boş ölçüt hücresi (`COUNTIF(A:A;B1)`, B1 boş) | Sayar; boş ölçüt 0 sayılır | ⏳ |
@@ -217,9 +222,9 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 38 | Koşullu bölümlerde eksi işareti; hiçbir koşula uymayan sayı (`[>100]0;[<0]0` ile 50) | İşaret yazılır; uymayan sayı `####` | ⏳ |
 | 39 | `[Red]0` biçimli hücreye metin yazılınca metin kırmızı mı | Renk uygulanmaz | ⏳ |
 | 40 | Kesirde 0 ve tam sayılar: `0,75` → `" 3/4"`, `2` → `"2    "` boşluk/hizalama; `?/?` ile 0 | Uygulanan davranış (yalnız boşlukları sıkıştırılmış hali test edildi) | ⏳ |
-| 41 | METNEÇEVİR biçim argümanı Türkçe Excel'de yerel yazım mı (`"gg.aa.yyyy"`)? Kanonik kod da çalışır mı | Yerel yazım | ⏳ |
+| 41 | METNEÇEVİR biçim argümanı Türkçe Excel'de yerel yazım mı (`"gg.aa.yyyy"`)? Kanonik kod da çalışır mı | Yerel yazım önce, çözülemezse kanonik denenir (3g, `metin.py`); `"0.00"` yerelde binlik ayracı sayılır | ⏳ |
 | 42 | Doldurma: 3+ sayıda doğrusal eğilim mi? Aynı gün, farklı ay olan iki tarihte ay adımı mı | Evet / evet | ⏳ |
-| 43 | Akıllı giriş: `1.5` → 1 Mayıs mı (§8b-2)? `1/2` → tarih mi? `1.234,5` girilince otomatik `#,##0` biçimi uygulanır mı | Tasarım: tarih / tarih / doğrulanana dek uygulanmaz | ⏳ |
+| 43 | Akıllı giriş: `1.5` → 1 Mayıs mı (§8b-2)? `1/2` → tarih mi? `1.234,5` girilince otomatik `#,##0` biçimi uygulanır mı | Uygulandı (3g): `1.5` → tarih, `1/2` → 1 Şubat (gün/ay), `1.234,5` → biçim uygulanmaz (Genel kalır). Ayrıca: yüzde `15,5%` → `0.0%`, para yalnız yazılan ondalık kadar (varsa 2), bilimsel `0.00E+00`, 24+ saat metin | ⏳ |
 | 44 | Türkçe Excel'de Kalın/İtalik/Altı çizili kısayolları | Sözcük'teki karar izlenecek (Ctrl+B/I/U) | ⏳ |
 | 45 | Para/Yüzde/Binlik düğmelerinin kodları ve kısayolları (Ctrl+Shift+4/5/1); Excel'in "Binlik Ayracı" düğmesi `#,##0.00` mı Muhasebe tarzı mı; çoklu seçimde Ondalık Artır etkin hücreye mi hücre hücre mi | `"₺"#,##0.00`, `0%`, `#,##0.00`; etkin hücreden | ⏳ |
 
@@ -465,6 +470,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1561 → **1606** (`test_birlesim.py` 16 Qt'siz, `test_birlesim_arayuz.py` 17: seçim/gezinme/piksel/dolgu/uyarı/düğme, `test_birlesim_pano.py` 12). Ekran görüntüsü incelendi (birleşik başlık dolgulu+ortalı+kenarlıklı, etkin birleşim çerçevesi). Regresyon yok, hiçbir test değiştirilmedi
 - **Bilerek eksik / bilinen sınır:** Ctrl+ok veri bloğu atlaması birleşimleri tanımaz; sütun/satır kenarından sürükleyerek boyutlandırmada birleşim yalnız yeniden çizilir; birleşik hücre içinde sıralama/filtre kuralları Faz 5; .xlsx `mergeCells` Faz 4; Excel'in "birleşik hücrelerde sırala" gibi uyarıları yok; birleşimin etkin hücresine dışarıdan yazılırken (örn. kapsanan hücreye formül girişi) engel yok
 - Sıradaki: **3g** (akıllı giriş + METNEÇEVİR)
+
+## [2026-10-09] — Faz 3 / 3g bitti (Sonnet 5.5)
+- Commit `8613ec4` (3f). **3g:** `model/girdi.py` `akilli_coz`/`sayisal_akilli`/düzenleme metni (`duzenleme_metni(hucre, kod)`), `ceviri.hucre_girdisi_akilli` + `hucre_metni(..., kod)`, `Izgara.hucre_gir` (Metin biçimi, kod önerisi + `Grup`) ve `aktif_duzenleme_metni`, `donustur.sayi_metninden` tarih/saat/para/kesir çözer, `metin.py` `TEXT` (METNEÇEVİR)
+- Testler 1606 → **1698** (`test_akilli_giris.py` 92: yüzde/para/kesir/saat/tarih desenleri + geçersizler, iki haneli yıl, düzenleme gidiş-dönüşü, arayüz, Metin biçimi, `="1.1.2026"+1`, TEXT için kural 11'in dört vaka türü). Regresyon yok, hiçbir test değişmedi
+- **Bilerek eksik:** dışarıdan yapıştırılan metinde akıllı çözüm yok; Genel olmayan hücrede otomatik biçim yok; 24+ saat (`[h]:mm`), kesirli saniye yok; sayı yazarken otomatik binlik biçim (`1.234,5` → `#,##0`) yok (§8b-43)
+- Sıradaki: **3h** (doldurma, Ctrl+D/R)
 
 *(Yeni girişler en alta eklenir.)*
 

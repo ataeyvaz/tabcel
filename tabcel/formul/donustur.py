@@ -9,15 +9,15 @@ from typing import Union
 
 from ..model import deger as D
 from ..model.deger import Hata
-from ..model.girdi import sayi_coz
+from ..model.girdi import sayi_coz, sayisal_akilli
 from .yerel import tr_kucuk
 
 Sayi = Union[float, Hata]
 
 
 def sayi_metninden(metin: str):
-    """Metni sayıya çevirmeyi dener (Türkçe yazım; sonda % varsa yüzde). Olmazsa None.
-    Tarih/saat metinleri Faz 3 (sayı biçimleriyle) — şimdilik dönüşmez."""
+    """Metni sayıya çevirmeyi dener (Türkçe yazım; sonda % varsa yüzde; tarih, saat, para ve kesir
+    yazımı hücreye yazılmış gibi çözülür: `="1.1.2026"+1` tarih + 1). Olmazsa None."""
     m = metin.strip()
     if not m:
         return None
@@ -26,7 +26,8 @@ def sayi_metninden(metin: str):
         m = m[:-1].rstrip()
     n = sayi_coz(m)
     if n is None:
-        return None
+        a = sayisal_akilli(metin)
+        return None if a is None else a[0]
     return n / 100 if yuzde else n
 
 

@@ -173,9 +173,20 @@ def hucre_girdisi(metin: str, kitap=None):
     return h
 
 
-def hucre_metni(hucre, kitap=None) -> str:
+def hucre_girdisi_akilli(metin: str, kitap=None):
+    """`hucre_girdisi` + akıllı giriş: (`Hucre`, önerilen sayı biçimi kodu | None). Yüzde/para/kesir/saat/
+    tarih yazımı sayıya çevrilir (hücreye elle yazarken; dışarıdan yapıştırma bunu kullanmaz)."""
+    from ..model.girdi import akilli_coz
+    from ..model.sayfa import Hucre
+    h, kod = akilli_coz(metin)
+    if h is not None and h.formul is not None:
+        return Hucre(None, girdiden(h.formul, kitap)), None
+    return h, kod
+
+
+def hucre_metni(hucre, kitap=None, kod=None) -> str:
     """Düzenleme kutusu/formül çubuğu metni: formül Türkçe gösterilir, değilse `duzenleme_metni`."""
     from ..model.girdi import duzenleme_metni
     if hucre is not None and hucre.formul is not None:
         return gosterime(hucre.formul, kitap)
-    return duzenleme_metni(hucre)
+    return duzenleme_metni(hucre, kod)

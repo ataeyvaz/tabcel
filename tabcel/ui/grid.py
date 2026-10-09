@@ -16,7 +16,7 @@ from ..model.adres import (
     MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
 )
 from ..formul import ceviri, isaretleme
-from ..formul.ceviri import hucre_girdisi, hucre_metni
+from ..formul.ceviri import hucre_girdisi, hucre_girdisi_akilli, hucre_metni
 from ..formul.sozcuk import FormulHatasi
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
@@ -1672,7 +1672,7 @@ class Izgara(QAbstractScrollArea):
         elif duzenle_metni is not None:
             e.setText(duzenle_metni)
         else:
-            e.setText(hucre_metni(self.sayfa.hucre(*self._aktif), self.sayfa.kitap))
+            e.setText(self.aktif_duzenleme_metni())
         e.bitir.connect(self._duzenleme_bitti)
         e.isaret_denetimi = self._isaret_modu
         e.okIsaret.connect(self._isaret_ok)
@@ -1942,17 +1942,33 @@ class Izgara(QAbstractScrollArea):
             r, c = self._aktif
             self.sec((r + dr, c + dc))
 
+    def aktif_duzenleme_metni(self) -> str:
+        """Etkin hücrenin düzenleme/formül çubuğu metni (tarih ve yüzde biçimli hücre o yazımla)."""
+        return hucre_metni(self.sayfa.hucre(*self._aktif), self.sayfa.kitap,
+                           self.sayfa.stil(*self._aktif).sayi_bicimi)
+
     def hucre_gir(self, satir: int, sutun: int, metin: str) -> bool:
         """Yazılan metni çözüp hücreye yazar (geri alınabilir). Değişmediyse bir şey yapmaz.
         Formül hatalıysa uyarı verir ve False döner (hiçbir şey yazılmaz)."""
-        try:
-            yeni = hucre_girdisi(metin, self.sayfa.kitap)
-        except FormulHatasi as h:
-            self.uyari.emit(f"Bu formülde bir sorun var: {h}")
-            return False
-        if yeni == self.sayfa.hucre(satir, sutun):
+        kod = None
+        if self.sayfa.stil(satir, sutun).sayi_bicimi == "@":
+            # Metin biçimli hücre (Excel): her girdi metin kalır, formül bile (başta ' varsa yine atılır)
+            yeni = Hucre(metin[1:] if metin.startswith("'") else metin) if metin not in ("", "'") else None
+        else:
+            try:
+                yeni, kod = hucre_girdisi_akilli(metin, self.sayfa.kitap)
+            except FormulHatasi as h:
+                self.uyari.emit(f"Bu formülde bir sorun var: {h}")
+                return False
+            if kod is not None and self.sayfa.stil(satir, sutun).sayi_bicimi != "General":
+                kod = None                              # biçim yalnız Genel hücreye önerilir (Excel)
+        if yeni == self.sayfa.hucre(satir, sutun) and kod is None:
             return True
-        self.yigin.calistir(HucrelerDegis(self.sayfa, {(satir, sutun): yeni}))
+        komut = HucrelerDegis(self.sayfa, {(satir, sutun): yeni})
+        if kod is not None:
+            komut = Grup([komut, bicim_komutu(self.sayfa, [Aralik(satir, sutun, satir, sutun)],
+                                              StilYama(sayi_bicimi=kod))])
+        self.yigin.calistir(komut)
         self._guncelle()
         return True
 

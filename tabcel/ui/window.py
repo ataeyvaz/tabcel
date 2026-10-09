@@ -476,7 +476,7 @@ class Pencere(QMainWindow):
         if (not g.duzenleniyor() and not self.formul.hasFocus() and not isaretleniyor
                 and self._uzak is None):
             self._formul_isareti_kapat()
-            self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
+            self.formul.setText(g.aktif_duzenleme_metni())
         self._ozet_planla()
         self._dongu_etiketi_guncelle()
         self.bicim_cubugu.guncelle()
@@ -581,7 +581,7 @@ class Pencere(QMainWindow):
             self._uzak_bitir()
         g = self.izgara()
         self._formul_isareti_kapat()
-        self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
+        self.formul.setText(g.aktif_duzenleme_metni())
         g.setFocus()
 
     def _duzenleme_aynala(self, metin: str):
