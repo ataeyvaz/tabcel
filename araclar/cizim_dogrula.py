@@ -21,6 +21,7 @@ from PySide6.QtTest import QTest  # noqa: E402
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from tabcel.model.sayfa import CalismaKitabi, Hucre  # noqa: E402
+from tabcel.model.stil import Kenarlik, Stil  # noqa: E402
 from tabcel.ui.window import Pencere  # noqa: E402
 
 TOLERANS = 1          # bilinen: seçili alan kısmen ekran dışındayken 1 piksellik köşe artefaktı
@@ -32,6 +33,14 @@ for r in range(1, 400):
     for c in range(1, 12):
         s.ata(r, c, Hucre(f"Satır {r} uzun metin" if c == 1 else float(r * c) + 0.25))
 s.ata(30, 3, Hucre("bu metin sağa taşıyor ve komşuları kapatıyor"))
+# Faz 3 / 3c: dolgu, kenarlık, kalın/renk, hizalama, sayı biçimi (artımlı çizim bunlarla da aynı olmalı)
+_stiller = [Stil(dolgu="#FFF2CC", kalin=True), Stil(kenar=Kenarlik(alt=("orta", "#C00000"), sag=("ince", "#0000FF"))),
+            Stil(sayi_bicimi="0.0%", yatay="orta", yazi_rengi="#006100"), Stil(dolgu="#DDEBF7", yatay="sag", girinti=1),
+            Stil(italik=True, kenar=Kenarlik(ust=("kalin", "#000000")), dikey="ust")]
+for _r in range(1, 400):
+    for _c in range(1, 12):
+        if (_r * 7 + _c * 3) % 5 == 0:
+            s.bicim_yaz({(_r, _c): s.havuz.kimlik(_stiller[(_r + _c) % len(_stiller)])})
 p = Pencere(k)
 p.resize(900, 560)
 p.move(50, 50)
@@ -112,6 +121,31 @@ for i in range(30, 36):
     vs.setValue(i)
     app.processEvents()
     sonuc.append(karsilastir(f"  sütun seçili, kaydırma değeri {i}"))
+# yatay artımlı kaydırma (taşan metin + stilli hücreler)
+hs = g.horizontalScrollBar()
+g.sec((1, 1))
+vs.setValue(25)
+hs.setValue(0)
+app.processEvents()
+sonuc.append(karsilastir("yatay: başlangıç"))
+for i in range(1, 6):
+    hs.setValue(i)
+    app.processEvents()
+sonuc.append(karsilastir("yatay: 5 sütun sağa (artımlı)"))
+for i in range(4, -1, -1):
+    hs.setValue(i)
+    app.processEvents()
+sonuc.append(karsilastir("yatay: 5 sütun sola (artımlı)"))
+# seçim büyütme (yalnız fark bölgesi boyanır)
+g.sec((27, 2))
+for i in range(6):
+    QTest.keyClick(g, Qt.Key_Down if i % 2 else Qt.Key_Right, Qt.ShiftModifier)
+    app.processEvents()
+sonuc.append(karsilastir("Shift+Ok ile seçim büyütme"))
+for i in range(4):
+    QTest.keyClick(g, Qt.Key_Left if i % 2 else Qt.Key_Up, Qt.ShiftModifier)
+    app.processEvents()
+sonuc.append(karsilastir("Shift+Ok ile seçim küçültme"))
 toplam_fark = sum(sonuc)
 print(f"TOPLAM FARK: {toplam_fark} piksel (tolerans {TOLERANS})")
 sys.exit(0 if toplam_fark <= TOLERANS else 1)

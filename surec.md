@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 sıradaki: 3a–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a, 3b, 3c ✅; sıradaki: 3d–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1474 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -80,6 +80,13 @@ Testler: 1474 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - Satır/sütun ekle-sil komutu kitaptaki formül metinlerini de düzeltir, tek geri al adımı
   - Formül çalışma anı metin⇄sayı dönüşümleri Türkçe kurala göre (`="2,5"+1` = 3,5)
   - Hata adlarının tek kaynağı `model/gosterim.HATA_TR`; `formul/yerel.py` oradan alır
+- 2026-10-09 (Faz 3 / 3c, gerekçe günlükte):
+  - Izgara çizim önbelleği **olay tabanlı satır önbelleği değil, değer tabanlı** (`faz3_tasarim.md` §7'den sapma): biçimlenmiş metin `(değer, sayı biçimi kodu)`, sığdırılmış metin `(değer, kod, sığan px)` anahtarlı, yazı tipi/ölçüm/`QStaticText` stil kimliği başına. Gerekçe: kitapsız sayfada olay yok, geçersiz kılma hatası riski yok (anahtar değişince eski girdi zaten kullanılmaz); hücre başına yalnız 3 sözlük araması eklenir
+  - `Stil.boyut` temel yazı boyutuna göre ölçeklenir (`temel × boyut / 11`); kalın/italik/üstü çizili/tek altı çizili `QFont`ta, çift altı çizgi elle ikinci çizgi
+  - Dikey hiza `alt` varsayılanı Excel gibi alttan 2 px; satır metinden kısaysa ortalanır. Girinti 9 px × düzey (yaklaşık, doğrulanmadı). Hizalama `doldur`/`iki_yana` şimdilik sola, `secim_ortasi` hücre ortasına basitleştirildi (3j ile birlikte gözden geçirilecek); sağa/ortaya hizalı metin komşuya **taşmaz** (yalnız sola hizalı taşar)
+  - Dolgu hücrenin kendi sağ/alt kılavuz çizgisini örter (komşunun çizgisi görünür kalır); kenarlık çizgileri kılavuzun üstüne, kalın olan kazanır
+  - Yatay kaydırma artımlı (dikeyle aynı düzen); yarım görünen seçim/kopyalama çerçevesi varken tam çizim (açık uçlar artefakt bırakıyordu)
+  - Geçersiz sayı biçimi kodu çizimde Genel gibi davranır (çökme yok)
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -136,6 +143,19 @@ Yapılan: topolojik sıralama yerine okurken erteleme (O(n²) kenar çıkarma ka
 | 4.000 satır: satır `TOPLA` + yürüyen bakiye, A1 değişti | **19,9 sn** (karesel) | **0,1 sn** |
 | `=TOPLA(A:A)` giriş / düzenleme (A1:A10 dolu) | 0,42 / 0,38 sn | 0,5 / 0,1 ms |
 Yapılan: aralık bağımlılıkları sütuna göre indekslendi (geniş >8 sütun kutular ayrı liste), kirli formüller her düzeyde yeniden taranmaz; `toplam()` kullanılan alana kırpılır.
+
+**2026-10-09 — Faz 3 / 3c sonrası** (aynı betik; makine yüklü, ±%20 dalgalanma var — tek ölçüm kesin değil)
+| Ölçüm | Faz 1 sonu | 3c sonrası | Hedef |
+|---|---|---|---|
+| Yatay kaydırma | 18,6 ms ❌ | **6,6–10 ms** ✅ | 16 |
+| Ok tuşu + boyama | 16,0 ms | **7,8–8,9 ms** ✅ | 16 |
+| Shift+Ok seçim genişletme | 25,1 ms ❌ | 18,1 ms ❌ | 16 |
+| Dikey sıçrama (tam çizim) | 28,8 ms ❌ | 28–30 ms ❌ | 16 |
+| Özet (100.000 hücre seçili) | 124 ms ❌ | 77–103 ms (büyük seçimde 50 ms ertelenir; çizim beklemez) ✅ | 100 |
+| Dikey kaydırma 1 / 3 satır | 8,7 / 13,7 ms ✅ | 7–10 / 14,5–18,6 ms (3 satır sınırda) | 16 |
+| STİLLİ (10 stil + 4 biçim, 100.000 hücre): ilk çizim / 1 satır / yatay / Ok | — | 24–32 / 10–11 / 7–8 / 12 ms ✅ | 16–40 |
+| STİLLİ: 3 satır / sıçrama / Shift+Ok | — | 17–19 / 40 / 22–25 ms ❌ | 16 |
+Büyük kazanç `window._formul_isareti_kapat`: her seçim değişiminde tüm ızgarayı boşuna yeniden çizdiriyordu (Faz 2'den kalma) → yalnız işaretleme açıkken. Diğer: `paintEvent` geçersiz bölgenin her parçasını ayrı boyar (sınır kutusu değil), Shift+Ok'ta yalnız fark bölgesi, başlıklar `QStaticText`. **Kalan ❌ (sıçrama, Shift+Ok, stilli 3 satır):** tam çizimde ~800 hücrede Python döngüsü + `drawStaticText` ≈ 25–40 ms; aşmak için satır/karo piksel önbelleği gerekir (3l'de gerekirse; kullanıcı kararı bekliyor).
 
 ## 8b. Excel web'de doğrulanacaklar (kullanıcı doğrular; sonra teste dönüşür)
 Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel ayara ayarlıyken denenecek. Her satır "belirsiz" — doğrulanana dek kodda varsayım olarak işaretli.
@@ -399,6 +419,15 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1458 → **1474** (`test_pano_bicim.py` 16)
 - Bilerek eksik: Özel Yapıştır (Değerler/Biçimler/Formüller) menüsü; birleşimlerin pano/taşıma ile taşınması (3f ile)
 - Sıradaki: **3c** (ızgara çizimi yeniden — Faz 1 performans ❌'leri burada kapanır; ölçüt `faz3_tasarim.md` §7)
+
+## [2026-10-09] — Faz 3 / 3c bitti (Sonnet 5.5)
+- **Çizim stili uygular:** `Izgara._yerlesim` hücre stiline göre: sayı biçimi (`sayi_bicimi.bicimle/sigdir`, renk `[Red]`…, `####`, `*x` dolgu), yatay/dikey hiza, girinti, yazı tipi (aile, boyut, kalın, italik, üstü/altı çizili, yazı rengi); `_stilli` yan ürünü dolgu/kenarlıklı görünen hücreleri (boş dahil) verir. `_dolgu_ciz`, `_kenar_ciz` (ince/orta/kalın/kesikli/noktalı/çift/saç; komşu kenarda kalın kazanır; sol/üst kenar komşunun sağ/alt çizgisine oturur, başlığın altında kalır). Test sözleşmesi korundu (`_yerlesim` 2'li dönüş, ilk 4 alan aynı; 6. alan `(renk, yazı tipi girdisi, stil)` eklendi)
+- **Önbellekler:** `_FontGirdisi` (stil kimliği başına QFont/QFontMetrics/genişlik/QStaticText/sığdırılmış sayı), `(değer, kod)` biçim önbelleği; yakınlaştırma/yazı tipi/havuz değişince sıfırlanır
+- **Artımlı çizim:** yatay kaydırma `viewport().scroll` (+ sınır şeridi yeniden boyanır: kalın kenarlık komşuya 2 px taşar); bölgenin her parçası ayrı boyanır ve kendi dikdörtgenine kırpılır (tek kırpma bölgesiyle çift çizimde başlık metni koyulaşıyordu); hücre işlemede 3 px taşma payı; Shift+Ok yalnız fark bölgesini boyar (`_secim_farki_boya`); büyük seçimde (>5000 hücre) durum çubuğu özeti 50 ms ertelenir (küçükte anında — testler aynen geçer)
+- **Hata düzeltmesi (Faz 2'den kalma):** `Pencere._formul_isareti_kapat` her seçim değişiminde tüm viewport'u yeniden çizdiriyordu → artık yalnız işaretleme etkinken
+- **Doğrulama:** testler 1474 → **1497** (`test_izgara_stil.py` 23: dolgu/kenarlık piksel, yazı tipi, hizalama, girinti, sayı biçimi, `####`, geçersiz kod, yatay artımlı = tam çizim, özet erteleme, kısmi boyama alanı). `araclar/cizim_dogrula.py` dolgu/kenarlık/biçimli hücre + yatay kaydırma + Shift+Ok adımlarıyla genişletildi (gerçek pencere): **1 piksel fark** (bilinen köşe artefaktı, tolerans 1). `performans_olcum.py`'ye stilli senaryo eklendi (§8). Regresyon yok, hiçbir test değiştirilmedi
+- **Bilerek eksik (sonraki işlere):** metni kaydır + otomatik satır yüksekliği (3j; `kaydir` şimdilik taşmayı kapatır, sarma yok), kılavuz gizle/dondurma (3i), birleşim (3f), `doldur`/`iki_yana`/`secim_ortasi` tam hizası, sağa hizalı metnin sola taşması. Ekran görüntüsü incelendi (başlık dolgusu, para/yüzde/kırmızı negatif biçimi, kalın/çift kenarlık, girinti, 18 punto satır — doğru). Bilinen sınır: A sütununun sol ve 1. satırın üst kenarlığı başlığın altında kalır (görünmez; Excel gösterir)
+- Sıradaki: **3d** (biçim araç çubuğu)
 
 *(Yeni girişler en alta eklenir.)*
 

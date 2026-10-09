@@ -7,7 +7,7 @@ import uuid
 from typing import Dict, Iterator, List, Optional, Tuple
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QRect, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen, QStaticText
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen, QRegion, QStaticText
 from PySide6.QtWidgets import (
     QAbstractScrollArea, QApplication, QInputDialog, QLineEdit, QListWidget, QMenu, QToolTip,
 )
@@ -20,6 +20,9 @@ from ..formul.ceviri import hucre_girdisi, hucre_metni
 from ..formul.sozcuk import FormulHatasi
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
+from ..model import sayi_bicimi
+from ..model.sayi_bicimi import BicimSonucu
+from ..model.stil import VARSAYILAN, Stil
 from ..model.komutlar import (
     BicimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, SatirEkleSil, SutunEkleSil,
 )
@@ -27,6 +30,28 @@ from ..model import olcu, pano
 from ..model.sayfa import Hucre, Sayfa
 from . import theme
 from .renkli import renkli_ciz
+
+VARSAYILAN_PUNTO = 11.0     # `Stil.boyut` bu değere göre ölçeklenir (Excel varsayılanı 11 punto)
+_YATAY_BAYRAK = {"genel": Qt.AlignLeft, "sol": Qt.AlignLeft, "doldur": Qt.AlignLeft,
+                 "iki_yana": Qt.AlignLeft, "orta": Qt.AlignHCenter,
+                 "secim_ortasi": Qt.AlignHCenter, "sag": Qt.AlignRight}
+_HIZA_BAYRAK = {"sol": Qt.AlignLeft, "orta": Qt.AlignHCenter, "sag": Qt.AlignRight}
+_CIZGI_KALINLIK = {"ince": 1, "orta": 2, "kalin": 3, "kesikli": 1, "noktali": 1, "cift": 3, "sac": 1}
+
+
+class _FontGirdisi:
+    """Bir stilin yazı tipi + ölçüm/çizim önbellekleri (metin genişliği, QStaticText, sığdırılmış sayı)."""
+    __slots__ = ("font", "olcer", "yukseklik", "gen", "statik", "sayilar", "dolgu", "kenarli")
+
+    def __init__(self, font: QFont, stil: Stil):
+        self.dolgu = stil.dolgu                       # hücre dolgusu / kenarlığı var mı (her çizimde sorulmasın)
+        self.kenarli = not stil.kenar.bos_mu()
+        self.font = font
+        self.olcer = QFontMetrics(font)
+        self.yukseklik = self.olcer.height()
+        self.gen: Dict[str, int] = {}
+        self.statik: Dict[str, QStaticText] = {}
+        self.sayilar: Dict[tuple, tuple] = {}
 
 
 class _Duzenleyici(QLineEdit):
@@ -200,11 +225,14 @@ class Izgara(QAbstractScrollArea):
         self.dis_duzenleyici: Optional[QLineEdit] = None   # formül çubuğu (pencere verir): aynı işaretleme modu
         self._ekler: List[Aralik] = []         # Ctrl ile eklenen önceki aralıklar (birincil aralık hariç)
         self._koru = False                      # fare düğmesi basılıyken çoklu seçim korunur
-        self._genislik_onb: Dict[str, int] = {}     # metin → piksel genişliği (kaydırmada yeniden ölçülmesin)
-        self._sayi_onb: Dict[tuple, str] = {}       # (sayı, sığan px) → gösterilen metin
-        self._statik_onb: Dict[str, QStaticText] = {}   # çizim için hazır metin düzenleri
+        self._font_onb: Dict[int, _FontGirdisi] = {}    # stil kimliği → yazı tipi + metin önbellekleri
+        self._bicim_onb: Dict[tuple, BicimSonucu] = {}  # (değer, sayı biçimi kodu) → biçimlenmiş sonuç
+        self._renk_onb: Dict[str, QColor] = {}
+        self._baslik_onb: Dict[str, QStaticText] = {}   # satır/sütun başlığı metinleri
+        self._stilli: list = []                     # son yerleşimde dolgu/kenarlıklı görünen hücreler
         self._onbellek_anahtari = None
         self._dikey_son = 0                         # artımlı kaydırma için önceki dikey kaydırma değeri
+        self._yatay_son = 0                         # ... yatay kaydırma değeri
         self._boyut: Optional[dict] = None     # kenardan boyutlandırma durumu
         self.setFocusPolicy(Qt.StrongFocus)
         self.viewport().setMouseTracking(True)
@@ -341,6 +369,8 @@ class Izgara(QAbstractScrollArea):
         satirlar = list(self._gorunen_satirlar())
         vp = self.viewport()
         bg, bh = self._baslik_g(), self._baslik_y()
+        if self._secim_farki_boya(sutunlar, satirlar, list(eski_aralik_listesi), eski_aktif):
+            return
         aralik_listesi = list(eski_aralik_listesi) + self.secimler
         aralik_listesi += [Aralik(*eski_aktif, *eski_aktif), Aralik(*self._aktif, *self._aktif)]
         for a in aralik_listesi:
@@ -353,6 +383,34 @@ class Izgara(QAbstractScrollArea):
             if xs and ys:
                 x1, x2, y1, y2 = xs[0][0], xs[-1][1], ys[0][0], ys[-1][1]
                 vp.update(QRect(x1 - 3, y1 - 3, x2 - x1 + 6, y2 - y1 + 6))
+
+    def _secim_farki_boya(self, sutunlar, satirlar, eski, eski_aktif) -> bool:
+        """Tek aralıklı seçim büyüyüp küçülürken yalnız FARK bölgesini (+ iki çerçevenin şeridi, başlıklar)
+        boyar; ortak iç alan yeniden çizilmez (Shift+Ok'ta seçim büyüdükçe kare süresi artmasın).
+        Uygun değilse (çoklu aralık, aktif hücre değişti, görünürde değil) False döner."""
+        yeni = self.secimler
+        if len(eski) != 1 or len(yeni) != 1 or eski_aktif != self._aktif:
+            return False
+
+        def kutu(a):
+            xs = [(x, x + g) for c, x, g in sutunlar if a.ilk_sutun <= c <= a.son_sutun]
+            ys = [(y, y + h) for r, y, h in satirlar if a.ilk_satir <= r <= a.son_satir]
+            if not xs or not ys:
+                return None
+            return QRect(xs[0][0], ys[0][0], xs[-1][1] - xs[0][0], ys[-1][1] - ys[0][0])
+        ra, rb = kutu(eski[0]), kutu(yeni[0])
+        if ra is None or rb is None:
+            return False
+        bolge = QRegion(ra).xored(QRegion(rb))
+        for r in (ra, rb):
+            bolge = bolge.united(QRegion(r.adjusted(-3, -3, 3, 3)).subtracted(
+                QRegion(r.adjusted(3, 3, -3, -3))))
+        birlesik = ra.united(rb)
+        bg, bh = self._baslik_g(), self._baslik_y()
+        bolge = bolge.united(QRegion(QRect(birlesik.left(), 0, birlesik.width(), bh)))
+        bolge = bolge.united(QRegion(QRect(0, birlesik.top(), bg, birlesik.height())))
+        self.viewport().update(bolge)
+        return True
 
     def _gorunur_yap(self, hedef: Tuple[int, int]) -> None:
         satir, sutun = hedef
@@ -386,100 +444,288 @@ class Izgara(QAbstractScrollArea):
 
     # --- çizim ---
     def _onbellek_hazirla(self) -> None:
-        anahtar = (self.yakinlastirma, self.font().key())
-        if anahtar != self._onbellek_anahtari or len(self._genislik_onb) > 60000:
+        anahtar = (self.yakinlastirma, self.font().key(), id(self.sayfa.havuz))
+        buyuk = any(len(f.gen) > 60000 or len(f.sayilar) > 60000 for f in self._font_onb.values())
+        if anahtar != self._onbellek_anahtari or buyuk or len(self._bicim_onb) > 60000:
             self._onbellek_anahtari = anahtar
-            self._genislik_onb.clear()
-            self._sayi_onb.clear()
-            self._statik_onb.clear()
+            self._font_onb.clear()
+            self._bicim_onb.clear()
+            self._baslik_onb.clear()
 
-    def _yerlesim(self, sutunlar, satirlar, olcer, pad):
+    def _font_girdisi(self, kimlik: int, stil: Stil) -> "_FontGirdisi":
+        """Stil kimliğine göre yazı tipi + ölçüm/çizim önbellekleri (yakınlaştırma ve havuz değişince sıfırlanır)."""
+        fe = self._font_onb.get(kimlik)
+        if fe is None:
+            f = self._yazi_tipi()
+            if stil.yazi_tipi:
+                f.setFamily(stil.yazi_tipi)
+            if stil.boyut:                    # 11 punto = ızgaranın temel yazı boyutu (Excel varsayılanı)
+                f.setPointSizeF(max(4.0, f.pointSizeF() * stil.boyut / VARSAYILAN_PUNTO))
+            f.setBold(stil.kalin)
+            f.setItalic(stil.italik)
+            f.setUnderline(stil.alti_cizili != "yok")
+            f.setStrikeOut(stil.ustu_cizili)
+            fe = self._font_onb[kimlik] = _FontGirdisi(f, stil)
+        return fe
+
+    def _bicimle(self, deger, kod: str) -> BicimSonucu:
+        """Sayı biçimi sonucu (değer, kod) başına önbellekli; geçersiz kod Genel gibi davranır."""
+        anahtar = (deger, kod)
+        s = self._bicim_onb.get(anahtar)
+        if s is None:
+            try:
+                s = sayi_bicimi.bicimle(deger, kod)
+            except sayi_bicimi.BicimHatasi:
+                s = sayi_bicimi.bicimle(deger, "General")
+            self._bicim_onb[anahtar] = s
+        return s
+
+    def _renk(self, renk: str) -> QColor:
+        c = self._renk_onb.get(renk)
+        if c is None:
+            c = self._renk_onb[renk] = QColor(renk)
+        return c
+
+    def _yerlesim(self, sutunlar, satirlar, olcer, pad, kirp_x=None):
         """Görünen hücrelerin metin yerleşimi.
 
         Döner: (metinler, tasma). metinler: (kırpma dikdörtgeni, metin dikdörtgeni, hizalama, metin,
-        metin genişliği px); tasma: {(satır, sütun)} — sağındaki dikey çizgi taşan metin yüzünden
-        çizilmeyecek hücreler.
+        metin genişliği px, (renk, yazı tipi girdisi, stil)); tasma: {(satır, sütun)} — sağındaki dikey
+        çizgi taşan metin yüzünden çizilmeyecek hücreler. Yan ürün: `self._stilli` — dolgusu ya da
+        kenarlığı olan görünen hücreler [(x, y, genişlik, yükseklik, Stil, yazı tipi girdisi)] (boş hücreler dahil).
         Kurallar (Excel): metin sola yaslı ve sığmıyorsa sağdaki BOŞ hücrelere taşar; sayı taşmaz,
-        sığmıyorsa önce kısaltılır, olmazsa `####` olur; mantıksal değer ortalanır.
-        Ölçümler önbelleğe alınır: aynı hücreler kaydırırken tekrar tekrar ölçülmez.
+        sığmıyorsa önce kısaltılır, olmazsa `####` olur; mantıksal değer ortalanır; hizalama, girinti ve
+        sayı biçimi hücre stilinden gelir.
+        `kirp_x=(x1, x2)` verilirse yalnız bu yatay aralığa değebilecek hücreler işlenir (artımlı çizim:
+        solda kalan hücreler yalnız metinse, taşma ihtimali yüzünden).
+        Ölçümler yazı tipi girdisinde önbelleğe alınır: aynı hücreler kaydırırken yeniden ölçülmez.
         """
         self._onbellek_hazirla()
-        genislikler, sayilar = self._genislik_onb, self._sayi_onb
-        hucre_al = self.sayfa.hucre
-        sonuc_al = self.sayfa._sonuc.get
-
-        def olc(t: str) -> int:
-            w = genislikler.get(t)
-            if w is None:
-                w = genislikler[t] = olcer.horizontalAdvance(t)
-            return w
-
+        sayfa = self.sayfa
+        hucre_al = sayfa.hucre
+        sonuc_al = sayfa._sonuc.get
+        havuz = sayfa.havuz
+        ham_stil, satir_stil, sutun_stil = sayfa._stil.get, sayfa.satir_stil.get, sayfa.sutun_stil.get
+        stilli_var = bool(sayfa._stil or sayfa.satir_stil or sayfa.sutun_stil)
+        varsayilan_fe = self._font_girdisi(0, VARSAYILAN)
+        girinti_px = self._z(9)
+        x1, x2 = kirp_x if kirp_x else (None, None)
         sol, sag, orta = Qt.AlignLeft, Qt.AlignRight, Qt.AlignHCenter
-        metinler, tasma = [], set()
+        yatay_bayrak = _YATAY_BAYRAK
+        metinler, tasma, stilli = [], set(), []
+        self._stilli = stilli
         for r, y, h in satirlar:
             for i, (c, x, g) in enumerate(sutunlar):
+                if x2 is not None and x > x2:
+                    break                                   # sağdakiler bölgeye değmez; taşma sağa gider
                 hucre = hucre_al(r, c)
                 if hucre is None:
+                    v = None
+                else:
+                    v = hucre.deger if hucre.formul is None else sonuc_al((r, c))
+                solda = x1 is not None and x + g <= x1
+                if solda and not isinstance(v, str):
                     continue
-                v = hucre.deger if hucre.formul is None else sonuc_al((r, c))
+                k = 0
+                if stilli_var:
+                    k = ham_stil((r, c))
+                    if k is None:
+                        k = satir_stil(r)
+                        if k is None:
+                            k = sutun_stil(c, 0)
+                if k:
+                    stil = havuz.stil(k)
+                    fe = self._font_girdisi(k, stil)
+                    if not solda and (fe.dolgu or fe.kenarli):
+                        stilli.append((x, y, g, h, stil, fe))
+                else:
+                    stil = VARSAYILAN
+                    fe = varsayilan_fe
                 if v is None:
                     continue
+                kod = stil.sayi_bicimi
+                genel = kod == "General"
+                yatay = stil.yatay
+                ind = stil.girinti * girinti_px if stil.girinti else 0
+                gen = fe.gen
+                renk = None
                 if isinstance(v, str):
-                    # Alt+Enter ile girilen satır sonları kaydırma kapalıyken görünmez
-                    metin = v.replace("\r", "").replace("\n", "") if ("\n" in v or "\r" in v) else v
-                    w = olc(metin)
-                    gerek = w + 2 * pad
-                    toplam, j = g, i
-                    while toplam < gerek and j + 1 < len(sutunlar):
-                        c2, _, g2 = sutunlar[j + 1]
-                        komsu = hucre_al(r, c2)
-                        if komsu is not None and not komsu.bos_mu():
-                            break
-                        tasma.add((r, sutunlar[j][0]))
-                        toplam += g2
-                        j += 1
-                    metinler.append((QRect(x, y, toplam - 1, h),
-                                     QRect(x + pad, y, toplam - 2 * pad, h), sol, metin, w))
-                elif isinstance(v, (bool, Hata)):           # mantıksal ve hata değerleri ortalanır
+                    if genel:
+                        # Alt+Enter ile girilen satır sonları kaydırma kapalıyken görünmez
+                        metin = v.replace("\r", "").replace("\n", "") if ("\n" in v or "\r" in v) else v
+                    else:
+                        s = self._bicimle(v, kod)
+                        metin, renk = s.metin, s.renk
+                        if "\n" in metin or "\r" in metin:
+                            metin = metin.replace("\r", "").replace("\n", "")
+                    w = gen.get(metin)
+                    if w is None:
+                        w = gen[metin] = fe.olcer.horizontalAdvance(metin)
+                    bayrak = yatay_bayrak.get(yatay, sol)
+                    if bayrak == sol:
+                        gerek = w + 2 * pad + ind
+                        toplam, j = g, i
+                        while not stil.kaydir and toplam < gerek and j + 1 < len(sutunlar):
+                            c2, _, g2 = sutunlar[j + 1]
+                            komsu = hucre_al(r, c2)
+                            if komsu is not None and not komsu.bos_mu():
+                                break
+                            tasma.add((r, sutunlar[j][0]))
+                            toplam += g2
+                            j += 1
+                        if solda and x + toplam <= x1:
+                            continue
+                        kirpma = QRect(x, y, toplam - 1, h)
+                        kutu = QRect(x + pad + ind, y, toplam - 2 * pad - ind, h)
+                    elif bayrak == sag:
+                        kirpma = QRect(x, y, g - 1, h)
+                        kutu = QRect(x + pad, y, g - 2 * pad - ind, h)
+                    else:
+                        kirpma = QRect(x, y, g - 1, h)
+                        kutu = QRect(x + pad, y, g - 2 * pad, h)
+                elif isinstance(v, (bool, Hata)):           # mantıksal ve hata değerleri varsayılan ortalanır
                     metin = goster(v)
-                    metinler.append((QRect(x, y, g - 1, h), QRect(x + pad, y, g - 2 * pad, h),
-                                     orta, metin, olc(metin)))
+                    w = gen.get(metin)
+                    if w is None:
+                        w = gen[metin] = fe.olcer.horizontalAdvance(metin)
+                    bayrak = yatay_bayrak.get(yatay, orta) if yatay != "genel" else orta
+                    kirpma = QRect(x, y, g - 1, h)
+                    kutu = QRect(x + pad, y, g - 2 * pad, h)
                 else:
-                    sigan = g - 2 * pad
-                    anahtar = (v, sigan)
-                    metin = sayilar.get(anahtar)
-                    if metin is None:
-                        metin = sayiyi_sigdir(v, lambda t: olc(t) <= sigan)
-                        if metin is None:
-                            metin = "#" * max(1, sigan // max(1, olc("#")))
-                        sayilar[anahtar] = metin
-                    metinler.append((QRect(x, y, g - 1, h), QRect(x + pad, y, g - 2 * pad, h),
-                                     sag, metin, olc(metin)))
+                    sigan = g - 2 * pad - ind
+                    anahtar = (v, kod, sigan)
+                    ek = fe.sayilar.get(anahtar)
+                    if ek is None:
+                        ek = fe.sayilar[anahtar] = self._sayi_metni(fe, v, kod, genel, sigan)
+                    metin, renk, hiz = ek
+                    w = gen.get(metin)
+                    if w is None:
+                        w = gen[metin] = fe.olcer.horizontalAdvance(metin)
+                    bayrak = yatay_bayrak.get(yatay, sag) if yatay != "genel" else _HIZA_BAYRAK[hiz]
+                    kirpma = QRect(x, y, g - 1, h)
+                    kutu = QRect(x + pad, y, g - 2 * pad - ind, h)
+                metinler.append((kirpma, kutu, bayrak, metin, w, (renk, fe, stil)))
         return metinler, tasma
 
+    def _sayi_metni(self, fe: "_FontGirdisi", v: float, kod: str, genel: bool, sigan: int):
+        """(görünen metin, renk, hizalama) — sütuna sığmayan sayı kısaltılır, olmazsa `####`."""
+        gen = fe.gen
+        ol = fe.olcer
+
+        def sigar(t: str) -> bool:
+            w = gen.get(t)
+            if w is None:
+                w = gen[t] = ol.horizontalAdvance(t)
+            return w <= sigan
+        renk, hiz = None, sayi_bicimi.SAG
+        metin = None
+        if genel:
+            metin = sayiyi_sigdir(v, sigar)
+        else:
+            s = self._bicimle(v, kod)
+            renk, hiz = s.renk, s.hizalama
+            try:
+                metin = None if s.diyez else sayi_bicimi.sigdir(v, kod, sigar)
+            except sayi_bicimi.BicimHatasi:
+                metin = sayiyi_sigdir(v, sigar)
+        if metin is None:
+            w = gen.get("#")
+            if w is None:
+                w = gen["#"] = ol.horizontalAdvance("#")
+            metin = "#" * max(1, sigan // max(1, w))
+        return metin, renk, hiz
+
+    def _dolgu_ciz(self, p: QPainter, stilli, kirp: QRect) -> None:
+        for x, y, g, h, stil, fe in stilli:
+            if fe.dolgu:
+                alan = QRect(x, y, g, h)
+                if alan.intersects(kirp):
+                    p.fillRect(alan, self._renk(stil.dolgu))
+
+    def _kenar_ciz(self, p: QPainter, stilli, kirp: QRect) -> None:
+        """Hücre kenarlıkları. Komşu hücreler aynı kenarı farklı kalınlıkta isterse kalın olan kazanır
+        (kalınlığa göre sıralı çizim). Sol/üst kenar komşunun sağ/alt çizgisi üstüne oturur."""
+        parcalar = []
+        for x, y, g, h, stil, fe in stilli:
+            if not fe.kenarli or not QRect(x - 1, y - 1, g + 2, h + 2).intersects(kirp):
+                continue
+            k = stil.kenar
+            sol_x, ust_y = x - 1, y - 1       # ilk satır/sütunda başlığın altında kalır (kaydırma geçmişinden bağımsız)
+            sag_x, alt_y = x + g - 1, y + h - 1
+            for yon, cizgi in (("ust", k.ust), ("alt", k.alt), ("sol", k.sol), ("sag", k.sag)):
+                if not cizgi:
+                    continue
+                tur, renk = cizgi
+                if yon == "ust":
+                    seg = (sol_x, ust_y, sag_x, ust_y)
+                elif yon == "alt":
+                    seg = (sol_x, alt_y, sag_x, alt_y)
+                elif yon == "sol":
+                    seg = (sol_x, ust_y, sol_x, alt_y)
+                else:
+                    seg = (sag_x, ust_y, sag_x, alt_y)
+                parcalar.append((_CIZGI_KALINLIK[tur], tur, renk, yon, seg))
+        parcalar.sort(key=lambda t: t[0])
+        for kalinlik, tur, renk, yon, (ax, ay, bx, by) in parcalar:
+            renk = self._renk(renk)
+            yatay = yon in ("ust", "alt")
+            if tur == "cift":                   # iki ince çizgi, aralarında 1 piksel
+                p.setPen(QPen(renk, 1))
+                for d in (-1, 1):
+                    if yatay:
+                        p.drawLine(ax, ay + d, bx, by + d)
+                    else:
+                        p.drawLine(ax + d, ay, bx + d, by)
+                continue
+            kalem = QPen(renk, kalinlik)
+            kalem.setCapStyle(Qt.FlatCap)
+            if tur == "kesikli":
+                kalem.setStyle(Qt.DashLine)
+            elif tur == "noktali":
+                kalem.setStyle(Qt.DotLine)
+            elif tur == "sac":
+                kalem.setDashPattern([1, 1])
+            p.setPen(kalem)
+            # yatay çizgi uçları köşelerde birleşsin diye bir piksel uzatılır
+            if yatay:
+                p.drawLine(ax, ay, bx + 1, by)
+            else:
+                p.drawLine(ax, ay, bx, by + 1)
+
     def paintEvent(self, olay):
+        """Geçersiz bölgenin her dikdörtgeni ayrı boyanır: `olay.rect()` dikdörtgenlerin sınır kutusudur
+        (ör. Ok tuşunda başlık şeritleri + hücre → neredeyse tüm ızgara); yalnız gerçek parçalar işlenir."""
         p = QPainter(self.viewport())
+        try:
+            for kirp in list(olay.region()):
+                self._boya(p, kirp)
+        finally:
+            p.end()
+
+    def _boya(self, p: QPainter, kirp: QRect) -> None:
+        p.setClipRect(kirp)           # bölgenin her parçası kendi dikdörtgeniyle sınırlı (üst üste çizim olmasın)
         p.setFont(self._yazi_tipi())
-        kirp = olay.rect()                     # yalnızca açığa çıkan bölge (artımlı kaydırmada küçük)
         p.fillRect(kirp, QColor(theme.SURFACE))
         sutunlar = list(self._gorunen_sutunlar())
         tum_satirlar = list(self._gorunen_satirlar())
-        satirlar = [s for s in tum_satirlar if s[1] <= kirp.bottom() and s[1] + s[2] > kirp.top()]
+        # kalın kenarlıklar komşu satıra/sütuna 2 piksel taşar: bölgenin 3 piksel çevresindeki hücreler de işlenir
+        satirlar = [s for s in tum_satirlar if s[1] <= kirp.bottom() + 3 and s[1] + s[2] > kirp.top() - 3]
         bg, bh = self._baslik_g(), self._baslik_y()
         sec = self.secim
         izgara = QPen(QColor(theme.GRID_LINE))
         sag = sutunlar[-1][1] + sutunlar[-1][2] if sutunlar else bg
         alt = tum_satirlar[-1][1] + tum_satirlar[-1][2] if tum_satirlar else bh
 
-        # hücre içerikleri: önce yerleşim (taşma/####), sonra ızgara çizgileri, sonra metinler
+        # hücre içerikleri: önce yerleşim (taşma/####), sonra ızgara çizgileri, dolgu, kenarlık, metinler
         pad = self._z(4)
         olcer = p.fontMetrics()
-        metinler, tasma = self._yerlesim(sutunlar, satirlar, olcer, pad)
+        metinler, tasma = self._yerlesim(sutunlar, satirlar, olcer, pad, (kirp.left() - 3, kirp.right() + 3))
 
         p.setPen(izgara)
         y1, y2 = max(bh, kirp.top()), min(alt - 1, kirp.bottom())
         tasan_sutunlar = {c for _, c in tasma}
-        for c, x, g in sutunlar:
+        sutunlar_k = [t for t in sutunlar if t[1] <= kirp.right() + 3 and t[1] + t[2] > kirp.left() - 3]
+        for c, x, g in sutunlar_k:
             if c not in tasan_sutunlar:
                 p.drawLine(x + g - 1, y1, x + g - 1, y2)
             else:               # taşan metnin altındaki dikey çizgi çizilmez (Excel gibi)
@@ -489,34 +735,59 @@ class Izgara(QAbstractScrollArea):
         for _, y, h in satirlar:
             p.drawLine(bg, y + h - 1, sag - 1, y + h - 1)
 
-        p.setPen(QColor(theme.TEXT))
-        yukseklik = olcer.height()
-        statik = self._statik_onb
-        for kirp_k, kutu, bayrak, metin, w in metinler:
+        if self._stilli:
+            self._dolgu_ciz(p, self._stilli, kirp)
+            self._kenar_ciz(p, self._stilli, kirp)
+
+        onceki = None
+        varsayilan_renk = QColor(theme.TEXT)
+        p.setPen(varsayilan_renk)
+        kalem_renk = None                                # son ayarlanan yazı rengi (None = varsayılan)
+        alt_pay = self._z(2)
+        for kirp_k, kutu, bayrak, metin, w, (renk, fe, stil) in metinler:
+            if not kirp_k.intersects(kirp):
+                continue                                 # artımlı çizimde bölge dışı metin atlanır
+            if fe is not onceki:
+                p.setFont(fe.font)
+                onceki = fe
+            renk = renk or stil.yazi_rengi
+            if renk != kalem_renk:
+                p.setPen(self._renk(renk) if renk else varsayilan_renk)
+                kalem_renk = renk
             if bayrak == Qt.AlignRight:
                 x = kutu.left() + kutu.width() - w
             elif bayrak == Qt.AlignHCenter:
                 x = kutu.left() + (kutu.width() - w) // 2
             else:
                 x = kutu.left()
+            th = fe.yukseklik
+            if kutu.height() <= th + 2 or stil.dikey == "orta":
+                ty = kutu.top() + (kutu.height() - th) // 2
+            elif stil.dikey == "ust":
+                ty = kutu.top() + 1
+            else:                                        # alt (Excel varsayılanı)
+                ty = kutu.top() + kutu.height() - th - alt_pay
             sigmiyor = w > kutu.width()        # yalnızca sığmayan metinde (taşma sınırı) kırpılır
             if sigmiyor:
-                p.setClipRect(kirp_k)
-            st = statik.get(metin)
+                p.setClipRect(kirp_k.intersected(kirp))
+            st = fe.statik.get(metin)
             if st is None:
-                st = statik[metin] = QStaticText(metin)
+                st = fe.statik[metin] = QStaticText(metin)
                 st.setTextFormat(Qt.PlainText)
                 st.setPerformanceHint(QStaticText.AggressiveCaching)
-            p.drawStaticText(x, kutu.top() + (kutu.height() - yukseklik) // 2, st)
+            p.drawStaticText(x, ty, st)
+            if stil.alti_cizili == "cift":               # ikinci alt çizgi (QFont yalnız tek çizgi bilir)
+                p.drawLine(x, ty + th - 1, x + w, ty + th - 1)
             if sigmiyor:
-                p.setClipping(False)
+                p.setClipRect(kirp)
+        p.setFont(self._yazi_tipi())
 
         # seçim
         dolgu = QColor(theme.SELECTION_FILL)
         dolgu.setAlpha(36)
         tum = self.secimler
         for a in tum:
-            for c, x, g in sutunlar:
+            for c, x, g in sutunlar_k:
                 if a.ilk_sutun <= c <= a.son_sutun:
                     for r, y, h in satirlar:
                         if a.ilk_satir <= r <= a.son_satir and (r, c) != self._aktif:
@@ -537,7 +808,7 @@ class Izgara(QAbstractScrollArea):
 
         # başlıklar
         # (yalnızca açığa çıkan bölgeye değenler: artımlı kaydırmada sütun başlıkları yeniden çizilmez)
-        p.setClipping(False)
+        p.setClipRect(kirp)
         genislik, yukseklik_vp = self.viewport().width(), self.viewport().height()
         baslik_zemin = QColor(theme.HEADER_BG)
         sutun_basligi_gerek = kirp.top() < bh
@@ -551,14 +822,15 @@ class Izgara(QAbstractScrollArea):
         if kirp.left() < bg:
             p.drawLine(bg - 1, max(0, kirp.top()), bg - 1, min(yukseklik_vp, kirp.bottom()))
         if sutun_basligi_gerek:
-            for c, x, g in sutunlar:
+            for c, x, g in sutunlar_k:
                 self._baslik_ciz(p, QRect(x, 0, g, bh), sutun_harfe(c),
                                  any(a.ilk_sutun <= c <= a.son_sutun for a in tum), izgara)
         if kirp.left() < bg:
             for r, y, h in satirlar:
+                if y + h <= kirp.top() or y > kirp.bottom():
+                    continue
                 self._baslik_ciz(p, QRect(0, y, bg, h), str(r),
                                  any(a.ilk_satir <= r <= a.son_satir for a in tum), izgara)
-        p.end()
 
     def _yazi_tipi(self) -> QFont:
         yazi = QFont(self.font())
@@ -612,7 +884,14 @@ class Izgara(QAbstractScrollArea):
         p.drawLine(ar.right(), ar.top(), ar.right(), ar.bottom())
         p.drawLine(ar.left(), ar.bottom(), ar.right(), ar.bottom())
         p.setPen(QColor(theme.HEADER_TEXT_SELECTED if secili else theme.HEADER_TEXT))
-        p.drawText(ar, int(Qt.AlignCenter), metin)
+        st = self._baslik_onb.get(metin)
+        if st is None:
+            st = self._baslik_onb[metin] = QStaticText(metin)
+            st.setTextFormat(Qt.PlainText)
+            st.setPerformanceHint(QStaticText.AggressiveCaching)
+        boy = st.size()
+        p.drawStaticText(ar.left() + round((ar.width() - boy.width()) / 2),
+                         ar.top() + round((ar.height() - boy.height()) / 2), st)
 
     def resizeEvent(self, olay):
         super().resizeEvent(olay)
@@ -1440,9 +1719,58 @@ class Izgara(QAbstractScrollArea):
         """Qt'nin varsayılanı tüm viewport'u geçersiz kılar; kaydırmayı `_dikey_kaydi` /
         `_yatay_kaydi` kendisi yönetir (artımlı çizim için)."""
 
-    def _yatay_kaydi(self, _=None) -> None:
+    def _yatay_kaydi(self, yeni: int = 0) -> None:
+        """Yatay kaydırma: küçük adımlarda mevcut pikselleri kaydırır, yalnızca açığa çıkan sütunlar
+        yeniden çizilir; büyük sıçramada tam çizim (dikey kaydırmayla aynı düzen)."""
+        yeni = self.horizontalScrollBar().value()
+        eski, self._yatay_son = self._yatay_son, yeni
+        fark = yeni - eski
+        if fark == 0:
+            return
+        n = len(list(self._gorunen_sutunlar()))
+        if abs(fark) < n - 1 and self._yatay_artimli_uygun(eski + 1, yeni + 1):
+            if fark > 0:      # soldaki `fark` sütun görünümden çıktı
+                dx = -sum(self._gen(c) for c in range(eski + 1, eski + 1 + fark))
+            else:             # solda `-fark` sütun göründü
+                dx = sum(self._gen(c) for c in range(yeni + 1, yeni + 1 - fark))
+            bg, vp = self._baslik_g(), self.viewport()
+            vp.scroll(dx, 0, QRect(bg, 0, vp.width() - bg, vp.height()))
+            sinir = bg + dx if dx > 0 else vp.width() + dx
+            vp.update(QRect(sinir - 3, 0, 6, vp.height()))
+        else:
+            self.viewport().update()
         self._duzenleyici_yerlestir()
-        self.viewport().update()
+
+    def _son_sutun_ilkten(self, ilk: int) -> int:
+        """`ilk` sütunu soldayken viewport'a sığan son sütun (kısmen görünen dahil)."""
+        x, c, w = self._baslik_g(), ilk, self.viewport().width()
+        son = ilk
+        while x < w and c <= MAX_COL:
+            g = self._gen(c)
+            if g:
+                x += g
+                son = c
+            c += 1
+        return son
+
+    def _yatay_artimli_uygun(self, eski_ilk: int, yeni_ilk: int) -> bool:
+        """Piksel kaydırma yalnız çerçeveli aralıklar (seçim, kopyalama) kaydırma öncesi ve sonrası
+        görünür pencerenin ortak kısmında tamamen duruyorsa güvenlidir; yarım görünen çerçevenin
+        açık uçları içerikle birlikte kayınca artefakt bırakır → o zaman tam çizim."""
+        ortak_ilk, ortak_son = max(eski_ilk, yeni_ilk), min(self._son_sutun_ilkten(eski_ilk),
+                                                            self._son_sutun_ilkten(yeni_ilk))
+        pencere_ilk = min(eski_ilk, yeni_ilk)
+        pencere_son = max(self._son_sutun_ilkten(eski_ilk), self._son_sutun_ilkten(yeni_ilk))
+        araliklar = list(self.secimler)
+        d = Izgara._pano_durumu
+        if d and d["sayfa"] is self.sayfa:
+            araliklar.append(d["aralik"])
+        for a in araliklar:
+            if a.son_sutun < pencere_ilk or a.ilk_sutun > pencere_son:
+                continue                                  # görünür değil
+            if a.ilk_sutun < ortak_ilk or a.son_sutun > ortak_son:
+                return False
+        return True
 
     def _dikey_kaydi(self, yeni: int) -> None:
         """Dikey kaydırma: küçük adımlarda mevcut pikselleri kaydırır, yalnızca açığa çıkan
@@ -1459,6 +1787,8 @@ class Izgara(QAbstractScrollArea):
                 dy = sum(self._yuk(r) for r in range(yeni + 1, yeni + 1 - fark))
             bh, vp = self._baslik_y(), self.viewport()
             vp.scroll(0, dy, QRect(0, bh, vp.width(), vp.height() - bh))
+            sinir = bh + dy if dy > 0 else vp.height() + dy        # kaydırılan/açığa çıkan bölge sınırı
+            vp.update(QRect(0, sinir - 3, vp.width(), 6))          # kalın kenarlıklar sınırın iki yanına taşar
         else:
             self.viewport().update()
         self._duzenleyici_yerlestir()

@@ -19,6 +19,7 @@ sys.path.insert(0, __file__.rsplit("\\", 2)[0] if "\\" in __file__ else ".")
 
 from tabcel.model.adres import Aralik  # noqa: E402
 from tabcel.model.sayfa import CalismaKitabi, Hucre  # noqa: E402
+from tabcel.model.stil import Kenarlik, Stil  # noqa: E402
 from tabcel.ui.window import Pencere  # noqa: E402
 
 SATIR = int(sys.argv[1]) if len(sys.argv) > 1 else 5000
@@ -143,6 +144,36 @@ def main():
     olc("Sütun otomatik sığdır (5000 hücre)", lambda: g.sutun_otomatik_sigdir(), 500)
     olc("Sütun silme", lambda: g.sutunlari_sil(), 1000)
     olc("Geri al (sütun silme)", lambda: g.geri_al(), 1000)
+
+    # Faz 3 / 3c senaryosu: 10 farklı stil (dolgu, kalın, renk, kenarlık, hizalama) + 4 sayı biçimi
+    g.sec((1, 1))
+    hs.setValue(0)
+    vs.setValue(0)
+    app.processEvents()
+    kodlar = ["0.00", "#,##0", "0.0%", "dd.mm.yyyy"]
+    stiller = []
+    for i in range(10):
+        stiller.append(sayfa.havuz.kimlik(Stil(
+            dolgu=["#FFF2CC", "#DDEBF7", None][i % 3], kalin=i % 2 == 0, yazi_rengi=["#C00000", None][i % 2],
+            yatay=["genel", "orta", "sag"][i % 3], sayi_bicimi=kodlar[i % 4],
+            kenar=Kenarlik(alt=("ince", "#808080")) if i % 4 == 0 else Kenarlik())))
+    t = time.perf_counter()
+    sayfa.bicim_yaz({(r, c): stiller[(r + c) % 10] for r in range(1, SATIR + 1) for c in range(1, SUTUN + 1)})
+    print(f"{'Stil yazımı (100.000 hücre, 10 stil, 4 biçim)':<58} {(time.perf_counter() - t) * 1000:9.2f} ms")
+    app.processEvents()
+    olc("STİLLİ: ilk çizim (soğuk önbellek)", lambda: vp.grab(), 40)
+    kare_olc(f"STİLLİ: dikey kaydırma 1 satır/kare ({n} kare)", lambda i: vs.setValue(orta + i), n)
+    kare_olc(f"STİLLİ: dikey kaydırma 3 satır/kare ({n} kare)", lambda i: vs.setValue(orta + 100 + 3 * i), n)
+    kare_olc(f"STİLLİ: dikey sıçrama (500 satır/kare) ({n} kare)", lambda i: vs.setValue(100 + 500 * (i % 8)), n)
+    vs.setValue(0)
+    app.processEvents()
+    kare_olc(f"STİLLİ: yatay kaydırma ({SUTUN} kare)", lambda i: hs.setValue(i), SUTUN)
+    hs.setValue(0)
+    app.processEvents()
+    g.sec((1, 1))
+    kare_olc("STİLLİ: Ok tuşu + boyama (60 basış)", lambda i: QTest.keyClick(g, Qt.Key_Down), 60)
+    kare_olc("STİLLİ: Shift+Ok seçim genişletme (60 basış)",
+             lambda i: QTest.keyClick(g, Qt.Key_Right if i % 2 else Qt.Key_Down, Qt.ShiftModifier), 60)
 
     yavas = [s for s in SATIRLAR if s[4] == "YAVAŞ"]
     print(f"\nÖzet: {len(SATIRLAR)} ölçüm, hedefi aşan: {len(yavas)}")

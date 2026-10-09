@@ -6,7 +6,7 @@ yığını çalışma kitabı genelinde ortaktır.
 """
 from typing import Dict, Optional
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QKeySequence, QPainter, QShortcut
 from PySide6.QtWidgets import (
     QColorDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
@@ -204,6 +204,9 @@ class Pencere(QMainWindow):
         self.mod_etiketi = QLabel("Hazır")
         self.mod_etiketi.setMinimumWidth(60)
         self.ozet_etiketi = QLabel("")
+        self._ozet_zamanlayici = QTimer(self)         # büyük seçimde özet çizimi beklemesin (50 ms ertelenir)
+        self._ozet_zamanlayici.setSingleShot(True)
+        self._ozet_zamanlayici.timeout.connect(self._ozet_guncelle)
         self.dongu_etiketi = QLabel("")               # "Döngüsel Başvurular: A1" (yalnız döngü varken)
         self.dongu_etiketi.setStyleSheet(f"color: {theme.UYARI}; font-weight: 600; padding: 0 8px;")
         self.dongu_etiketi.hide()
@@ -461,7 +464,7 @@ class Pencere(QMainWindow):
                 and self._uzak is None):
             self._formul_isareti_kapat()
             self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
-        self._ozet_guncelle()
+        self._ozet_planla()
         self._dongu_etiketi_guncelle()
 
     def _uyari(self, metin: str):
@@ -535,9 +538,11 @@ class Pencere(QMainWindow):
 
     def _formul_isareti_kapat(self):
         for g in self._izgaralar.values():
+            etkindi = g.dis_duzenleyici is not None or g._isaret is not None or g._isaret_yaziyor
             g.dis_duzenleyici = None
             g.isaret_sifirla()
-            g.viewport().update()
+            if etkindi:          # her seçim değişiminde çağrılır: boşuna tüm ızgarayı yeniden çizme
+                g.viewport().update()
 
     def _formul_onayla(self, metin: str):
         if self._uzak is not None:
@@ -575,6 +580,18 @@ class Pencere(QMainWindow):
         self.mod_etiketi.setText(mod)
         if mod == "Hazır":
             self._arayuzu_guncelle()
+
+    OZET_ERTELEME_ALANI = 5000       # bundan büyük seçimde özet zamanlayıcıyla ertelenir
+
+    def _ozet_planla(self):
+        g = self.izgara()
+        alan = sum((a.son_satir - a.ilk_satir + 1) * (a.son_sutun - a.ilk_sutun + 1)
+                   for a in g.secimler)
+        if alan <= self.OZET_ERTELEME_ALANI:
+            self._ozet_zamanlayici.stop()
+            self._ozet_guncelle()
+        else:
+            self._ozet_zamanlayici.start(50)
 
     def _ozet_guncelle(self):
         """Seçimde Ortalama · Sayım · Toplam (Excel gibi; yalnızca dolu hücreler gezilir)."""
