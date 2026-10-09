@@ -42,6 +42,16 @@ QToolTip {{ background: {SURFACE}; color: {TEXT}; border: 1px solid {BORDER};
 #header #fileButton {{ font-weight: 600; }}
 #header #fileButton::menu-indicator {{ image: none; }}
 
+#formatBar {{ background: {SURFACE}; border-bottom: 1px solid {BORDER}; }}
+#formatBar QToolButton {{ border: 1px solid transparent; border-radius: 4px; padding: 2px; }}
+#formatBar QToolButton:hover {{ background: {HOVER}; }}
+#formatBar QToolButton:pressed {{ background: {PRESSED}; }}
+#formatBar QToolButton:checked {{ background: {HEADER_BG_SELECTED}; border: 1px solid {ACCENT}; }}
+#formatBar QToolButton::menu-indicator {{ image: none; }}
+#formatBar QComboBox {{ border: 1px solid {BORDER}; border-radius: 3px; padding: 1px 6px;
+    background: {SURFACE}; color: {TEXT}; min-height: 22px; }}
+#formatBar QComboBox:focus {{ border: 1px solid {ACCENT}; }}
+
 #formulaBar {{ background: {SURFACE}; border-bottom: 1px solid {BORDER}; }}
 #formulaBar QLineEdit {{ border: 1px solid {BORDER}; border-radius: 3px;
     padding: 2px 6px; background: {SURFACE}; color: {TEXT}; }}

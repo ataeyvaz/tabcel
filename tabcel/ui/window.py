@@ -26,6 +26,7 @@ from ..model.komutlar import ana_sayfa
 from ..model.olay import Olay
 from ..model.sayfa import CalismaKitabi, Sayfa
 from . import theme
+from .bicim_cubugu import BicimCubugu
 from .grid import Izgara, goster
 
 
@@ -150,6 +151,10 @@ class Pencere(QMainWindow):
         h.addWidget(self.belge_etiketi)
         h.addStretch(1)
         dikey.addWidget(baslik)
+
+        # biçim araç çubuğu (3d)
+        self.bicim_cubugu = BicimCubugu(self.izgara)
+        dikey.addWidget(self.bicim_cubugu)
 
         # ad kutusu + formül çubuğu
         cubuk = QWidget()
@@ -466,6 +471,7 @@ class Pencere(QMainWindow):
             self.formul.setText(hucre_metni(g.sayfa.hucre(*g.aktif), self.kitap))
         self._ozet_planla()
         self._dongu_etiketi_guncelle()
+        self.bicim_cubugu.guncelle()
 
     def _uyari(self, metin: str):
         self.statusBar().showMessage(metin, 6000)

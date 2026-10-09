@@ -250,6 +250,33 @@ def bicim_komutu(sayfa: Sayfa, araliklar, yama: Optional[StilYama] = None, sifir
     return BicimDegis(sayfa, hucre, satir, sutun)
 
 
+class BicimPlani:
+    """Sıralı yama listesini tek adımda uygular: `plan = [(aralıklar, StilYama), …]`.
+
+    Her adım bir öncekinin SONUCUNU görerek kurulur (köşe hücrede üst + sol kenarlık gibi
+    örtüşen yamalar birbirini ezmesin); bu yüzden komutlar `yap()` anında üretilir. Geri al
+    hepsini ters sırayla çözer."""
+
+    def __init__(self, sayfa: Sayfa, plan):
+        self.sayfa = sayfa
+        self.plan = list(plan)
+        self._komutlar: List[BicimDegis] = []
+
+    def bos_mu(self) -> bool:
+        return not self.plan
+
+    def yap(self) -> None:
+        self._komutlar = []
+        for araliklar, yama in self.plan:
+            k = bicim_komutu(self.sayfa, araliklar, yama)
+            k.yap()
+            self._komutlar.append(k)
+
+    def geri_al(self) -> None:
+        for k in reversed(self._komutlar):
+            k.geri_al()
+
+
 class OlcuDegis:
     """Sütun genişliği / satır yüksekliği / gizleme değişikliği (tek adım).
 
@@ -360,7 +387,7 @@ def ana_sayfa(komut, geri_al: bool = False):
                 return s
         return None
     return getattr(komut, "sayfa", None) if isinstance(
-        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis)) else None
+        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani)) else None
 
 
 class GeriAlYigini:

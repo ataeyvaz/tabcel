@@ -22,9 +22,9 @@ from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model import sayi_bicimi
 from ..model.sayi_bicimi import BicimSonucu
-from ..model.stil import VARSAYILAN, Stil
+from ..model.stil import VARSAYILAN, Stil, StilYama
 from ..model.komutlar import (
-    BicimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, SatirEkleSil, SutunEkleSil,
+    BicimDegis, BicimPlani, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
 from ..model.sayfa import Hucre, Sayfa
@@ -1845,6 +1845,27 @@ class Izgara(QAbstractScrollArea):
         if not kmt.bos_mu():
             self.yigin.calistir(kmt)
             self._guncelle()
+
+    def bicim_uygula(self, yama_ya_da_plan) -> bool:
+        """Seçime stil yaması uygular (biçim araç çubuğu). Ya tek `StilYama` (tüm seçim) ya da
+        `model.bicim_islem` planı (`[(aralıklar, yama), …]`); hepsi tek geri al adımı. Uygulanacak
+        değişiklik yoksa False."""
+        try:
+            if isinstance(yama_ya_da_plan, StilYama):
+                kmt = bicim_komutu(self.sayfa, self.secimler, yama_ya_da_plan)
+            else:
+                kmt = BicimPlani(self.sayfa, yama_ya_da_plan)
+                # tam satır/sütunda çok büyük seçim bu aşamada AdresHatası verir: önce dene
+                for ar, y in kmt.plan:
+                    bicim_komutu(self.sayfa, ar, y)
+        except AdresHatasi as h:
+            self.uyari.emit(str(h))
+            return False
+        if kmt.bos_mu():
+            return False
+        self.yigin.calistir(kmt)
+        self._guncelle()
+        return True
 
     def tumunu_temizle(self) -> None:
         """İçerik + biçim (Temizle ▸ Tümü); tek geri al adımı."""

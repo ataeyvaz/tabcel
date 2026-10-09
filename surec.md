@@ -8,14 +8,14 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 0 | Planlama, belgeler, iskelet | plan.md, CLAUDE.md, surec.md, .gitignore, git deposu, kod iskeleti | ✅ |
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
-| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a, 3b, 3c ✅; sıradaki: 3d–3l (§2 madde 8) |
+| 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a, 3b, 3c, 3d ✅; sıradaki: 3e–3l (§2 madde 8) |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | — | ⏳ |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 1543 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -40,7 +40,7 @@ Testler: 1497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6e. ✅ (2026-10-09) Döngüsel başvuru uyarısı arayüzde (`pencere.motor.donguler`; durum çubuğu "Döngüsel Başvurular: A1")
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
-8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f birleştirme · 3g akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
+8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f birleştirme · 3g akıllı giriş + METNEÇEVİR · 3h doldurma/Ctrl+D,R · 3i dondurma/kılavuz · 3j metni kaydır + otomatik satır yüksekliği · 3k biçim boyacısı · 3l Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -87,6 +87,12 @@ Testler: 1497 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
   - Dolgu hücrenin kendi sağ/alt kılavuz çizgisini örter (komşunun çizgisi görünür kalır); kenarlık çizgileri kılavuzun üstüne, kalın olan kazanır
   - Yatay kaydırma artımlı (dikeyle aynı düzen); yarım görünen seçim/kopyalama çerçevesi varken tam çizim (açık uçlar artefakt bırakıyordu)
   - Geçersiz sayı biçimi kodu çizimde Genel gibi davranır (çökme yok)
+- 2026-10-09 (Faz 3 / 3d):
+  - Düğmeler **etkin hücreye bakar, sonucu tüm seçime uygular** (K/İ/A/kaydır aç-kapat; sola/ortaya/sağa ve üst/orta/alt hizada etkin hücrede zaten o hiza ise varsayılana döner — Excel gibi). Ondalık artır/azalt de etkin hücrenin kodundan hesaplanıp tüm seçime yazılır (Excel hücre hücre hesaplayabilir; doğrulanmadı)
+  - Kenarlık menüsü Excel'in en sık 9 seçeneği (alt/üst/sol/sağ/tüm/dış/kalın dış/çift alt/yok); renk siyah sabit, çizgi stili/rengi seçimi Ctrl+1'de (3e). Çok parçalı yama `BicimPlani` komutuyla **sırayla ve her adım öncekinin sonucunu görerek** uygulanır (önceden kurulan `Grup`ta köşe hücrede üst+sol kenarlık birbirini eziyordu — testle yakalandı); tek geri al adımı
+  - Sayı düğmeleri: yüzde `0%`, para `"₺"#,##0.00` (`HAZIR["Para Birimi"]`), binlik `#,##0.00` (Excel Ctrl+Shift+1); Özel yalnız durum gösterir. Girinti artırma genel hizayı sola çevirir (Excel gibi)
+  - Kısayollar Sözcük'teki kararla: Ctrl+B/I/U (+ Ctrl+5 üstü çizili, Ctrl+Shift+4/5/1 para/yüzde/binlik); Türkçe Excel karşılığı §8b-44/45'te doğrulanacak. Kısayollar pencere düzeyinde; düzenleme/formül çubuğu odağı çalınmaz
+  - Çubuk Sözcük'ün `icons.py`/`widgets.py` dosyalarından **kopyalanıp uyarlandı** (`ui/icons.py`, `ui/widgets.py`; Sözcük'te değişiklik yok)
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -204,7 +210,8 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 41 | METNEÇEVİR biçim argümanı Türkçe Excel'de yerel yazım mı (`"gg.aa.yyyy"`)? Kanonik kod da çalışır mı | Yerel yazım | ⏳ |
 | 42 | Doldurma: 3+ sayıda doğrusal eğilim mi? Aynı gün, farklı ay olan iki tarihte ay adımı mı | Evet / evet | ⏳ |
 | 43 | Akıllı giriş: `1.5` → 1 Mayıs mı (§8b-2)? `1/2` → tarih mi? `1.234,5` girilince otomatik `#,##0` biçimi uygulanır mı | Tasarım: tarih / tarih / doğrulanana dek uygulanmaz | ⏳ |
-| 44 | Türkçe Excel'de Kalın/İtalik/Altı çizili kısayolları | Sözcük'teki karar izlenecek | ⏳ |
+| 44 | Türkçe Excel'de Kalın/İtalik/Altı çizili kısayolları | Sözcük'teki karar izlenecek (Ctrl+B/I/U) | ⏳ |
+| 45 | Para/Yüzde/Binlik düğmelerinin kodları ve kısayolları (Ctrl+Shift+4/5/1); Excel'in "Binlik Ayracı" düğmesi `#,##0.00` mı Muhasebe tarzı mı; çoklu seçimde Ondalık Artır etkin hücreye mi hücre hücre mi | `"₺"#,##0.00`, `0%`, `#,##0.00`; etkin hücreden | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -428,6 +435,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Doğrulama:** testler 1474 → **1497** (`test_izgara_stil.py` 23: dolgu/kenarlık piksel, yazı tipi, hizalama, girinti, sayı biçimi, `####`, geçersiz kod, yatay artımlı = tam çizim, özet erteleme, kısmi boyama alanı). `araclar/cizim_dogrula.py` dolgu/kenarlık/biçimli hücre + yatay kaydırma + Shift+Ok adımlarıyla genişletildi (gerçek pencere): **1 piksel fark** (bilinen köşe artefaktı, tolerans 1). `performans_olcum.py`'ye stilli senaryo eklendi (§8). Regresyon yok, hiçbir test değiştirilmedi
 - **Bilerek eksik (sonraki işlere):** metni kaydır + otomatik satır yüksekliği (3j; `kaydir` şimdilik taşmayı kapatır, sarma yok), kılavuz gizle/dondurma (3i), birleşim (3f), `doldur`/`iki_yana`/`secim_ortasi` tam hizası, sağa hizalı metnin sola taşması. Ekran görüntüsü incelendi (başlık dolgusu, para/yüzde/kırmızı negatif biçimi, kalın/çift kenarlık, girinti, 18 punto satır — doğru). Bilinen sınır: A sütununun sol ve 1. satırın üst kenarlığı başlığın altında kalır (görünmez; Excel gösterir)
 - Sıradaki: **3d** (biçim araç çubuğu)
+
+## [2026-10-09] — Faz 3 / 3d bitti (Sonnet 5.5)
+- **Yeni:** `model/bicim_islem.py` (Qt'siz: aç-kapat/hiza/girinti/ondalık/boyut adımı/kenarlık planı yamaları), `komutlar.BicimPlani` (sıralı çok yamalı tek adım; `ana_sayfa` tanır), `Izgara.bicim_uygula(yama | plan)`, `ui/bicim_cubugu.py` (yazı tipi, boyut + büyüt/küçült, K/İ/A, yazı rengi, dolgu rengi, kenarlık menüsü, dikey+yatay hiza, metni kaydır, girinti ±, sayı biçimi listesi `HAZIR`, ₺/%/binlik, ondalık ±), `ui/icons.py`, `ui/widgets.py` (`RenkDugmesi`: Office paleti + Diğer Renkler), tema `#formatBar`. Çubuk başlık şeridi ile formül çubuğu arasında; her seçim/geri al/yinele sonrası etkin hücreyi yansıtır
+- **Hata (testle yakalandı, düzeltildi):** kenarlık plan adımları önceden `bicim_komutu` ile kurulunca örtüşen köşe hücrelerde sonraki adım öncekini eziyordu → `BicimPlani` komutları yap() anında üretir
+- Testler 1497 → **1543** (`test_bicim_islem.py` 23 Qt'siz, `test_bicim_cubugu.py` 23 pencere: her düğme, etkin hücre mantığı, tek geri al, kısayollar, tam sütunda kenarlık, düzenlerken odak, ikinci sayfa). Regresyon yok, hiçbir test değiştirilmedi. Ekran görüntüsü incelendi (çubuk 1200 px'te tek satır, işaretli düğme/dolgu/kenarlık/yüzde doğru)
+- **Bilerek eksik:** Birleştir düğmesi (3f ile eklenir), biçim boyacısı (3k), kenarlık rengi/stili seçimi (3e), "Özel" liste öğesi yalnız gösterge, Metni Kaydır düğmesi stili yazar ama sarma çizimi 3j'de; Türkçe Excel kısayol doğrulaması (§8b-44/45). `CLAUDE.md` dosya yapısına yeni `ui/` dosyaları (icons, widgets, bicim_cubugu) ve `model/bicim_islem.py` eklenmedi — kullanıcı onayı bekler
+- Commit atılmadı (kullanıcı isteyince)
+- Sıradaki: **3e** (Hücreleri Biçimlendir, Ctrl+1)
 
 *(Yeni girişler en alta eklenir.)*
 
