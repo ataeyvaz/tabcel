@@ -263,6 +263,18 @@ class Pencere(DosyaIslemleri, QMainWindow):
         sb.addPermanentWidget(self.yakin_kaydirici)
         sb.addPermanentWidget(self.yakin_etiketi)
 
+        self.bul_penceresi = None
+        for eylem, kisayol, islev in (
+                ("bul", "Ctrl+F", lambda: self.bul_ac(False)),
+                ("degistir", "Ctrl+H", lambda: self.bul_ac(True)),
+                ("git", "Ctrl+G", self.git_ac)):
+            self.duzen_eylemleri[eylem].setEnabled(True)
+            self.duzen_eylemleri[eylem].setText(self.duzen_eylemleri[eylem].text() + "	" + kisayol)   # yalnız gösterim; kısayol QShortcut'ta (çift tanım belirsizlik yaratır)
+            self.duzen_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
+            QShortcut(QKeySequence(kisayol), self, activated=islev)
+        QShortcut(QKeySequence("F5"), self, activated=self.git_ac)
+        QShortcut(QKeySequence("Shift+F4"), self, activated=lambda: self.sonrakini_bul(False))
+        QShortcut(QKeySequence("Ctrl+Shift+F4"), self, activated=lambda: self.sonrakini_bul(True))
         QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
         QShortcut(QKeySequence("Ctrl+PgUp"), self, activated=lambda: self._sekme_git(-1))
 
@@ -599,10 +611,32 @@ class Pencere(DosyaIslemleri, QMainWindow):
                 "dolaylı olarak başvuruyor. Döngüdeki hücreler 0 olarak hesaplanır; sonuçlar yanlış "
                 "olabilir.")
 
+    # --- Düzen menüsü: Bul / Değiştir / Git (Faz 5 / 5b) ---
+    def bul_ac(self, degistir: bool = False):
+        from .bul_penceresi import BulPenceresi
+        if self.bul_penceresi is None:
+            self.bul_penceresi = BulPenceresi(self)
+        self.bul_penceresi.ac(degistir)
+
+    def sonrakini_bul(self, ters: bool = False):
+        """Shift+F4 / Ctrl+Shift+F4: pencere kapalıyken de son arananı bulur."""
+        if self.bul_penceresi is None or not self.bul_penceresi.bul_metni.text():
+            self.bul_ac(False)
+            return
+        self.bul_penceresi.sonrakini_bul(ters)
+
+    def git_ac(self):
+        metin, tamam = QInputDialog.getText(self, "Git", "Başvuru:", text="")
+        if tamam and metin.strip():
+            self._adrese_git(metin)
+
     def _ad_kutusundan_git(self):
+        self._adrese_git(self.ad_kutusu.text())
+
+    def _adrese_git(self, metin: str):
         g = self.izgara()
         try:
-            ar = aralik_coz(self.ad_kutusu.text())
+            ar = aralik_coz(metin)
         except AdresHatasi:
             QMessageBox.warning(self, APP_NAME, "Başvuru geçerli değil.")
             self._arayuzu_guncelle()
