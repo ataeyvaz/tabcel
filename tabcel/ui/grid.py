@@ -39,6 +39,7 @@ from ..model.notlar import Not, varsayilan_yazar
 from ..model.bicim_islem import boyaci_stilleri
 from ..model.sayfa import Hucre, Sayfa
 from . import theme
+from .grid_nesne_etkilesim import NesneEtkilesimi
 from .grid_nesneler import NesneKatmani
 from .renkli import renkli_ciz
 
@@ -241,7 +242,7 @@ class _NotDuzenleyici(QPlainTextEdit):
         self._bitir(self.toPlainText())
 
 
-class Izgara(NesneKatmani, QAbstractScrollArea):
+class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
     aktifDegisti = Signal(int, int)       # satır, sütun
     secimDegisti = Signal(object)         # Aralik
     degisti = Signal()                    # içerik değişti (düzenleme, silme, geri al)
@@ -252,6 +253,8 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
     gecmisIslemi = Signal(bool)           # geri al/yinele başladı (True) / bitti (False)
     yakinlastirmaDegisti = Signal(float)
     uyari = Signal(str)                   # kullanıcıya gösterilecek iletiler
+    nesneSecimiDegisti = Signal(int)      # seçili yüzen nesnenin kimliği (0 = seçim yok)
+    nesneAyarIstendi = Signal(int, str)   # nesne kimliği, istek: 'ayarlar' | 'veri' | 'tur' (pencereyi pencere açar)
     filtreDugmesi = Signal(int)           # filtre açılır düğmesine tıklandı / Alt+Aşağı (mutlak sütun)
     uzakOnay = Signal()                   # devredilen (başka sayfadan) formül düzenlemesi sürerken işaret dışı tıklama
 
@@ -316,6 +319,7 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
         self._dondur_uygula()
         self.aktifDegisti.connect(lambda *_: self._giris_iletisi_guncelle())
         self._nesne_kur()                                    # Faz 6: yüzen nesne katmanı
+        self._etkilesim_kur()
         self.horizontalScrollBar().valueChanged.connect(self._yatay_kaydi)
         self.verticalScrollBar().valueChanged.connect(self._dikey_kaydi)
         QApplication.clipboard().dataChanged.connect(self._pano_degisti)
@@ -1588,6 +1592,8 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
         if self.duzenleniyor():
             return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır
         nokta = olay.position().toPoint()
+        if self._nesne_fare_bas(nokta):                      # yüzen nesne (grafik/resim) hücrelerin üstündedir
+            return
         ad_ = self._acilir_dugme_dikdortgeni() if self.sayfa.dogrulamalar else None
         if ad_ is not None and ad_.contains(nokta):          # açılır liste oku: seçim değişmez
             self.acilir_liste_ac()
@@ -1636,6 +1642,9 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
             self._imlec_guncelle(p)
             self._not_ipucu_guncelle(p)
             return
+        if self._surukleme == "nesne":
+            self._nesne_fare_hareket(p, bool(olay.modifiers() & Qt.ShiftModifier))
+            return
         if self._surukleme == "boyut":
             self._boyut_surukle(p)
             return
@@ -1670,6 +1679,10 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
             self.sec(self._aktif, (satir, MAX_COL), kaydir=False)
 
     def mouseReleaseEvent(self, olay):
+        if self._surukleme == "nesne":
+            self._nesne_fare_birak()
+            self.suruklemeBitti.emit()
+            return
         if self._surukleme == "boyut":
             self._boyut_bitir()
         elif self._surukleme == "doldur":
@@ -1732,6 +1745,8 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
         shift = bool(m & Qt.ShiftModifier)
         if self._not_kutusu is not None and self._not_kutusu.isVisible():
             self._not_gizle()
+        if self._secili_nesne is not None and self._nesne_klavye(olay):
+            return                      # seçili grafik/resim: Delete, Esc, ok, Ctrl+C/X/V
         if k == Qt.Key_F2 and shift and not ctrl:
             self.not_duzenle()
             return
@@ -1945,13 +1960,20 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
 
     # --- pano ---
     def kopyala(self) -> None:
+        if self._secili_nesne is not None:
+            self.nesne_kopyala(False)
+            return
         self._panoya_koy(kesilen=False)
 
     def kes(self) -> None:
         """Kes: hücreler yapıştırılana kadar yerinde kalır (Excel gibi), kesik çizgili çerçeveyle işaretlenir."""
+        if self._secili_nesne is not None:
+            self.nesne_kopyala(True)
+            return
         self._panoya_koy(kesilen=True)
 
     def _panoya_koy(self, kesilen: bool) -> None:
+        Izgara._nesne_panosu = None                          # hücre kopyası nesne kopyasının yerini alır
         if self._ekler:
             self.uyari.emit("Bu komut birden çok seçimde kullanılamaz.")
             return
@@ -2032,6 +2054,8 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
         return md is not None and (md.hasFormat(self.MIME_HUCRELER) or md.hasHtml() or md.hasText())
 
     def yapistir(self) -> None:
+        if Izgara._nesne_panosu is not None and self.nesne_yapistir():
+            return
         veri = self._pano_oku()
         if veri is None:
             return
@@ -2156,6 +2180,10 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
         return list(araligi) if len(araligi) <= self.TOPLU_SINIR else [i]
 
     def _imlec_guncelle(self, p: QPoint) -> None:
+        nesne_imleci = self._nesne_imleci(p) if self.sayfa.nesneler else None
+        if nesne_imleci is not None:
+            self.viewport().setCursor(nesne_imleci)
+            return
         kenar = self._kenar_bul(p)
         sekil = Qt.ArrowCursor
         if self._tutamacta_mi(p):
@@ -2395,7 +2423,7 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
             self.satir_yuksekligi_ayarla(olcu.punto_px(deger))
 
     def contextMenuEvent(self, olay):
-        m = self.baslik_menusu(olay.pos()) or self.hucre_menusu(olay.pos())
+        m = self.nesne_menusu(olay.pos()) or self.baslik_menusu(olay.pos()) or self.hucre_menusu(olay.pos())
         if m:
             m.exec(olay.globalPos())
 
@@ -3141,6 +3169,8 @@ class Izgara(NesneKatmani, QAbstractScrollArea):
         self.degisti.emit()
 
     def mouseDoubleClickEvent(self, olay):
+        if olay.button() == Qt.LeftButton and self._nesne_cift_tik(olay.position().toPoint()):
+            return
         if olay.button() == Qt.LeftButton and self._tutamacta_mi(olay.position().toPoint()):
             self._doldur = None
             self._surukleme = None

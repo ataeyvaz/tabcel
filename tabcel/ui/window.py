@@ -516,6 +516,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         g.modDegisti.connect(self._mod_degisti)
         g.duzenlemeMetniDegisti.connect(self._duzenleme_aynala)
         g.suruklemeBitti.connect(self._arayuzu_guncelle)
+        g.nesneSecimiDegisti.connect(self._arayuzu_guncelle)     # Ad Kutusu seçili nesnenin adını gösterir
         g.boyaciDegisti.connect(lambda _a: self._arayuzu_guncelle())
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
@@ -757,7 +758,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
                                    f"{sec.son_sutun - sec.ilk_sutun + 1}Sü")
         else:
             ad = secimin_adi(self.kitap, g.sayfa, sec) if self.kitap.adlar else None
-            self.ad_kutusu.setText(ad or hucre_yaz(*g.aktif))
+            nesne = g.sayfa.nesne(g.secili_nesne) if g.secili_nesne is not None else None
+            self.ad_kutusu.setText(nesne.etiket if nesne is not None else (ad or hucre_yaz(*g.aktif)))
         isaretleniyor = g.dis_duzenleyici is not None and g._isaret is not None
         if (not g.duzenleniyor() and not self.formul.hasFocus() and not isaretleniyor
                 and self._uzak is None):

@@ -92,7 +92,10 @@ class NesneKatmani:
         self.viewport().update()
 
     def _nesne_secim_dogrula(self) -> None:
-        """6e'de seçili nesne silinmişse seçimi bırakır (burada yalnız kanca)."""
+        """`NesneEtkilesimi` geçersiz kılar (seçili nesne silinmişse seçimi bırakır)."""
+
+    def _gorunen_nesne_dikdortgeni(self, n):
+        return self._nesne_dikdortgeni(n)
 
     # ------------------------------------------------------------------ konum
     def _nesne_boyutu(self, n) -> Tuple[int, int]:
@@ -170,20 +173,36 @@ class NesneKatmani:
         return pm
 
     def _nesneleri_ciz(self, p: QPainter, kirp: QRect) -> None:
-        """`_boya` içinden: z sırasıyla her nesnenin görünen kısmını çizer."""
+        """`_boya` içinden: z sırasıyla her nesnenin görünen kısmını çizer; sürükleme sürerken önizleme
+        dikdörtgeni kullanılır (boyutlandırmada önce eski görüntü ölçeklenir, 60 ms durulunca gerçek boyutta kurulur);
+        seçili nesnenin çerçevesi ve tutamaçları en üstte."""
+        secili_dik = None
         for n in self.sayfa.nesneler:
-            if isinstance(n, Resim):
-                continue                                  # resim çizimi 6g'de
-            sonuc = self._nesne_dikdortgeni(n)
+            sonuc = self._gorunen_nesne_dikdortgeni(n)
             if sonuc is None:
                 continue
             dik, pencere = sonuc
+            if n.kimlik == self._secili_nesne:
+                secili_dik = dik
+            if isinstance(n, Resim):
+                continue                                  # resim çizimi 6g'de
             kirpma = dik.intersected(pencere).intersected(kirp)
             if kirpma.isEmpty():
                 continue
-            pm = self._nesne_pixmap(n, dik.width(), dik.height())
+            w, h = self._nesne_boyutu(n)
             p.setClipRect(kirpma)
-            p.drawPixmap(dik.topLeft(), pm)
+            if dik.size() == QSize(w, h):
+                p.drawPixmap(dik.topLeft(), self._nesne_pixmap(n, w, h))
+            elif self._onizleme_gercek_boyut == dik.size():
+                z = self.yakinlastirma
+                n2 = n.degistir(boyut=(max(1, round(dik.width() / z)), max(1, round(dik.height() / z))))
+                p.drawPixmap(dik.topLeft(), self._nesne_pixmap(n2, dik.width(), dik.height()))
+            else:
+                giris = self._nesne_onb.get(n.kimlik)
+                pm = giris[1] if giris is not None else self._nesne_pixmap(n, w, h)
+                p.drawPixmap(dik, pm)                     # eski görüntü yeni boyuta gerilir
+        if secili_dik is not None:
+            self._nesne_secim_ciz(p, secili_dik, kirp)
         p.setClipRect(kirp)
 
     def nesne_dikdortgeni(self, kimlik: int) -> Optional[QRect]:
