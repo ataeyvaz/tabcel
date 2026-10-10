@@ -443,6 +443,23 @@ class DosyaIslemleri:
             self._baslik_guncelle()
         return True
 
+    def sayfa_yapisi_degistir(self, **alanlar) -> bool:
+        """Şerit düğmeleri (Sayfa Düzeni): etkin sayfanın `SayfaYapisi` alanlarını değiştirir; `sayfa_yapisi_ac`
+        ile aynı geri alınabilir komut. Geçersiz değerde uyarır. Değişen yoksa False."""
+        sayfa = self.izgara().sayfa
+        try:
+            yeni = sayfa.sayfa_yapisi.degistir(**alanlar)
+        except ValueError as e:
+            QMessageBox.warning(self, APP_NAME, str(e))
+            return False
+        kmt = SayfaYapisiDegis(sayfa, yeni)
+        if kmt.bos_mu():
+            return False
+        self.yigin.calistir(kmt)
+        self._baslik_guncelle()
+        self._eylem_durumlari()
+        return True
+
     def _yazdirilacak(self, tum: bool = False):
         return [self._izgaralar[s] for s in self.kitap.sayfalar] if tum else [self.izgara()]
 

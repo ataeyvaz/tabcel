@@ -62,4 +62,9 @@ class SayfaYapisi:
         return g - (self.sol + self.sag) * PX_CM, y - (self.ust + self.alt) * PX_CM
 
 
+# Excel'in hazır kenar boşlukları (cm; üst, alt, sol, sağ). Değerler Excel web'de doğrulanacak (surec.md §8b-75)
+KENAR_HAZIR = {"normal": (1.91, 1.91, 1.78, 1.78), "genis": (2.54, 2.54, 2.54, 2.54),
+               "dar": (1.91, 1.91, 0.64, 0.64)}
+
+
 VARSAYILAN = SayfaYapisi()

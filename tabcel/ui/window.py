@@ -177,6 +177,12 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.dosya_menusu = QMenu(self)
         self._dosya_menusu_doldur(self.dosya_menusu)
         self.serit.sekme_ekle("Giriş", self.bicim_cubugu)
+        from .serit_sekmeleri import (FormullerSayfasi, GorunumSayfasi, GozdenGecirSayfasi,
+                                      SayfaDuzeniSayfasi, VeriSayfasi)
+        for ad, sinif in (("Sayfa Düzeni", SayfaDuzeniSayfasi), ("Formüller", FormullerSayfasi),
+                          ("Veri", VeriSayfasi), ("Gözden Geçir", GozdenGecirSayfasi),
+                          ("Görünüm", GorunumSayfasi)):
+            self.serit.sekme_ekle(ad, sinif(self))
         self.serit.dosya_sekmesi_ekle(self.dosya_menusu)
         dikey.addWidget(self.serit)
         self.bilgi_cubugu = self._bilgi_cubugu_olustur()      # açılan dosyada korunamayan öğe uyarısı
@@ -438,6 +444,23 @@ class Pencere(DosyaIslemleri, QMainWindow):
         kl.setChecked(True)
         kl.toggled.connect(lambda v: g().kilavuz_goster(v))
         e("yakin_100", "%100", lambda: g().yakinlastir(1.0), "", "zoom100_32")
+        # sayfa düzeni (5j-5): hepsi `sayfa_yapisi_degistir` (geri alınabilir) ya da Sayfa Yapısı penceresi
+        from ..model.sayfa_yapisi import KAGITLAR, KENAR_HAZIR
+        for k, ad in (("normal", "Normal"), ("genis", "Geniş"), ("dar", "Dar")):
+            u, a, so, sa = KENAR_HAZIR[k]
+            e("kenar_" + k, f"{ad}  (üst/alt {u:g}, sol/sağ {so:g} cm)".replace(".", ","),
+              lambda u=u, a=a, so=so, sa=sa: self.sayfa_yapisi_degistir(ust=u, alt=a, sol=so, sag=sa))
+        e("kenar_ozel", "Özel Kenar Boşlukları…", lambda: self.sayfa_yapisi_ac())
+        e("yon_dikey", "Dikey", lambda: self.sayfa_yapisi_degistir(yon="dikey"))
+        e("yon_yatay", "Yatay", lambda: self.sayfa_yapisi_degistir(yon="yatay"))
+        for k, (kg, ky) in KAGITLAR.items():
+            e("kagit_" + k, f"{k}  ({kg:g} × {ky:g} cm)".replace(".", ","),
+              lambda k=k: self.sayfa_yapisi_degistir(kagit=k))
+        e("alan_belirle", "Yazdırma Alanını Belirle", lambda: self.sayfa_yapisi_degistir(alan=g().secim))
+        e("alan_temizle", "Yazdırma Alanını Temizle", lambda: self.sayfa_yapisi_degistir(alan=None))
+        e("baslik_yazdir", "Başlıkları Yazdır", lambda: self.sayfa_yapisi_ac(), "", "print_titles32")
+        e("kilavuz_yazdir", "Kılavuz Çizgilerini Yazdır",
+          lambda: self.sayfa_yapisi_degistir(kilavuz=not g().sayfa.sayfa_yapisi.kilavuz), isaretli=True)
 
     def _gorunum_menusu_hazirla(self) -> None:
         self._eylem_durumlari()
@@ -449,7 +472,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
         if g is None:
             return
         e = self.eylemler
-        for anahtar, deger in (("kilavuz", g.sayfa.kilavuz), ("filtre", g.sayfa.filtre is not None)):
+        for anahtar, deger in (("kilavuz", g.sayfa.kilavuz), ("filtre", g.sayfa.filtre is not None),
+                               ("kilavuz_yazdir", g.sayfa.sayfa_yapisi.kilavuz)):
             a = e[anahtar]
             a.blockSignals(True)
             a.setChecked(bool(deger))
