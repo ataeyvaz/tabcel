@@ -139,7 +139,7 @@ Kural: `model/` ve `formul/` Qt içe aktarmaz → hızlı test edilir, ileride b
 ### Faz 6 — Grafikler
 - Seçili veriden grafik ekle: sütun, çubuk, çizgi, pasta, halka, alan, dağılım (XY)
 - Grafik sayfanın üzerinde yüzen nesne: taşı, boyutlandır, sil; başlık, gösterge, eksen başlıkları, renkler; veri değişince canlı güncellenir
-- .xlsx'e yazma (openpyxl grafik yazabilir); **okuma openpyxl'de yok** → Excel dosyasındaki grafikler açılışta "korunamaz" uyarısı ile bildirilir (Faz 8'de kendi okuyucumuzla değerlendirilir)
+- .xlsx'e yazma **ve okuma** (openpyxl ikisini de yapar — 2026-10-10'da `grafikli.xlsx` ile doğrulandı; plan'daki "okuma yok" yanlıştı); openpyxl'in anlamadığı biçimler/türler düşer ve uyarı verilir. Ayrıntı `faz6_tasarim.md`
 - Görsel ekleme (resim) — Sözcük'ün `images.py` deneyimiyle
 
 ### Faz 7 — Ortak özellikler, paket ve dağıtım (Sözcük'ten)
@@ -154,7 +154,7 @@ Kural: `model/` ve `formul/` Qt içe aktarmaz → hızlı test edilir, ileride b
 - .xls okuma (xlrd), .ods aç/kaydet, parola korumalı .xlsx (msoffcrypto-tool), sayfa/çalışma kitabı koruması
 - Basit **Özet Tablo** (pivot: satır/sütun/değer alanları, Toplam/Sayım/Ortalama)
 - Dinamik dizi fonksiyonları (FILTER, SORT, UNIQUE, SEQUENCE), LET
-- Excel dosyasındaki grafikleri okuma (kendi XML okuyucumuz)
+- openpyxl'in düşürdüğü Excel grafik biçimlerini kurtarma (kendi XML okuyucumuz; temel okuma Faz 6'da openpyxl ile)
 - Sözcük ⇄ Tabcel: Sözcük'e bağlı tablo yapıştırma, ortak tema/bileşenlerin paylaşılan pakete çıkarılması
 - Karanlık tema
 
