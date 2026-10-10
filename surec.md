@@ -10,12 +10,12 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
-| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅ 5b ✅; sıradaki **5c** (Sonnet 5.5; §2 madde 10) |
+| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅ 5b ✅ 5c ✅ (performans ölçütü ❌, aşağıda); sıradaki **5d** (Sonnet 5.5; §2 madde 10) |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 2134 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 2174 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -42,7 +42,7 @@ Testler: 2134 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
-10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
+10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; 5c ✅ Sırala; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -647,6 +647,20 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
   - Boş aranan metin hiçbir şey bulmaz. Git penceresi şimdilik düz adres/aralık sorar (liste ve tanımlı adlar 5d'de); Excel'in tam Türkçe "bulunamadı" iletisi §8b-58'de doğrulanacak
   - **Görsel denetim (ekran görüntüsü) yapılmadı**; elle test: pencere yerleşimi, sekme geçişi, Tümünü Bul listesi
 - Sıradaki: **5c** Sırala (+ `karsilastir`'ın Türkçe harmanlamaya geçişi — mevcut test değişirse önce kullanıcıya bildir)
+
+## [2026-10-10] — Faz 5 / 5c Sırala (Sonnet 5.5)
+- **Yapıldı:** `model/sirala.py` (`SiralamaAnahtari`, `siralama_plani`, `baslik_tahmin`, `veri_kutusu`); `komutlar.Sirala` (satır/sütun, `ana_sayfa` tanır); `ui/sirala_penceresi.py` (Özel Sıralama: düzey tablosu, ekle/sil/kopyala/yukarı-aşağı, en çok 64 düzey, üst bilgi, büyük/küçük harf, yukarıdan aşağı/soldan sağa, renk ölçütü); `Pencere.sirala_hizli/sirala_ozel/_siralama_uyarisi` (Excel "Sıralama Uyarısı": seçimi genişlet / geçerli seçimle devam / iptal); Veri menüsü Artan/Azalan/Özel eylemleri açıldı; hücre sağ tık menüsüne Sırala ▸
+- **Regresyon notu (kural 12) uygulandı:** `donustur.karsilastir` ve `ortak.kriter` (`<`, `>`, `<=`, `>=` metin ölçütleri) Türkçe harmanlamaya geçti (`harmanla.metin_anahtari`); eşitlik hâlâ tam (büyük/küçük harf duyarsız, `tr_kucuk`). **Hiçbir mevcut test değişmedi/bozulmadı** (2134 test geçmeye devam etti); `VLOOKUP/MATCH` da aynı `karsilastir`'ı kullandığı için sıralı metin aramaları Türkçe sırayı izler. Yeni testler `test_sirala.py::TestKarsilastirmaTurkce`
+- **Testler:** `test_sirala.py` (28), `test_sirala_arayuz.py` (12). Toplam 2174 geçiyor. `test_faz5_altyapi.py` menü iskeleti testi bilerek güncellendi (Sırala eylemleri artık açık; kalan Veri eylemlerinin kapalılığı denetlenir)
+- **❌ Performans ölçütü karşılanmadı:** 100.000 satır × 5 sütun tek anahtar sıralama hedef ≤ 2 sn; ölçülen **plan ≈ 0,7 sn + komut ≈ 3,1 sn ≈ 3,8 sn** (yük altında 4–6 sn). Süre `Sayfa.toplu_yaz` (500.000 hücre, ~4,8 µs/hücre) ve olay sözlüğü kurmada. Yapılan: `Hucre.__eq__` demetsiz (genel kazanç), boş→boş yazım atlanır, stil/not yoksa taşınmaz. Test eşiği gerilemeyi yakalamak için gevşek (6 sn). **Karar bekliyor (kullanıcı):** (a) kabul (Excel'de de ~birkaç sn; kullanıcı gözle fark etmez), ya da (b) `toplu_yaz`'a "kendi içinde permütasyon" hızlı yolu yazılsın (olay sözlüğü yerine `permutasyon` olayı; motor ve ızgara dinleyicilerinin değişmesi gerekir)
+- **Kararlar/notlar:**
+  - Plan `plan[i]` = veri aralığının i. konumuna gelecek KAYNAK satır/sütun numarası (mutlak); gizli satırlar yerinde kalır, görünenler kendi aralarında sıralanır
+  - Renk ölçütü: eşleşen hücreler üstte (artan) ya da altta (azalan), diğerleri özgün sırada; renk karşılaştırması büyük/küçük harf duyarsız
+  - Sütun sıralaması (soldan sağa) modelde ve komutta var; sütun başlığı varsa ilk sütun başlık sayılır
+  - Başlık tahmini yaklaşık (§8b-60): metin üstü sayı ya da ilk satırın kalın/dolgu farkı; kullanıcı Özel Sıralama'da kutuyu değiştirebilir (hızlı A→Z'de tahmin kesindir — Excel de aynı)
+  - Sıralanan hücrelerin notları taşınır (notlar henüz arayüzsüz; 5e'de `NotlarDegis` gelince aynı yoldan); doğrulama/koşullu biçim aralıkları, satır yüksekliği/stili, birleşimler yerinde kalır; birleşim varsa Excel iletisiyle reddedilir
+  - Görsel denetim (ekran görüntüsü) yapılmadı; elle test: Özel Sıralama penceresinin yerleşimi
+- Sıradaki: **5d** Adlandırılmış aralıklar
 
 *(Yeni girişler en alta eklenir.)*
 

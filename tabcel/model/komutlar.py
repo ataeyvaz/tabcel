@@ -520,7 +520,7 @@ def ana_sayfa(komut, geri_al: bool = False):
                 return s
         return None
     return getattr(komut, "sayfa", None) if isinstance(
-        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis)) else None
+        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala)) else None
 
 
 class GeriAlYigini:
@@ -590,3 +590,70 @@ class SayfaYapisiDegis:
 
     def geri_al(self) -> None:
         self.sayfa.sayfa_yapisi = self.eski
+
+
+class Sirala:
+    """Satırları (yon="satir") ya da sütunları (yon="sutun") `kaynaklar` düzenine göre yer değiştirir
+    (faz5_tasarim.md §3.2). `aralik`: başlık hariç VERİ aralığı; `kaynaklar[i]`: o aralığın `i`.
+    konumuna gelecek kaynak satırın (sütunun) mutlak numarası (`sirala.siralama_plani`).
+
+    Formüller kopyala gibi kayar (`=B2*C2` 5. satıra gidince `=B5*C5`); dışarıdan bu hücrelere işaret
+    eden başvurular değişmez (Excel gibi). Girdi, hücre stili (ham kayıt) ve not taşınır; satır
+    yüksekliği, satır stili, doğrulama, koşullu biçim ve birleşimler yerinde kalır. Tek geri al adımı."""
+
+    def __init__(self, sayfa: Sayfa, aralik: Aralik, kaynaklar: List[int], yon: str = "satir"):
+        self.sayfa, self.aralik, self.kaynaklar, self.yon = sayfa, aralik, list(kaynaklar), yon
+        self._eski_hucre = None
+        self._eski_stil = None
+        self._ek_once = None
+
+    def _cizgiler(self):
+        a = self.aralik
+        return (range(a.ilk_sutun, a.son_sutun + 1) if self.yon == "satir"
+                else range(a.ilk_satir, a.son_satir + 1))
+
+    def yap(self) -> None:
+        from ..formul.kaydir import kopyala             # model → formul yalnız burada
+        s, a = self.sayfa, self.aralik
+        satir = self.yon == "satir"
+        ilk = a.ilk_satir if satir else a.ilk_sutun
+        hucreler = s._hucreler
+        yeni_h: Dict[Anahtar, Optional[Hucre]] = {}
+        yeni_stil: Dict[Anahtar, Optional[int]] = {}
+        yeni_not = dict(s.notlar)
+        tasinan = [(ilk + i, k) for i, k in enumerate(self.kaynaklar) if k != ilk + i]
+        cizgiler = list(self._cizgiler())
+        stil_var = bool(s._stil)                         # ham stil kaydı yoksa stil taşıma işi de yok
+        notlar_var = bool(s.notlar)
+        if notlar_var:
+            for hedef, _ in tasinan:                    # taşınan hedeflerin eski notları silinir
+                for d in cizgiler:
+                    yeni_not.pop((hedef, d) if satir else (d, hedef), None)
+        hget = hucreler.get
+        for hedef, kaynak in tasinan:
+            fark = hedef - kaynak
+            for d in cizgiler:
+                ks, hs = ((kaynak, d), (hedef, d)) if satir else ((d, kaynak), (d, hedef))
+                h = hget(ks)
+                if h is not None and h.formul is not None:
+                    yeni_f = kopyala(h.formul, fark, 0) if satir else kopyala(h.formul, 0, fark)
+                    h = Hucre(None, yeni_f)
+                if h is not None or hs in hucreler:       # boş → boş için yazım gerekmez
+                    yeni_h[hs] = h
+                if stil_var:
+                    yeni_stil[hs] = s.ham_stil_kimligi(*ks)
+                if notlar_var:
+                    n = s.notlar.get(ks)
+                    if n is not None:
+                        yeni_not[hs] = n
+        self._ek_once = s.ek_durumu()
+        self._eski_hucre = s.toplu_yaz(yeni_h)
+        self._eski_stil = s.bicim_yaz(hucreler=yeni_stil)[0] if yeni_stil else {}
+        if yeni_not != s.notlar:
+            s.ek_durumu_yukle((yeni_not,) + self._ek_once[1:])
+
+    def geri_al(self) -> None:
+        s = self.sayfa
+        s.toplu_yaz(self._eski_hucre)
+        s.bicim_yaz(hucreler=self._eski_stil)
+        s.ek_durumu_yukle(self._ek_once)

@@ -9,6 +9,7 @@ from typing import Union
 
 from ..model import deger as D
 from ..model.deger import Hata
+from ..model.harmanla import metin_anahtari
 from ..model.girdi import sayi_coz, sayisal_akilli
 from .yerel import tr_kucuk
 
@@ -134,7 +135,15 @@ def karsilastir(a, b) -> Union[int, Hata]:
     if ta != tb:
         return -1 if ta < tb else 1
     if ta == 1:
-        a, b = tr_kucuk(a), tr_kucuk(b)
+        # eşitlik: Türkçe büyük/küçük harf duyarsız tam eşitlik; sıra: Türkçe alfabe (ç, ğ, ı, ö, ş, ü
+        # kendi yerinde — `"ç" < "d"` DOĞRU; surec.md §8b-55)
+        ka, kb = tr_kucuk(a), tr_kucuk(b)
+        if ka == kb:
+            return 0
+        ma, mb = metin_anahtari(a), metin_anahtari(b)
+        if ma == mb:
+            return (ka > kb) - (ka < kb)
+        return (ma > mb) - (ma < mb)
     elif ta == 0:
         a, b = onbes_basamak(float(a)), onbes_basamak(float(b))
     return (a > b) - (a < b)

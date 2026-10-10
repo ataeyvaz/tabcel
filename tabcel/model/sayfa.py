@@ -37,9 +37,14 @@ class Hucre:
         return (self.deger.__class__, self.deger, self.formul)
 
     def __eq__(self, diger):
+        if self is diger:
+            return True
         if not isinstance(diger, Hucre):
             return NotImplemented
-        return self._anahtar() == diger._anahtar()
+        a, b = self.deger, diger.deger
+        # `_anahtar()` ile aynı anlam, demet kurmadan (sıralama/toplu yazımda yüz binlerce çağrı)
+        return (self.formul == diger.formul and a.__class__ is b.__class__
+                and (a is b or a == b))
 
     def __hash__(self):
         return hash(self._anahtar())

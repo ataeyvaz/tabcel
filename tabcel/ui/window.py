@@ -273,6 +273,11 @@ class Pencere(DosyaIslemleri, QMainWindow):
             self.duzen_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
             QShortcut(QKeySequence(kisayol), self, activated=islev)
         QShortcut(QKeySequence("F5"), self, activated=self.git_ac)
+        for eylem, islev in (("artan", lambda: self.sirala_hizli(True)),
+                             ("azalan", lambda: self.sirala_hizli(False)),
+                             ("ozel_sirala", self.sirala_ozel)):
+            self.veri_eylemleri[eylem].setEnabled(True)
+            self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
         QShortcut(QKeySequence("Shift+F4"), self, activated=lambda: self.sonrakini_bul(False))
         QShortcut(QKeySequence("Ctrl+Shift+F4"), self, activated=lambda: self.sonrakini_bul(True))
         QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
@@ -624,6 +629,100 @@ class Pencere(DosyaIslemleri, QMainWindow):
             self.bul_ac(False)
             return
         self.bul_penceresi.sonrakini_bul(ters)
+
+    # --- Veri menüsü: Sırala (Faz 5 / 5c) ---
+    def _siralama_uyarisi(self) -> Optional[bool]:
+        """Excel "Sıralama Uyarısı": True = seçimi genişlet, False = geçerli seçimle devam, None = vazgeç."""
+        kutu = QMessageBox(self)
+        kutu.setWindowTitle("Sıralama Uyarısı")
+        kutu.setIcon(QMessageBox.Warning)
+        kutu.setText("Seçimin yanında da veri bulundu. Bu veriler seçime dahil edilmediği için "
+                     "sıralanmayacak. Ne yapmak istersiniz?")
+        genislet = kutu.addButton("Seçimi genişlet", QMessageBox.AcceptRole)
+        devam = kutu.addButton("Geçerli seçimle devam et", QMessageBox.ActionRole)
+        kutu.addButton("İptal", QMessageBox.RejectRole)
+        kutu.setDefaultButton(genislet)
+        kutu.exec()
+        tik = kutu.clickedButton()
+        return True if tik is genislet else False if tik is devam else None
+
+    def _siralama_alani(self, genislet=None):
+        """Sıralanacak alan: (veri aralığı başlık dahil, başlık var mı, anahtar sütunu) ya da None.
+        Tek hücre seçiliyse etkin hücrenin bitişik bölgesi; tek sütun seçimi yanında veri varsa
+        Excel uyarısı sorulur (`genislet` None ise sorulur; True/False ise sorulmaz)."""
+        from ..model.adres import Aralik, bitisik_bolge
+        from ..model.sirala import baslik_tahmin, veri_kutusu
+        g = self.izgara()
+        sec = g.secimler
+        if len(sec) > 1:
+            QMessageBox.warning(self, APP_NAME, "Bu komut çoklu seçimde kullanılamaz.")
+            return None
+        ar = sec[0]
+        tek = ar.ilk_satir == ar.son_satir and ar.ilk_sutun == ar.son_sutun
+        if tek:
+            ar = bitisik_bolge(g.sayfa, *g.aktif)
+        else:
+            ar = veri_kutusu(g.sayfa, ar) or ar
+            bolge = bitisik_bolge(g.sayfa, *g.aktif)
+            disari = (bolge.ilk_sutun < ar.ilk_sutun or bolge.son_sutun > ar.son_sutun
+                      or bolge.ilk_satir < ar.ilk_satir or bolge.son_satir > ar.son_satir)
+            if ar.ilk_sutun == ar.son_sutun and disari:
+                if genislet is None:
+                    genislet = self._siralama_uyarisi()
+                    if genislet is None:
+                        return None
+                if genislet:
+                    ar = bolge
+        return ar, baslik_tahmin(g.sayfa, ar), g.aktif[1]
+
+    def _siralama_uygula(self, aralik, anahtarlar, baslik, buyuk_kucuk=False, yon="satir") -> bool:
+        from ..model.adres import Aralik
+        from ..model.komutlar import Sirala
+        from ..model.sirala import siralama_plani
+        g = self.izgara()
+        try:
+            plan = siralama_plani(g.sayfa, aralik, anahtarlar, baslik=baslik, buyuk_kucuk=buyuk_kucuk, yon=yon)
+        except ValueError as e:
+            QMessageBox.warning(self, APP_NAME, str(e))
+            return False
+        if not plan:
+            return False
+        if yon == "satir":
+            veri = Aralik(aralik.ilk_satir + (1 if baslik else 0), aralik.ilk_sutun,
+                          aralik.son_satir, aralik.son_sutun)
+        else:
+            veri = Aralik(aralik.ilk_satir, aralik.ilk_sutun + (1 if baslik else 0),
+                          aralik.son_satir, aralik.son_sutun)
+        self.yigin.calistir(Sirala(g.sayfa, veri, plan, yon))
+        g._guncelle()
+        return True
+
+    def sirala_hizli(self, artan: bool, genislet=None) -> bool:
+        """A→Z / Z→A: anahtar etkin hücrenin sütunu; başlık satırı tahmin edilir."""
+        from ..model.sirala import SiralamaAnahtari
+        alan = self._siralama_alani(genislet)
+        if alan is None:
+            return False
+        aralik, baslik, sutun = alan
+        if not aralik.ilk_sutun <= sutun <= aralik.son_sutun:
+            sutun = aralik.ilk_sutun
+        return self._siralama_uygula(aralik, [SiralamaAnahtari(sutun, artan)], baslik)
+
+    def sirala_ozel(self, sonuc=None) -> bool:
+        """Özel Sıralama penceresi. `sonuc`: testler için pencereyi atlayan (anahtarlar, başlık, büyük/küçük,
+        yön) demeti."""
+        from .sirala_penceresi import SiralaPenceresi
+        alan = self._siralama_alani(True)
+        if alan is None:
+            return False
+        aralik, baslik, sutun = alan
+        if sonuc is None:
+            pen = SiralaPenceresi(self.izgara().sayfa, aralik, sutun, self, baslik)
+            if pen.exec() != pen.Accepted:
+                return False
+            sonuc = (pen.anahtarlar(), pen.baslik(), pen.buyuk_kucuk(), pen.yon())
+        anahtarlar, baslik, bk, yon = sonuc
+        return self._siralama_uygula(aralik, anahtarlar, baslik, bk, yon)
 
     def git_ac(self):
         metin, tamam = QInputDialog.getText(self, "Git", "Başvuru:", text="")

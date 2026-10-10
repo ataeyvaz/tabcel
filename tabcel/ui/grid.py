@@ -1773,6 +1773,13 @@ class Izgara(QAbstractScrollArea):
         m.addAction("İçeriği temizle", self.secimi_temizle)
         m.addAction("Biçimleri temizle", self.bicimleri_temizle)
         m.addAction("Tümünü temizle", self.tumunu_temizle)
+        pencere = self.window()
+        if hasattr(pencere, "sirala_hizli"):
+            m.addSeparator()
+            sm = m.addMenu("Sırala")
+            sm.addAction("A'dan Z'ye Sırala", lambda: pencere.sirala_hizli(True))
+            sm.addAction("Z'den A'ya Sırala", lambda: pencere.sirala_hizli(False))
+            sm.addAction("Özel Sıralama…", pencere.sirala_ozel)
         return m
 
     # --- gizli satır/sütun atlama ---

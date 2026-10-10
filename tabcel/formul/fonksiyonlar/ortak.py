@@ -12,7 +12,7 @@ from ...model.deger import Hata
 from ..degerler import (
     BOS_ARG, AralikDeger, Dizi, _boyut, _okuyucu, _yay,
 )
-from ..donustur import mantiga, metne, sayi_metninden, sayiya
+from ..donustur import karsilastir, mantiga, metne, sayi_metninden, sayiya
 from ..yerel import tr_kucuk
 from . import fonksiyon
 
@@ -213,10 +213,10 @@ def kriter(olcut) -> Callable[[object], bool]:
         if op == "=":
             return lambda v: isinstance(v, str) and eslesir(v)
         return lambda v: not (isinstance(v, str) and eslesir(v))
-    h = tr_kucuk(geri)
+    # sıra karşılaştırması Türkçe harmanlamayla (`"<m"` ölçütü ç, ğ, ı, ö, ş, ü'yü doğru yere koyar)
     k = {"<": lambda a, c: a < c, ">": lambda a, c: a > c,
          "<=": lambda a, c: a <= c, ">=": lambda a, c: a >= c}[op]
-    return lambda v: isinstance(v, str) and k(tr_kucuk(v), h)
+    return lambda v: isinstance(v, str) and k(karsilastir(v, geri), 0)
 
 
 def _hata_adindan(metin: str):
