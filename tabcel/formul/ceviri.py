@@ -30,6 +30,8 @@ def _fonksiyon_adi(yazilan: str, kaynak: Yerel) -> str:
     (büyük harf); bilinmeyen ad büyük harfle kalır (değerlendirmede #AD?)."""
     if yazilan.upper().startswith("_XLFN."):            # .xlsx'teki yeni fonksiyon öneki
         yazilan = yazilan[6:]
+        if yazilan.upper().startswith("_XLWS."):         # `_xlfn._xlws.SORT` / `FILTER`
+            yazilan = yazilan[6:]
     if kaynak is TR:
         en = adlar.ingilizcesi(yazilan)
         if en:

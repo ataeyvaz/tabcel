@@ -8,10 +8,12 @@ Bilinen sınırlar (her açılışta `Rapor`'a yazılır, arayüz bilgi çubuğu
 - kaydedilen formüllerin önbellek değeri yazılmaz (Excel açınca yeniden hesaplar)
 - tema renkleri varsayılan Office teması varsayımıyla RGB'ye çevrilir (§8b)
 """
+import math
 import os
 import re
 import zipfile
 from copy import copy
+from xml.etree import ElementTree
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -20,6 +22,7 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.styles.colors import COLOR_INDEX
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
+from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.utils.datetime import to_excel
 
 from ..formul import ceviri
@@ -27,7 +30,7 @@ from ..formul.sozcuk import FormulHatasi
 from ..model import olcu
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
-from ..model.sayfa import CalismaKitabi, Hucre
+from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
 from ..model.sayfa_yapisi import SayfaYapisi
 from ..model.stil import Kenarlik, Stil
 
@@ -47,13 +50,53 @@ _DIKEY_OKU.update({"justify": "orta", "distributed": "orta"})
 _ALTI_YAZ = {"tek": "single", "cift": "double"}
 _ALTI_OKU = {"single": "tek", "double": "cift", "singleAccounting": "tek", "doubleAccounting": "cift"}
 
-# Dosyada `_xlfn.` öneki isteyen (Excel 2010+ ile gelen) işlevler
-_XLFN = {"CONCAT", "DAYS", "IFNA", "IFS", "MAXIFS", "MINIFS", "SWITCH", "TEXTJOIN", "XLOOKUP", "XMATCH", "XOR"}
-_XLFN_YAZ = re.compile(r"\b(" + "|".join(sorted(_XLFN)) + r")\(", re.IGNORECASE)
-_XLFN_OKU = re.compile(r"_xlfn\.", re.IGNORECASE)
+# Dosyada `_xlfn.` öneki isteyen (Excel 2010+ ile gelen) işlevler. Motor kayıtlı olmayanlar da buradadır:
+# `_xlfn.STDEV.S` dosyadan okununca ön ek motorda düşer (`formul/ceviri.py`), yazarken geri eklenmezse Excel
+# işlevi tanımaz (#AD?). Liste Microsoft'un "_xlfn. öneki görünüyor" belgesinden; tam doğrulanmadı (§8b).
+_XLFN = {
+    "CONCAT", "DAYS", "IFNA", "IFS", "MAXIFS", "MINIFS", "SWITCH", "TEXTJOIN", "XLOOKUP", "XMATCH", "XOR",
+    "ACOT", "ACOTH", "ARABIC", "BASE", "BETA.DIST", "BETA.INV", "BINOM.DIST", "BINOM.DIST.RANGE", "BINOM.INV",
+    "BITAND", "BITLSHIFT", "BITOR", "BITRSHIFT", "BITXOR", "CEILING.MATH", "CEILING.PRECISE", "CHISQ.DIST",
+    "CHISQ.DIST.RT", "CHISQ.INV", "CHISQ.INV.RT", "CHISQ.TEST", "CONFIDENCE.NORM", "CONFIDENCE.T", "COT", "COTH",
+    "COVARIANCE.P", "COVARIANCE.S", "CSC", "CSCH", "DECIMAL", "ERF.PRECISE", "ERFC.PRECISE", "EXPON.DIST",
+    "F.DIST", "F.DIST.RT", "F.INV", "F.INV.RT", "F.TEST", "FLOOR.MATH", "FLOOR.PRECISE", "FORECAST.LINEAR",
+    "FORMULATEXT", "GAMMA", "GAMMA.DIST", "GAMMA.INV", "GAMMALN.PRECISE", "GAUSS", "HYPGEOM.DIST", "ISFORMULA",
+    "ISOWEEKNUM", "LOGNORM.DIST", "LOGNORM.INV", "MODE.MULT", "MODE.SNGL", "MUNIT", "NEGBINOM.DIST", "NORM.DIST",
+    "NORM.INV", "NORM.S.DIST", "NORM.S.INV", "NUMBERVALUE", "PDURATION", "PERCENTILE.EXC", "PERCENTILE.INC",
+    "PERCENTRANK.EXC", "PERCENTRANK.INC", "PERMUTATIONA", "PHI", "POISSON.DIST", "QUARTILE.EXC", "QUARTILE.INC",
+    "RANK.AVG", "RANK.EQ", "RRI", "SEC", "SECH", "SHEET", "SHEETS", "SKEW.P", "STDEV.P", "STDEV.S", "T.DIST",
+    "T.DIST.2T", "T.DIST.RT", "T.INV", "T.INV.2T", "T.TEST", "UNICHAR", "UNICODE", "VAR.P", "VAR.S",
+    "WEIBULL.DIST", "Z.TEST", "UNIQUE", "SEQUENCE", "RANDARRAY", "SORTBY", "LET", "LAMBDA", "TEXTBEFORE",
+    "TEXTAFTER", "TEXTSPLIT", "VSTACK", "HSTACK", "TAKE", "DROP", "CHOOSECOLS", "CHOOSEROWS", "TOCOL", "TOROW",
+    "EXPAND", "WRAPCOLS", "WRAPROWS", "XMATCH", "BYROW", "BYCOL", "MAP", "REDUCE", "SCAN", "MAKEARRAY",
+}
+_XLWS = {"SORT", "FILTER"}                      # dosyada `_xlfn._xlws.` önekiyle
+_FN_ADI = re.compile(r"\b([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)\(")
+_XLFN_OKU = re.compile(r"_xlfn\.(?:_xlws\.)?", re.IGNORECASE)
 
 # Varsayılan Office teması (belirsiz: yeni Excel 365 teması farklı olabilir — surec.md §8b)
-_TEMA = ["FFFFFF", "000000", "E7E6E6", "44546A", "4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5", "70AD47"]
+_TEMA = ["FFFFFF", "000000", "E7E6E6", "44546A", "4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5", "70AD47",
+         "0563C1", "954F72"]                                       # son ikisi: köprü / izlenmiş köprü
+_TEMA_SIRA = ("lt1", "dk1", "lt2", "dk2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6",
+              "hlink", "folHlink")
+
+
+def _tema_oku(wb) -> list:
+    """Dosyanın kendi temasından (`xl/theme/theme1.xml`) 12 renk; okunamayan varsayılan Office temasıyla kalır."""
+    tema = list(_TEMA)
+    kaynak = getattr(wb, "loaded_theme", None)
+    if not kaynak:
+        return tema
+    try:
+        xml = kaynak.decode("utf-8", errors="replace") if isinstance(kaynak, bytes) else str(kaynak)
+        for i, ad in enumerate(_TEMA_SIRA):
+            m = re.search(rf"<a:{ad}>\s*<a:(?:srgbClr val=\"([0-9A-Fa-f]{{6}})\"|sysClr [^>]*lastClr=\"([0-9A-Fa-f]{{6}})\")",
+                          xml)
+            if m:
+                tema[i] = (m.group(1) or m.group(2)).upper()
+    except Exception:                                            # bozuk tema: varsayılan
+        pass
+    return tema
 
 _KAGIT_KODU = {"Letter": 1, "Legal": 5, "A3": 8, "A4": 9, "A5": 11}
 _KAGIT_ADI = {v: k for k, v in _KAGIT_KODU.items()}
@@ -88,6 +131,14 @@ _TARA = (
     (re.compile(r"^xl/externalLinks/"), "dış bağlantı", True),
     (re.compile(r"^xl/(comments|threadedComments)"), "yorum/not", True),
     (re.compile(r"^xl/slicers/|^xl/timelines/"), "dilimleyici", True),
+    (re.compile(r"^xl/tables/"), "Excel tablosu", True),
+)
+# sayfa XML'inde aranan, openpyxl ile korunamayan/bozulan öğeler
+_SAYFA_ISARETLERI = (
+    (b"<conditionalFormatting", "koşullu biçim"), (b"<dataValidations", "veri doğrulama"),
+    (b"<autoFilter", "filtre"), (b"<hyperlinks", "köprü"), (b"outlineLevel=", "satır/sütun gruplama"),
+    (b"<headerFooter", "üst/alt bilgi"), (b"<sheetProtection", "sayfa koruması"),
+    (b't="array"', "dizi formülü (normal formüle dönüştürülür)"),
 )
 
 
@@ -105,12 +156,9 @@ def tara(yol: str) -> Rapor:
             for ad in adlar:
                 if re.match(r"^xl/worksheets/sheet\d+\.xml$", ad):
                     xml = z.read(ad)
-                    if b"<conditionalFormatting" in xml:
-                        bulunan["koşullu biçim"] = True
-                    if b"<dataValidations" in xml:
-                        bulunan["veri doğrulama"] = True
-                    if b"<autoFilter" in xml:
-                        bulunan["filtre"] = True
+                    for isaret, ne in _SAYFA_ISARETLERI:
+                        if isaret in xml and (isaret != b't="array"' or re.search(rb'<f[^>]*t="array"', xml)):
+                            bulunan[ne] = True
             if re.search(rb'<definedName[^>]*name="(?!_xlnm)', z.read("xl/workbook.xml")):
                 bulunan["tanımlı ad"] = True
     except (zipfile.BadZipFile, KeyError, OSError):
@@ -121,7 +169,7 @@ def tara(yol: str) -> Rapor:
 
 
 # --- renk ---------------------------------------------------------------------------------------
-def _renk_oku(c) -> Optional[str]:
+def _renk_oku(c, tema=_TEMA) -> Optional[str]:
     """openpyxl `Color` → '#RRGGBB' (tema/indeksli renkler çözülür); belirsizse None."""
     if c is None:
         return None
@@ -130,8 +178,8 @@ def _renk_oku(c) -> Optional[str]:
             return "#" + c.rgb[-6:].upper()
         if c.type == "indexed" and isinstance(c.indexed, int) and 0 <= c.indexed < len(COLOR_INDEX):
             return "#" + COLOR_INDEX[c.indexed][-6:].upper()
-        if c.type == "theme" and isinstance(c.theme, int) and 0 <= c.theme < len(_TEMA):
-            return _renk_ton("#" + _TEMA[c.theme], c.tint or 0.0)
+        if c.type == "theme" and isinstance(c.theme, int) and 0 <= c.theme < len(tema):
+            return _renk_ton("#" + tema[c.theme], c.tint or 0.0)
     except (AttributeError, TypeError, ValueError):
         pass
     return None
@@ -165,19 +213,19 @@ def _stil_yaz(st: Stil):
     return font, fill, border, align, st.sayi_bicimi
 
 
-def _stil_oku(font, fill, border, align, sayi_bicimi: str) -> Stil:
+def _stil_oku(font, fill, border, align, sayi_bicimi: str, tema=_TEMA) -> Stil:
     yazi_tipi = font.name if font and font.name and font.name != VARSAYILAN_YAZI_TIPI else None
     boyut = float(font.sz) if font and font.sz and float(font.sz) != VARSAYILAN_BOYUT else None
     if boyut is not None and not 1 <= boyut <= 409:
         boyut = None
     dolgu = None
     if fill is not None and fill.fill_type == "solid":
-        dolgu = _renk_oku(fill.fgColor)
+        dolgu = _renk_oku(fill.fgColor, tema)
     k = {}
     if border is not None:
         for yon, kn in (("ust", border.top), ("alt", border.bottom), ("sol", border.left), ("sag", border.right)):
             if kn is not None and kn.style:
-                k[yon] = (_CIZGI_OKU.get(kn.style, "ince"), _renk_oku(kn.color) or "#000000")
+                k[yon] = (_CIZGI_OKU.get(kn.style, "ince"), _renk_oku(kn.color, tema) or "#000000")
     yatay = _YATAY_OKU.get(getattr(align, "horizontal", None) or "general", "genel")
     dikey = _DIKEY_OKU.get(getattr(align, "vertical", None) or "bottom", "alt")
     girinti = int(getattr(align, "indent", 0) or 0)
@@ -185,18 +233,27 @@ def _stil_oku(font, fill, border, align, sayi_bicimi: str) -> Stil:
         yazi_tipi=yazi_tipi, boyut=boyut,
         kalin=bool(font and font.b), italik=bool(font and font.i), ustu_cizili=bool(font and font.strike),
         alti_cizili=_ALTI_OKU.get(font.u, "yok") if font and font.u else "yok",
-        yazi_rengi=_renk_oku(font.color) if font else None, dolgu=dolgu, kenar=Kenarlik(**k),
+        yazi_rengi=_renk_oku(font.color, tema) if font else None, dolgu=dolgu, kenar=Kenarlik(**k),
         yatay=yatay, dikey=dikey, girinti=min(max(girinti, 0), 15),
         kaydir=bool(getattr(align, "wrap_text", False)), sayi_bicimi=sayi_bicimi or "General")
 
 
 # --- formül ---------------------------------------------------------------------------------------
+def _oneki_ekle(g) -> str:
+    ad = g.group(1).upper()
+    if ad in _XLWS:
+        return "_xlfn._xlws." + ad + "("
+    if ad in _XLFN:
+        return "_xlfn." + ad + "("
+    return g.group(0)
+
+
 def _formul_yaz(formul: str, kitap) -> str:
     """Saklanan formül → dosyadaki metin (İngilizce, sayfa adlı, gerekli `_xlfn.` önekleriyle)."""
     m = ceviri.disa(formul, kitap)
     parcalar = m.split('"')               # çift tırnaklı metin sabitlerine dokunma (çift sayı = dışarıda)
     for i in range(0, len(parcalar), 2):
-        parcalar[i] = _XLFN_YAZ.sub(lambda g: "_xlfn." + g.group(1).upper() + "(", parcalar[i])
+        parcalar[i] = _FN_ADI.sub(_oneki_ekle, parcalar[i])
     return '"'.join(parcalar)
 
 
@@ -267,8 +324,8 @@ def _yapi_oku(ws) -> SayfaYapisi:
 # ayrıştırmak açılışın yarısını yiyordu. Yalnız basit (sayı, işleç, hücre başvurusu, işlev çağrısı) formüller
 # için, hücre konumuna göre bağıl (R1C1 benzeri) bir anahtar çıkarılır; ilk örnek tam çevrilir ve sonuç
 # metne ÖZDEŞ çıkarsa (sayfa başvurusu/ad/küçük harf yok) aynı anahtarlı diğerleri çevrilmeden kabul edilir.
-_BASIT = re.compile(r"(?:\s+|\d+(?:\.\d+)?|[-+*/^&=<>(),:%]|\$?[A-Z]{1,3}\$?\d+|[A-Z][A-Z0-9.]*(?=\())+")
-_BASV = re.compile(r"(?<![A-Z0-9.$])(\$?)([A-Z]{1,3})(\$?)(\d+)(?![\w(.])")
+_BASIT = re.compile(r"(?:\s+|(?:0|[1-9]\d*)(?:\.\d+)?(?!\d)|[-+*/^&=<>(),:%]|\$?[A-Z]{1,3}\$?[1-9]\d*|[A-Z][A-Z0-9.]*(?=\())+")
+_BASV = re.compile(r"(?<![A-Z0-9.$])(\$?)([A-Z]{1,3})(\$?)([1-9]\d*)(?![\w(.])")
 
 
 def _sutun_no(harf: str) -> int:
@@ -317,6 +374,25 @@ def _hucre_degeri(h: Hucre, kitap, r: int = 0, c: int = 0, onb: Optional[_Formul
     return v, False
 
 
+MAKS_METIN = 32767
+
+
+def _guvenli_deger(deger, rapor: Rapor, sayac: dict):
+    """openpyxl'in/Excel'in kabul etmediği değerleri düzeltir: XML'de geçersiz denetim karakterleri silinir,
+    32767 karakterden uzun metin kırpılır, NaN/sonsuz `#NUM!` olur. Düzeltme sayıları `sayac`ta."""
+    if isinstance(deger, str):
+        if ILLEGAL_CHARACTERS_RE.search(deger):
+            deger = ILLEGAL_CHARACTERS_RE.sub("", deger)
+            sayac["karakter"] = sayac.get("karakter", 0) + 1
+        if len(deger) > MAKS_METIN:
+            deger = deger[:MAKS_METIN]
+            sayac["uzun"] = sayac.get("uzun", 0) + 1
+    elif isinstance(deger, float) and not math.isfinite(deger):
+        deger = "#NUM!"
+        sayac["sonsuz"] = sayac.get("sonsuz", 0) + 1
+    return deger
+
+
 def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
     """Kitabı `yol`a yazar (önce geçici dosya, sonra yerine koyma: yarıda kalan kayıt dosyayı bozmaz)."""
     rapor = Rapor()
@@ -326,6 +402,7 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
     onbellek: Dict[int, tuple] = {}
     stil_dizisi: Dict[int, object] = {}          # stil kimliği → openpyxl `StyleArray` (hücre başına 5 atama yerine kopya)
     formul_onb = _FormulOnbellek()
+    sayac: dict = {}
 
     def stil_nesneleri(kimlik: int):
         t = onbellek.get(kimlik)
@@ -352,6 +429,7 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
             deger, formul = _hucre_degeri(h, kitap, r, c, formul_onb)
             if deger is None:
                 continue
+            deger = _guvenli_deger(deger, rapor, sayac)
             hc = ws.cell(row=r, column=c)
             hc.value = deger
             if isinstance(h.deger, str) and h.formul is None:
@@ -361,14 +439,30 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
                 uygula(ws.cell(row=r, column=c), k)
         for r, k in sayfa.satir_stil.items():
             uygula(ws.row_dimensions[r], k)
-        for c, k in sayfa.sutun_stil.items():
-            uygula(ws.column_dimensions[get_column_letter(c)], k)
-        for c, px in sayfa.sutun_genislik.items():
-            ws.column_dimensions[get_column_letter(c)].width = olcu.px_karakter(px)
+        # sütun bilgisi: aynı özellikli ardışık sütunlar tek `<col min max>` olur ("K:XFD gizli" 16 bin kayıt olmaz)
+        sutunlar = sorted(set(sayfa.sutun_stil) | set(sayfa.sutun_genislik) | sayfa.gizli_sutun)
+
+        def sutun_bilgisi(c):
+            return (sayfa.sutun_stil.get(c, 0), sayfa.sutun_genislik.get(c), c in sayfa.gizli_sutun)
+        i = 0
+        while i < len(sutunlar):
+            c1 = c2 = sutunlar[i]
+            b = sutun_bilgisi(c1)
+            i += 1
+            while i < len(sutunlar) and sutunlar[i] == c2 + 1 and sutun_bilgisi(sutunlar[i]) == b:
+                c2 = sutunlar[i]
+                i += 1
+            cd = ws.column_dimensions[get_column_letter(c1)]
+            cd.min, cd.max = c1, c2
+            uygula(cd, b[0])
+            if b[1] is not None:
+                cd.width = olcu.px_karakter(b[1])
+            elif b[2]:
+                cd.width = olcu.px_karakter(Sayfa.VARSAYILAN_SUTUN_GENISLIGI)
+            if b[2]:
+                cd.hidden = True
         for r, px in sayfa.satir_yukseklik.items():
             ws.row_dimensions[r].height = olcu.px_punto(px)
-        for c in sayfa.gizli_sutun:
-            ws.column_dimensions[get_column_letter(c)].hidden = True
         for r in sayfa.gizli_satir:
             ws.row_dimensions[r].hidden = True
         for b in sayfa.birlesimler:
@@ -379,6 +473,12 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         ws.sheet_view.showGridLines = sayfa.kilavuz
         _yapi_yaz(ws, sayfa.sayfa_yapisi)
 
+    if sayac.get("karakter"):
+        rapor.ekle(f"{sayac['karakter']} hücrede dosyada geçersiz olan denetim karakterleri silindi.")
+    if sayac.get("uzun"):
+        rapor.ekle(f"{sayac['uzun']} hücrede 32.767 karakterden uzun metin kırpıldı.")
+    if sayac.get("sonsuz"):
+        rapor.ekle(f"{sayac['sonsuz']} hücredeki sonsuz/geçersiz sayı #SAYI! olarak yazıldı.")
     gecici = f"{yol}.{os.getpid()}.tmp"
     try:
         wb.save(gecici)
@@ -399,6 +499,36 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
 # --- okuma ----------------------------------------------------------------------------------------
 def _aralik(hucre_araligi) -> Aralik:
     return Aralik(hucre_araligi.min_row, hucre_araligi.min_col, hucre_araligi.max_row, hucre_araligi.max_col)
+
+
+def _ozel_yukseklikler(yol: str) -> Optional[Dict[str, set]]:
+    """Sayfa adı → elle ayarlanmış (`customHeight`) satırlar; Excel'in otomatik ayarladığı satırlar da `ht`
+    taşır ama özel değildir (openpyxl bu ayrımı atar). Okunamazsa None (hepsi elle sayılır)."""
+    try:
+        with zipfile.ZipFile(yol) as z:
+            ns = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+                  "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
+            wbx = ElementTree.fromstring(z.read("xl/workbook.xml"))
+            rels = ElementTree.fromstring(z.read("xl/_rels/workbook.xml.rels"))
+            hedef = {r.get("Id"): r.get("Target") for r in rels}
+            sonuc: Dict[str, set] = {}
+            for sh in wbx.find("m:sheets", ns):
+                h = hedef.get(sh.get("{%s}id" % ns["r"]))
+                if not h:
+                    return None
+                p = h.lstrip("/") if h.startswith("/") else "xl/" + h
+                xml = z.read(p)
+                satirlar = set()
+                for m in re.finditer(rb"<row\b[^>]*>", xml):
+                    etiket = m.group(0)
+                    if re.search(rb'customHeight="(?:1|true)"', etiket):
+                        n = re.search(rb'\br="(\d+)"', etiket)
+                        if n:
+                            satirlar.add(int(n.group(1)))
+                sonuc[sh.get("name")] = satirlar
+            return sonuc
+    except Exception:
+        return None
 
 
 def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
@@ -427,17 +557,22 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         else:
             kitap.yeniden_adlandir(s, ad)
         if ws.sheet_state != "visible":
-            rapor.ekle(f"Gizli sayfa '{ad}' görünür yapıldı.")
+            rapor.ekle(f"Gizli sayfa '{ad}' görünür yapıldı; kaydederseniz gizlilik kaybolur.", True)
         sayfalar.append((ws, s))
 
     stil_onb: Dict[tuple, int] = {}
+    tema = _tema_oku(wb)
+    ozel_yuk = _ozel_yukseklikler(yol)
+    if wb.epoch.year == 1904:
+        rapor.ekle("Bu dosya 1904 tarih sistemini kullanıyor; tarih biçimli hücreler doğru çevrildi, ancak tarih "
+                   "biçimi olmayıp tarih olarak kullanılan sayılar 1.462 gün kayabilir.")
 
     def kimlik_al(hc_veya_boyut) -> int:
         t = hc_veya_boyut
         anahtar = tuple(t._style)
         k = stil_onb.get(anahtar)
         if k is None:
-            st = _stil_oku(t.font, t.fill, t.border, t.alignment, t.number_format)
+            st = _stil_oku(t.font, t.fill, t.border, t.alignment, t.number_format, tema)
             k = stil_onb[anahtar] = havuz.kimlik(st)
         return k
 
@@ -445,43 +580,41 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
     formul_onb = _FormulOnbellek()
     for ws, s in sayfalar:
         yeni, stiller = {}, {}
-        for satir in ws.iter_rows():
-            for hc in satir:
-                if type(hc).__name__ == "MergedCell":
-                    continue
-                r, c = hc.row, hc.column
-                v = hc.value
-                if v is not None:
-                    if hc.data_type == "f" or (isinstance(v, str) and hc.data_type == "f"):
-                        metin = v if isinstance(v, str) else getattr(v, "text", None)
-                        if not isinstance(metin, str):            # veri tablosu vb.: desteklenmez
-                            rapor.ekle("Desteklenmeyen formül türleri (veri tablosu) değere çevrilemedi.")
-                            continue
-                        if not metin.startswith("="):
-                            metin = "=" + metin
-                        try:
-                            yeni[(r, c)] = Hucre(None, formul_onb.cevir(
-                                metin, r, c, lambda m: _formul_oku(m, kitap)))
-                        except FormulHatasi:
-                            bozuk_formul += 1
-                            yeni[(r, c)] = Hucre(metin)
-                    elif hc.data_type == "e":
-                        yeni[(r, c)] = Hucre(hata_bul(str(v)) or Hata(str(v)))
-                    elif isinstance(v, bool):
-                        yeni[(r, c)] = Hucre(v)
-                    elif isinstance(v, (int, float)):
-                        yeni[(r, c)] = Hucre(float(v))
-                    elif isinstance(v, str):
-                        yeni[(r, c)] = Hucre(v)
-                    else:                                         # tarih/saat/süre → seri sayı
-                        try:
-                            yeni[(r, c)] = Hucre(float(to_excel(v, wb.epoch)))
-                        except (TypeError, ValueError, OverflowError):
-                            rapor.ekle(f"'{ws.title}' sayfasında okunamayan tarih değerleri atlandı.")
-                if hc.has_style:
-                    k = kimlik_al(hc)
-                    if k:
-                        stiller[(r, c)] = k
+        for (r, c), hc in ws._cells.items():          # yalnız var olan hücreler (iter_rows seyrek dosyada tüm kutuyu gezer)
+            if type(hc).__name__ == "MergedCell":
+                continue
+            v = hc.value
+            if v is not None:
+                if hc.data_type == "f" or (isinstance(v, str) and hc.data_type == "f"):
+                    metin = v if isinstance(v, str) else getattr(v, "text", None)
+                    if not isinstance(metin, str):            # veri tablosu vb.: desteklenmez
+                        rapor.ekle("Desteklenmeyen formül türleri (veri tablosu) değere çevrilemedi.")
+                        continue
+                    if not metin.startswith("="):
+                        metin = "=" + metin
+                    try:
+                        yeni[(r, c)] = Hucre(None, formul_onb.cevir(
+                            metin, r, c, lambda m: _formul_oku(m, kitap)))
+                    except FormulHatasi:
+                        bozuk_formul += 1
+                        yeni[(r, c)] = Hucre(metin)
+                elif hc.data_type == "e":
+                    yeni[(r, c)] = Hucre(hata_bul(str(v)) or Hata(str(v)))
+                elif isinstance(v, bool):
+                    yeni[(r, c)] = Hucre(v)
+                elif isinstance(v, (int, float)):
+                    yeni[(r, c)] = Hucre(float(v))
+                elif isinstance(v, str):
+                    yeni[(r, c)] = Hucre(v)
+                else:                                         # tarih/saat/süre → seri sayı
+                    try:
+                        yeni[(r, c)] = Hucre(float(to_excel(v)))
+                    except (TypeError, ValueError, OverflowError):
+                        rapor.ekle(f"'{ws.title}' sayfasında okunamayan tarih değerleri atlandı.")
+            if hc.has_style:
+                k = kimlik_al(hc)
+                if k:
+                    stiller[(r, c)] = k
         s.toplu_yaz(yeni)
         satir_st, sutun_st = {}, {}
         for r, rd in ws.row_dimensions.items():
@@ -489,7 +622,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
                 k = kimlik_al(rd)
                 if k:
                     satir_st[r] = k
-            if rd.height is not None and rd.customHeight is not False:
+            if rd.height is not None and (ozel_yuk is None or r in ozel_yuk.get(ws.title, ())):
                 s.satir_yukseklik[r] = olcu.yukseklik_sinirla(olcu.punto_px(rd.height))
             if rd.hidden:
                 s.gizli_satir.add(r)
@@ -500,15 +633,25 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
             except ValueError:
                 continue
             kim = kimlik_al(cd) if cd.has_style else 0
-            for c in range(c1, c2 + 1) if c2 - c1 < 1000 else (c1,):
+            for c in range(c1, c2 + 1):
                 if kim:
                     sutun_st[c] = kim
-                if cd.width is not None and cd.customWidth is not False:
+                if cd.width is not None and cd.width != 13:       # 13: openpyxl'in genişliksiz `<col>` varsayılanı
                     s.sutun_genislik[c] = olcu.genislik_sinirla(olcu.karakter_px(cd.width))
                 if cd.hidden:
                     s.gizli_sutun.add(c)
         s.bicim_yaz(stiller, satir_st, sutun_st)
-        s.birlesim_yukle([_aralik(b) for b in ws.merged_cells.ranges])
+        birlesimler = []
+        for b in ws.merged_cells.ranges:
+            a = _aralik(b)
+            if (a.ilk_satir, a.ilk_sutun) == (a.son_satir, a.son_sutun):
+                continue
+            if any(not (a.son_satir < x.ilk_satir or a.ilk_satir > x.son_satir or a.son_sutun < x.ilk_sutun
+                        or a.ilk_sutun > x.son_sutun) for x in birlesimler):
+                rapor.ekle("Çakışan birleşimler (dosya bozuk) atlandı.")
+                continue
+            birlesimler.append(a)
+        s.birlesim_yukle(birlesimler)
         fp = ws.freeze_panes
         dondur = None
         if fp:
@@ -523,7 +666,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         s.sayfa_yapisi = _yapi_oku(ws)
         tab = ws.sheet_properties.tabColor
         if tab is not None:
-            s.sekme_rengi = _renk_oku(tab)
+            s.sekme_rengi = _renk_oku(tab, tema)
     if bozuk_formul:
         rapor.ekle(f"{bozuk_formul} formül çevrilemedi, metin olarak bırakıldı.")
     return kitap, rapor

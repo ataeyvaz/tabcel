@@ -2037,3 +2037,42 @@ Açılış (model + motor hesabı) 8 → **5,5 sn** (hedef < 10 ✅); .xlsx kay�
 | 4 | Çökme sonrası kurtarma | Değişiklik yap, 2 dk bekle, Görev Yöneticisi'nden sonlandır, yeniden aç | ⏳ |
 | 5 | Büyük dosyada açılış | 100.000 satırlık gerçek dosya; "bekleyin" penceresi | ⏳ |
 | 6 | CSV'yi Türkçe Excel'de aç | Tabcel'in yazdığı `;` + BOM CSV'yi çift tıkla | ⏳ |
+
+
+---
+
+## 14. Faz 4 gözden geçirmesi (Opus 5.5) — 2026-10-09
+
+Salt okunur Opus 5.5 alt ajanı (58 araç çağrısı, ~25 dk; openpyxl ile üretilmiş dosyalar, 30.000 rastgele formül, 12.800 rastgele hızlı-yol karşılaştırması). **Tavsiye: koşullu evet** (1–3 ve 4, 6, 8, 10 önce). Bulgular bizde yeniden üretilip düzeltildi; gerileme testleri `testler/test_opus_faz4.py` (36 test). Testler 1993 → **2028**, mevcut hiçbir test değişmedi.
+
+| # | Önem | Bulgu | Sonuç |
+|---|---|---|---|
+| 1 | KRİTİK | 1904 tarih sistemli dosyada tüm tarihler 4 yıl 1 gün kayıyordu (`to_excel(v, wb.epoch)`) | ✅ takvim tarihi korunur (`to_excel(v)`); 1904 dosyada uyarı (biçimsiz sayılar 1.462 gün kayabilir) |
+| 2 | KRİTİK | Kayıt `XlsxHatasi` dışı istisnayla (örn. hücrede `\x0b`: `IllegalCharacterError`) düşünce **pencere yine de kapanıyor**, veri kaybolur, kurtarma kopyası da yazılamıyor | ✅ geçersiz denetim karakterleri silinir + uyarı; 32.767 karakterden uzun metin kırpılır + uyarı; NaN/sonsuz `#SAYI!`; `_kaydet_yola` ve `otokayit_yap` her istisnayı yakalar; `closeEvent` varsayılan **ignore**, yalnız başarıda kabul; kayıt sürerken (arka plan) kapatma ertelenir |
+| 3 | KRİTİK | Seyrek dosyada açılış takılıyor (`iter_rows` tüm kutu): 3 hücreli 4,9 KB dosya 24,8 sn; A1+XFD1048576 → 1,6 GB | ✅ `ws._cells` ile yalnız var olan hücreler; aynı dosya < 5 sn (test) |
+| 4 | ORTA | `_xlfn.` öneki yalnız 11 işlev için geri ekleniyordu; `STDEV.S`, `_xlfn._xlws.SORT` bozuluyordu | ✅ ~150 işlevlik liste (Microsoft belgesinden; tam doğrulanmadı §8b-51), `_xlws.` desteği, `ceviri._fonksiyon_adi` `_xlws.` öneki de düşer; gidiş-dönüşte metin birebir |
+| 5 | ORTA | Dizi formülleri (CSE/çok hücreli) normal formüle dönüşüyor; çok hücreli dizinin diğer hücreleri boş | ➖ **açılışta uyarı** ve kaydederken onay (`veri_kaybi`); dizi anlamıyla yazma yok (Faz 8, taşma ile) |
+| 6 | ORTA | Excel Tablosu, köprü, gruplama (outline), üst/alt bilgi, sayfa koruması **uyarısız** kayboluyor | ✅ hepsi taranır, uyarılır, kaydederken onay istenir; (dosyayı biz yazınca uyarı çıkmaz — test) |
+| 7 | ORTA | 1000'den geniş `<col min max>` aralığında yalnız ilk sütun alınıyor ("K:XFD gizli" → K) | ✅ tüm aralık okunur; yazarken ardışık aynı özellikli sütunlar tek `<col>` olur |
+| 8 | ORTA | Ayraç tanıma: ondalık virgüllü Türkçe CSV'de `,` seçiliyordu | ✅ `;` ve `,` ikisi tutarlıysa `;`; yalnız `rakam,rakam` virgülü ayraç sayılmaz; ≥%80 tutarlılık |
+| 9 | ORTA | UTF-16 ("Unicode Metin") CSV bozuk okunuyor | ✅ BOM tanınır, kodlama listesinde |
+| 10 | ORTA | Kurtarılan belgede veri kaybı uyarısı kayboluyor; Farklı Kaydet özgün dosyayı öneriyor | ✅ uyarı/`veri_kaybi` kurtarma üst verisinde saklanır ve geri yüklenir; öneri "… (Kurtarılan).xlsx"; özgün (kayıplı) dosyanın üzerine yazılırsa onay sorulur |
+| 11 | ORTA | Dondurma/kılavuz/sekme rengi "değişti" saymıyor, sorulmadan kapanınca kayboluyor | ✅ görünüm sürümü sayacı: `degisti_mi`, kapatma sorusu, otomatik kopya |
+| 12 | ORTA | Aynı dosya iki süreçte açılabiliyor; son kaydeden diğerini siliyor | ✅ **kısmen:** kayıtta dosyanın (mtime, boyut) damgası denetlenir, başka yerde değişmişse onay sorulur; tek örnek/IPC ve `~$` kilit dosyası yok (açık) |
+| 13 | ORTA | Tema indeksi 10–11 siliniyor, dosyanın kendi teması okunmuyor | ✅ `xl/theme/theme1.xml` ayrıştırılır (yoksa varsayılan Office); indeks 10–11 dahil. Excel 365'in yeni teması dosyada gelen temayla zaten doğru okunur |
+| 14 | ORTA | CSV'ye Genel sayı 10 basamağa kırpılıyor (12–15 basamaklı kimlik/hesap numarası bozulur) | ✅ Genel sayı CSV'ye 15 anlamlı basamakla yazılır (Excel'in davranışı belirsiz §8b-52) |
+| 15 | DÜŞÜK | Otomatik satır yükseklikleri elle sayılıyor; genişliksiz `<col>` 96 px elle genişlik oluyor | ✅ `customHeight` ham XML'den okunur; varsayılan 13 karakter elenir |
+| 16 | DÜŞÜK | Hızlı formül yolu baştaki sıfırda ayrışıyor (`$A$01`) | ✅ baştaki sıfırlı başvuru/sayı hızlı yola girmez; 3.000 rastgele formülde yavaşla birebir |
+| 17 | DÜŞÜK | Seri 60 (29.02.1900) okununca 59 | ➖ açık (openpyxl tarihe çevirdiği için bilgi kayıp; ham okuma gerekir) |
+| 18 | DÜŞÜK | Çakışan birleşimli bozuk dosya aynen kabul; gizli sayfa onaysız görünür yapılıyor | ✅ çakışanlar atlanır + uyarı; gizli sayfa `veri_kaybi` sayılır (kaydederken onay) |
+| 19 | DÜŞÜK | 32.767+ karakter, NaN/sonsuz, zengin metin | ✅ ilk ikisi (bkz. 2); zengin metin biçimi düzleşir (uyarı yok, açık) |
+| 20 | DÜŞÜK | Bilinmeyen kağıt boyutu A4; "1 sayfaya sığdır" "genişliğe sığdır"a dönüşüyor; birden çok yazdırma alanından ilki | ➖ açık |
+| 21 | DÜŞÜK | PID yeniden kullanımı kurtarma kopyasını gizleyebilir | ✅ süreç başlangıç zamanı (`GetProcessTimes`) saklanır/karşılaştırılır |
+| 22 | DÜŞÜK | Kurtarılan belge açıkken özgün dosya açılamıyor | ✅ |
+| 23 | DÜŞÜK | Arka plan işlemi sırasında WM_CLOSE | ✅ `_mesgul` bayrağı; kapatma ertelenir (gerçek WM_CLOSE doğrulanmadı, `closeEvent` doğrudan sınandı) |
+| 24 | DÜŞÜK | CSV'deki `=` alanları formül oluyor | ➖ **bilerek, Excel gibi** (surec.md §4'e yazıldı); "formülleri metin al" kutusu zaten var ("Tüm alanları metin olarak al") |
+| 25 | DÜŞÜK | Anlamsız test (`test_pdf_eski_dosya_bozulmaz`) | ✅ aynı yolda gerçek yazma hatası (`QPainter.begin` False) ile yeniden yazıldı; eski anlamsız test kaldırıldı |
+
+**Temiz çıkanlar:** kural 2 ve 8 (xlsx/csv/pdf/json hepsi geçici dosya→yerine koy); hata değeri gidiş-dönüşü; `=` ile başlayan düz metin; sayfa adları; bozuk dosyalar `XlsxHatasi`; 30.000 rastgele formülde istisna yok; `_xlfn` listesi kütüphanedeki 117 işlev için eksiksiz; CSV CR/boş/tırnak/çok satırlı; yazdırma gizli sütun; arka plan model güvenliği; performans (100.000 hücre: açılış 4,2+2,4 sn, kayıt 5,1 sn).
+
+**İncelenmeyenler:** gerçek Excel'de açma (4, 5, 13, 14 numaralıların Excel web'de doğrulanması); gerçek yazıcı/PDF okuyucuları; iki ayrı süreçle gerçek eşzamanlılık; tepe bellek; 1 milyon yoğun hücre; zip bombası (`tara` her sayfa XML'ini belleğe okur).

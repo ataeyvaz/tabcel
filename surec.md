@@ -9,13 +9,13 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 1 | Veri modeli + ızgara + temel düzenleme | model, ızgara, düzenleme, pano, boyutlandırma, çoklu aralık, taşan metin, ana pencere, sayfa sekmeleri; Opus gözden geçirmesi + K1–K6 düzeltme/mimari; 100.000 hücre ölçümü | ✅ (Dosya menüsü Faz 4'te; performans ❌'leri kabul edildi → Faz 3) |
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
-| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya | 🔄 4g (§2 madde 9) |
+| 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 1984 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 2028 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -41,7 +41,7 @@ Testler: 1984 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6f. ✅ (2026-10-09) geri al/yinele sayfa geçişi komuttan belirlenir (`komutlar.ana_sayfa`); formül düzeltmesi yan etkisi geçiş yaptırmaz
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
-9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
+9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -259,6 +259,10 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 48 | Muhasebe biçiminde Ondalık Artır: sıfır bölümü (`"-"??`) nasıl değişir? | `"-"??.0` | ⏳ |
 | 49 | `-₺-5`, `1E400` Excel'de ne olur (metin mi, hata mı)? | Metin kalır | ⏳ |
 | 50 | Kes-yapıştırda satır/sütun stilli kaynak hücreler; tam sütun kesilince sütun biçimi taşınır mı? | Hücre biçimi varsayılana döner / taşınmaz | ⏳ |
+| 51 | `_xlfn.` ön eki isteyen işlevlerin tam listesi (STDEV.S, SORT `_xlfn._xlws.`…) ve dosyada yazım | `xlsx_io._XLFN` ~150 ad + `_XLWS` {SORT, FILTER} (Microsoft belgesinden) | ⏳ |
+| 52 | CSV'ye Genel biçimli sayı kaç basamakla yazılır (`123456789012345`, `0,1+0,2`)? | 15 anlamlı basamak, bilimsel gösterim `E+` | ⏳ |
+| 53 | Excel 365 dizi formülü dosyada `t="array"` olmadan `=SUM(A1:A3*B1:B3)` açılınca örtük kesişim (`@`) ekler mi? | Dizi anlamı yok sayılır (normal formül) | ⏳ |
+| 54 | 1904 tarih sistemli dosyada biçimsiz sayılar | Yalnız tarih biçimli hücreler çevrilir, uyarı verilir | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -582,6 +586,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Testler 1975 → **1984** (`test_arka_plan.py` 7, `test_xlsx_io.py` +2: hızlı yol = yavaş yol eşdeğerliği 500+ formülde, büyük dosya gidiş-dönüşü); mevcut hiçbir test değişmedi
 - **Bilerek eksik / sınır:** otomatik kurtarma kopyası hâlâ ana iş parçacığında (100.000 hücrede ≈ 3 sn kısa donma; model eşzamanlı değiştirilebildiği için arka plana alınmadı — anlık görüntü (snapshot) gerekir); PDF/yazdırma arka planda değil; ilerleme yüzdesi yok (belirsiz çubuk); önbellek yalnız basit formüllerde (sayfa başvurulu/tırnaklı/küçük harfli formül yavaş yoldan); 1M hücrelik dosya denenmedi; `Hesaplayici` açılışta formülleri yeniden ayrıştırır (2,2 sn)
 - Sıradaki: **4g** (Faz 4 sonu: `test.md` bölümü, `testler/ornekler/` örnek .xlsx dosyaları (grafikli/resimli dahil), gerçek iş senaryosu, Opus gözden geçirmesi)
+
+## [2026-10-09] — Faz 4 / 4g bitti: Opus gözden geçirmesi + düzeltmeler (Sonnet 5.5 + Opus 5.5)
+- Commit `3248be7` (4f–4g). **Opus gözden geçirmesi:** 25 bulgu (3 KRİTİK); 21'i düzeltildi, 4'ü açık/kısmi (`test.md` §14; `test_opus_faz4.py` 36 test). Testler 1993 → **2028**; mevcut hiçbir test değişmedi
+- Önemli düzeltmeler: 1904 tarih kayması; kayıt başarısız olunca pencerenin kapanıp veriyi kaybetmesi (`closeEvent` artık varsayılan ignore, her istisna yakalanır, geçersiz karakterler silinir); seyrek dosyada açılış (`ws._cells`); `_xlfn.` ön ekleri; korunamayan öğe taraması genişledi (Excel tablosu, köprü, gruplama, üst/alt bilgi, koruma, dizi formülü, gizli sayfa → kaydederken onay); geniş sütun aralıkları; CSV ayraç/UTF-16/15 basamak; kurtarılan belgede veri kaybı uyarısı + "(Kurtarılan)" önerisi; görünüm değişiklikleri "değişti" sayılır; kayıtta dosya başka yerde değişmişse onay
+- Kararlar: CSV'deki `=` alanları **Excel gibi formül** olarak çözülür (bilerek; "metin olarak al" kutusu kapatır); dosyanın kendi teması (`theme1.xml`) renkleri çözer, yoksa varsayılan Office; çakışan birleşim atlanır; elle yükseklik yalnız `customHeight`li satırdır
+- **Açık (Faz 4 sonrası):** tek örnek/IPC (aynı dosya iki süreçte; yalnız kayıtta mtime denetimi var); seri 60 (29.02.1900) okuma; dizi formülü yazma (Faz 8); zengin metin biçimi uyarısı; bilinmeyen kağıt/`fitToHeight`/çoklu yazdırma alanı; kurtarma kopyası ana iş parçacığında; zip bombası taraması; §8b-51…54 Excel web doğrulamaları; gerçek Excel/yazıcı elle testleri (`test.md` §13.4)
+- **Faz 4 bitti**, kullanıcı onayı bekliyor → sıradaki **Faz 5** (sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlandırılmış aralık, notlar; plan.md). Faz 5 modele girince `xlsx_io` bu öğeleri eşlemeli (şu an uyarılıp atılıyor)
 
 *(Yeni girişler en alta eklenir.)*
 

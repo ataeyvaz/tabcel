@@ -25,6 +25,15 @@ PDF_FILTRESI = "PDF (*.pdf)"
 ACMA_FILTRESI = ("Excel ve CSV (*.xlsx *.csv);;" + XLSX_FILTRESI + ";;CSV (*.csv);;Tüm Dosyalar (*.*)")
 
 
+def _damga(yol: str):
+    """Dosyanın (değişiklik zamanı ns, boyut); yoksa None."""
+    try:
+        s = os.stat(yol)
+        return (s.st_mtime_ns, s.st_size)
+    except OSError:
+        return None
+
+
 def _ayni_yol(a: Optional[str], b: Optional[str]) -> bool:
     return bool(a and b) and os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
 
@@ -41,6 +50,11 @@ class DosyaIslemleri:
     def _dosya_kur(self) -> None:
         self.kurtarma_kimligi = kurtarma.yeni_kimlik()
         self._kurtarilan = False                              # kurtarma kopyasından açıldı, henüz kaydedilmedi
+        self._gorunum_surum = 0                               # dondurma/kılavuz/sekme rengi (komut olmayan) değişiklik sayısı
+        self._gorunum_kirli = False
+        self._mesgul = False                                  # arka planda dosya işlemi sürüyor (kapatma ertelenir)
+        self._disk_damgasi = None                             # açılış/kayıtta dosyanın (mtime, boyut): başka yerde değişti mi
+        self.kitap.dinle(self._gorunum_olayi)
         self._son_otokayit = None
         self._otokayit_zamanlayici = QTimer(self)
         self._otokayit_zamanlayici.timeout.connect(self.otokayit_yap)
@@ -54,6 +68,17 @@ class DosyaIslemleri:
                            ("Ctrl+Shift+S", self.farkli_kaydet), ("F12", self.farkli_kaydet),
                            ("Ctrl+P", self.yazdir_baslat)):
             QShortcut(QKeySequence(tus), self, activated=lambda f=islem: f(), context=Qt.WindowShortcut)
+
+    def _gorunum_olayi(self, olay) -> None:
+        if olay.tur == "bicim" and olay.ayrinti.get("gorunum"):
+            self.gorunum_degisti_isaretle()
+
+    def gorunum_degisti_isaretle(self) -> None:
+        """Geri al yığınına girmeyen ama dosyaya yazılan görünüm değişikliği (dondurma, kılavuz, sekme rengi):
+        belge "değişti" sayılır; kapatırken sorulur."""
+        self._gorunum_surum += 1
+        self._gorunum_kirli = True
+        self._baslik_guncelle()
 
     def _bilgi_cubugu_olustur(self) -> QFrame:
         """Açılan dosyada korunamayan öğe varsa uyarı şeridi (kapatılabilir)."""
@@ -113,7 +138,7 @@ class DosyaIslemleri:
     # ------------------------------------------------------------------ durum
     def degisti_mi(self) -> bool:
         """Son kayıt/açılıştan beri geri al yığını değişti mi (geri alıp kayıt noktasına dönülürse hayır)."""
-        if getattr(self, "_kurtarilan", False):
+        if getattr(self, "_kurtarilan", False) or getattr(self, "_gorunum_kirli", False):
             return True
         temiz = getattr(self, "_temiz_damga", None)          # kurulum sırasında henüz yok
         return temiz is not None and not self.yigin.damga_esit(self.yigin.damga(), temiz)
@@ -130,6 +155,7 @@ class DosyaIslemleri:
     def _isaretle_temiz(self) -> None:
         self._temiz_damga = self.yigin.damga()
         self._kurtarilan = False
+        self._gorunum_kirli = False
         self._son_otokayit = None
         kurtarma.sil(self.kurtarma_kimligi)                   # kaydedildi: kurtarma kopyası gereksiz
         self._baslik_guncelle()
@@ -161,7 +187,7 @@ class DosyaIslemleri:
         """`yol`u yeni pencerede açar (açıksa o pencereyi öne getirir); başarısızsa None ve ileti."""
         from .window import Pencere
         for p in list(DosyaIslemleri._acik_pencereler):
-            if _ayni_yol(p.yol, yol) or (p.yol is None and _ayni_yol(p.kaynak_yol, yol)):
+            if _ayni_yol(p.yol, yol) or (p.yol is None and not p._kurtarilan and _ayni_yol(p.kaynak_yol, yol)):
                 son_dosyalar.ekle(yol)
                 p._dosya_gorunur_yap()
                 return p
@@ -180,6 +206,7 @@ class DosyaIslemleri:
             p.kaynak_yol = os.path.abspath(yol)              # kayıt yolu değil: Kaydet → Farklı Kaydet (.xlsx önerilir)
         else:
             p.yol = os.path.abspath(yol)
+            p._disk_damgasi = _damga(p.yol)
         p.rapor = rapor
         p._belge_adi_guncelle()
         p._bilgi_goster()
@@ -213,9 +240,20 @@ class DosyaIslemleri:
         return arka_planda(self, "Dosya açılıyor…", lambda: xlsx_io.ac(yol))
 
     # ------------------------------------------------------------------ kaydet
+    def _disk_degisti_sorusu(self) -> bool:
+        """Dosya açıldıktan sonra başka bir yerde (başka program/başka Tabcel penceresi) değişti: üzerine yazılsın mı?"""
+        c = QMessageBox.warning(
+            self, APP_NAME, f"“{os.path.basename(self.yol)}” açıldıktan sonra başka bir yerde değiştirilmiş. "
+            "Üzerine yazarsanız o değişiklikler kaybolur. Devam edilsin mi?",
+            QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
+        return c == QMessageBox.Yes
+
     def kaydet(self) -> bool:
         if self.yol is None:
             return self.farkli_kaydet()
+        if self._disk_damgasi is not None and _damga(self.yol) not in (None, self._disk_damgasi):
+            if not self._disk_degisti_sorusu():
+                return False
         if self.rapor.veri_kaybi:
             secim = self._veri_kaybi_sorusu()
             if secim == "farkli":
@@ -227,6 +265,8 @@ class DosyaIslemleri:
     def farkli_kaydet(self) -> bool:
         if self.yol:
             onerilen = self.yol
+        elif self.kaynak_yol and self._kurtarilan:           # kurtarılan: özgün dosyanın üzerine yazmayı önermez
+            onerilen = os.path.splitext(self.kaynak_yol)[0] + " (Kurtarılan).xlsx"
         elif self.kaynak_yol:                                # .csv'den açıldı: aynı adla .xlsx öner
             onerilen = os.path.splitext(self.kaynak_yol)[0] + ".xlsx"
         else:
@@ -236,6 +276,10 @@ class DosyaIslemleri:
             return False
         if not os.path.splitext(yol)[1]:
             yol += ".csv" if "csv" in (filtre or "").lower() else ".xlsx"
+        hedef_eski = self.yol or self.kaynak_yol
+        if self.rapor.veri_kaybi and _ayni_yol(yol, hedef_eski) and os.path.exists(yol):
+            if self._veri_kaybi_sorusu() != "kaydet":        # özgün (grafikli vb.) dosyanın üzerine yazılıyor
+                return False
         return self._kaydet_yola(yol)
 
     def _csv_cok_sayfa_sorusu(self) -> bool:
@@ -247,6 +291,7 @@ class DosyaIslemleri:
 
     def _kaydet_yola(self, yol: str) -> bool:
         csv_mi = os.path.splitext(yol)[1].lower() == ".csv"
+        kayit_raporu = None
         try:
             if csv_mi:
                 if len(self.kitap.sayfalar) > 1 and not self._csv_cok_sayfa_sorusu():
@@ -254,13 +299,18 @@ class DosyaIslemleri:
                 sayfa = self.izgara().sayfa
                 arka_planda(self, "Kaydediliyor…", lambda: csv_io.dosya_yaz(sayfa, yol))
             else:
-                arka_planda(self, "Kaydediliyor…", lambda: xlsx_io.kaydet(self.kitap, yol))
+                kayit_raporu = arka_planda(self, "Kaydediliyor…", lambda: xlsx_io.kaydet(self.kitap, yol))
         except (XlsxHatasi, csv_io.CsvHatasi) as e:
             QMessageBox.critical(self, APP_NAME, str(e))
             return False
+        except Exception as e:                               # beklenmeyen hata: pencere kapanmasın, veri kaybolmasın
+            QMessageBox.critical(self, APP_NAME, f"Dosya kaydedilemedi: {e}")
+            return False
         self.yol = os.path.abspath(yol)
         self.kaynak_yol = None
-        self.rapor = Rapor()                                 # artık dosya bu kitabın kendisi: kayıp uyarısı biter
+        self._disk_damgasi = _damga(self.yol)
+        # artık dosya bu kitabın kendisi: açılıştaki kayıp uyarısı biter; kayıt sırasındaki düzeltmeler bildirilir
+        self.rapor = kayit_raporu if isinstance(kayit_raporu, Rapor) else Rapor()
         self._bilgi_goster()
         self._belge_adi_guncelle()
         self._isaretle_temiz()
@@ -296,6 +346,8 @@ class DosyaIslemleri:
         return "kaydet" if b is kay else "kaydetme" if b is kayma else "iptal"
 
     def _kapanabilir_mi(self) -> bool:
+        if self._mesgul:                                     # kayıt/açma sürerken (görev çubuğundan kapat vb.)
+            return False
         if not self.degisti_mi():
             return True
         c = self._kapatma_sorusu()
@@ -309,12 +361,14 @@ class DosyaIslemleri:
         yazmaz). Hata sessizce yutulur: otomatik işlem kullanıcıyı bölmez. Yazıldıysa True."""
         if not self.degisti_mi():
             return False
-        damga = self.yigin.damga()
-        if self._son_otokayit is not None and self.yigin.damga_esit(damga, self._son_otokayit):
+        damga = (self.yigin.damga(), self._gorunum_surum)
+        if self._son_otokayit is not None and self.yigin.damga_esit(damga[0], self._son_otokayit[0]) \
+                and damga[1] == self._son_otokayit[1]:
             return False
         try:
-            kurtarma.kopya_yaz(self.kitap, self.kurtarma_kimligi, self.belge_adi, self.yol or self.kaynak_yol)
-        except (OSError, XlsxHatasi):
+            kurtarma.kopya_yaz(self.kitap, self.kurtarma_kimligi, self.belge_adi, self.yol or self.kaynak_yol,
+                               self.rapor)
+        except Exception:                                    # otomatik işlem hiçbir koşulda kullanıcıyı bölmez
             return False
         self._son_otokayit = damga
         return True
@@ -355,7 +409,9 @@ class DosyaIslemleri:
         p.kurtarma_kimligi = k.kimlik                         # aynı kopyayı güncellemeye devam eder
         kurtarma.sahiplen(k.kimlik)
         p.kaynak_yol = k.yol                                  # kayıt yolu DEĞİL: Farklı Kaydet'te öneri olur
-        p.rapor = rapor
+        p.rapor = Rapor(list(k.uyarilar), k.veri_kaybi)       # özgün dosyadaki kayıp uyarıları unutulmaz
+        for u in rapor.uyarilar:
+            p.rapor.ekle(u, rapor.veri_kaybi)
         p.rapor.ekle("Bu belge otomatik kurtarma kopyasından açıldı; kaydedilmemiş değişiklikleri içerir. "
                      "Kaybolmaması için kaydedin.")
         p._kurtarilan = True

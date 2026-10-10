@@ -18,7 +18,8 @@ from ..model.sayi_bicimi import BicimHatasi, bicimle
 from ..model.stil import StilYama
 
 AYRACLAR = {"Noktalı virgül (;)": ";", "Virgül (,)": ",", "Sekme": "\t", "Dikey çizgi (|)": "|"}
-KODLAMALAR = {"UTF-8 (BOM'lu)": "utf-8-sig", "UTF-8": "utf-8", "Windows-1254 (Türkçe)": "cp1254"}
+KODLAMALAR = {"UTF-8 (BOM'lu)": "utf-8-sig", "UTF-8": "utf-8", "Windows-1254 (Türkçe)": "cp1254",
+              "UTF-16 (Unicode Metin)": "utf-16"}
 ONIZLEME_SATIR = 200
 MAKS_SATIR = 1_048_576
 MAKS_SUTUN = 16_384
@@ -29,9 +30,11 @@ class CsvHatasi(Exception):
 
 
 def kodlama_tani(veri: bytes) -> str:
-    """BOM → `utf-8-sig`; geçerli UTF-8 → `utf-8`; aksi `cp1254` (Türkçe Windows)."""
+    """BOM → `utf-8-sig` / `utf-16`; geçerli UTF-8 → `utf-8`; aksi `cp1254` (Türkçe Windows)."""
     if veri.startswith(b"\xef\xbb\xbf"):
         return "utf-8-sig"
+    if veri.startswith((b"\xff\xfe", b"\xfe\xff")):
+        return "utf-16"                                      # Excel "Unicode Metin" (sekme ayraçlı)
     try:
         veri.decode("utf-8")
         return "utf-8"
@@ -48,12 +51,33 @@ def coz(veri: bytes, kodlama: str) -> str:
         raise CsvHatasi(f"Bilinmeyen kodlama: {kodlama}") from e
 
 
+def _yalniz_ondalik_virgul(satirlar: List[str]) -> bool:
+    """Tırnak dışındaki her virgül iki rakam arasında ve satırda en çok bir tane mi (`12,5` gibi ondalık)?"""
+    gordu = False
+    for s in satirlar:
+        tirnak, say = False, 0
+        for i, ch in enumerate(s):
+            if ch == '"':
+                tirnak = not tirnak
+            elif ch == "," and not tirnak:
+                say += 1
+                onceki = s[i - 1] if i else ""
+                sonraki = s[i + 1] if i + 1 < len(s) else ""
+                if not (onceki.isdigit() and sonraki.isdigit()):
+                    return False
+        if say > 1:
+            return False
+        gordu = gordu or say > 0
+    return gordu
+
+
 def ayrac_tani(metin: str) -> str:
-    """İlk ~30 dolu satırda tırnak dışındaki her adayın sayısına bakar: en tutarlı (her satırda aynı
-    sayıda, ≥1) aday seçilir; eşitlikte `;` `,` sekme `|` sırası (Türkçe Excel `;` kullanır).
-    Hiçbiri yoksa `;`."""
+    """İlk ~30 dolu satırda tırnak dışındaki her adayın sayısına bakar. Satırların ≥%80'inde aynı (≥1) sayıda
+    görünen aday "tutarlı"dır. `;` ve `,` ikisi de tutarlıysa `;` (Türkçe Excel; ondalık virgülü yanıltmaz);
+    yalnız ondalık virgül olan (`12,5`) satırlarda virgül ayraç sayılmaz. Tutarlı aday yoksa en sık/çok
+    görünen; hiçbiri yoksa `;`."""
     satirlar = [s for s in _mantiksal_satirlar(metin, 30) if s.strip()]
-    en_iyi, en_puan = ";", (0, 0)
+    adaylar = {}
     for aday in (";", ",", "\t", "|"):
         sayilar = [_tirnak_disi_say(s, aday) for s in satirlar]
         if not sayilar or max(sayilar) == 0:
@@ -61,11 +85,16 @@ def ayrac_tani(metin: str) -> str:
         ortak = max(set(sayilar), key=sayilar.count)       # en sık görülen sayı
         if ortak == 0:
             continue
-        uyan = sayilar.count(ortak)
-        puan = (uyan, ortak)
-        if puan > en_puan:
-            en_iyi, en_puan = aday, puan
-    return en_iyi
+        if aday == "," and _yalniz_ondalik_virgul(satirlar):
+            continue
+        adaylar[aday] = (sayilar.count(ortak), ortak)
+    if not adaylar:
+        return ";"
+    tutarli = {a: p for a, p in adaylar.items() if p[0] >= 0.8 * len(satirlar)}
+    if ";" in tutarli and "," in tutarli:
+        return ";"
+    havuz = tutarli or adaylar
+    return max(havuz, key=lambda a: (havuz[a], -(";,\t|".index(a))))
 
 
 def _mantiksal_satirlar(metin: str, sinir: int) -> List[str]:
@@ -203,6 +232,9 @@ def hucre_metni(sayfa: Sayfa, r: int, c: int) -> str:
     if isinstance(v, (Hata, bool, str)):
         return goster(v)
     kod = sayfa.stil(r, c).sayi_bicimi
+    genel = _genel_sayi(v) if kod == "General" else None
+    if genel is not None:
+        return genel
     if kod != "General":
         try:
             s = bicimle(v, kod)
@@ -211,6 +243,16 @@ def hucre_metni(sayfa: Sayfa, r: int, c: int) -> str:
         except (BicimHatasi, ArithmeticError, ValueError, OverflowError):
             pass
     return goster(v)
+
+
+def _genel_sayi(v) -> Optional[str]:
+    """Genel biçimli sayı CSV'ye 15 anlamlı basamakla yazılır (ekrandaki kısaltma 10 basamaktır; kimlik/hesap
+    numaraları CSV'de bozulmasın)."""
+    if not isinstance(v, float):
+        return None
+    if v == int(v) and abs(v) < 1e15:
+        return str(int(v))
+    return f"{v:.15g}".replace(".", ",").replace("e", "E")
 
 
 def metin_yaz(sayfa: Sayfa, ayrac: str = ";") -> str:

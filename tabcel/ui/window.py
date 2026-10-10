@@ -265,11 +265,15 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.gorunum_eylemleri["coz"].setEnabled(g.sayfa.dondur is not None)
 
     def closeEvent(self, olay):
-        if self._kapanabilir_mi():
+        olay.ignore()                                        # yalnız başarıyla kapanabilirse kabul edilir
+        try:
+            kapanir = self._kapanabilir_mi()
+        except Exception as e:                               # kayıt sırasında beklenmeyen hata: pencere AÇIK kalır
+            QMessageBox.critical(self, APP_NAME, f"Kapatılamadı: {e}")
+            kapanir = False
+        if kapanir:
             self._pencere_kapandi()
             olay.accept()
-        else:
-            olay.ignore()
 
     def showEvent(self, olay):
         super().showEvent(olay)
@@ -410,6 +414,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
 
     def sekme_rengi_ata(self, i: int, renk: Optional[str]):
         self.kitap.sayfalar[i].sekme_rengi = renk
+        self.gorunum_degisti_isaretle()
         self.sekmeler.setTabData(i, renk)
         self.sekmeler.update()
 

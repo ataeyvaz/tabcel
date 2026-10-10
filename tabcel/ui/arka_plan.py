@@ -30,6 +30,8 @@ class _Is(QThread):
 def arka_planda(parent, metin: str, islev: Callable, gecikme_ms: int = 400):
     is_ = _Is(islev)
     pencere_acik = parent is not None and parent.isEnabled()
+    if parent is not None:
+        parent._mesgul = True                              # bu sürede kapatma isteği ertelenir (iç içe kayıt olmasın)
     dlg = None
     if parent is not None:
         dlg = QProgressDialog(metin, "", 0, 0, parent)
@@ -55,6 +57,8 @@ def arka_planda(parent, metin: str, islev: Callable, gecikme_ms: int = 400):
         if dlg is not None:
             dlg.close()
             dlg.deleteLater()
+        if parent is not None:
+            parent._mesgul = False
         if pencere_acik:
             parent.setEnabled(True)
     if is_.hata is not None:

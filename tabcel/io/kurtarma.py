@@ -22,6 +22,8 @@ class Kurtarilabilir:
     yol: Optional[str]           # özgün dosya yolu (varsa)
     zaman: float                 # son kopya zamanı (epoch)
     dosya: str                   # kopyanın .xlsx yolu
+    veri_kaybi: bool = False     # özgün dosyada korunamayan öğe vardı (kurtarılınca uyarı geri gelsin)
+    uyarilar: tuple = ()
 
 
 def klasor() -> str:
@@ -57,14 +59,52 @@ def surec_canli_mi(pid: int) -> bool:
         return False
 
 
-def kopya_yaz(kitap, kimlik: str, ad: str, yol: Optional[str]) -> None:
+def surec_baslangic(pid: int) -> Optional[int]:
+    """Sürecin başlangıç zamanı (Windows FILETIME); pid yeniden kullanımını ayırt etmek için. Bilinmezse None."""
+    if os.name != "nt":
+        return None
+    try:
+        import ctypes
+        from ctypes import wintypes
+        k = ctypes.windll.kernel32
+        h = k.OpenProcess(0x1000, False, pid)
+        if not h:
+            return None
+        try:
+            olus, bitis, ker, kul = (wintypes.FILETIME() for _ in range(4))
+            if not k.GetProcessTimes(h, ctypes.byref(olus), ctypes.byref(bitis), ctypes.byref(ker),
+                                     ctypes.byref(kul)):
+                return None
+            return (olus.dwHighDateTime << 32) | olus.dwLowDateTime
+        finally:
+            k.CloseHandle(h)
+    except Exception:
+        return None
+
+
+def _sahibi_canli_mi(m: dict) -> bool:
+    """Üst verideki pid hâlâ aynı süreç mi (pid başka bir süreç tarafından yeniden kullanıldıysa değil)."""
+    pid = int(m["pid"])
+    if not surec_canli_mi(pid):
+        return False
+    kayitli = m.get("baslangic")
+    if kayitli is None or pid == os.getpid():
+        return True
+    simdi = surec_baslangic(pid)
+    return simdi is None or simdi == kayitli
+
+
+def kopya_yaz(kitap, kimlik: str, ad: str, yol: Optional[str], rapor=None) -> None:
     """Kitabın kurtarma kopyasını yazar (xlsx önce, üst veri sonra: üst verisi olan kopya her zaman tamdır).
     Yazılamazsa OSError/XlsxHatasi; çağıran sessizce geçer (otomatik işlem kullanıcıyı bölmez)."""
     os.makedirs(klasor(), exist_ok=True)
     xlsx_io.kaydet(kitap, _dosya(kimlik, ".xlsx"))
     gecici = _dosya(kimlik, ".json.tmp")
     with open(gecici, "w", encoding="utf-8") as f:
-        json.dump({"ad": ad, "yol": yol, "zaman": time.time(), "pid": os.getpid()}, f, ensure_ascii=False)
+        json.dump({"ad": ad, "yol": yol, "zaman": time.time(), "pid": os.getpid(),
+                   "baslangic": surec_baslangic(os.getpid()),
+                   "veri_kaybi": bool(rapor and rapor.veri_kaybi),
+                   "uyarilar": list(rapor.uyarilar) if rapor else []}, f, ensure_ascii=False)
     os.replace(gecici, _dosya(kimlik, ".json"))
 
 
@@ -92,10 +132,11 @@ def bekleyenler() -> List[Kurtarilabilir]:
             with open(_dosya(kimlik, ".json"), encoding="utf-8") as f:
                 m = json.load(f)
             xlsx = _dosya(kimlik, ".xlsx")
-            if not os.path.exists(xlsx) or surec_canli_mi(int(m["pid"])):
+            if not os.path.exists(xlsx) or _sahibi_canli_mi(m):
                 continue
             sonuc.append(Kurtarilabilir(kimlik, str(m.get("ad") or "Adsız"), m.get("yol"),
-                                        float(m.get("zaman") or 0), xlsx))
+                                        float(m.get("zaman") or 0), xlsx, bool(m.get("veri_kaybi")),
+                                        tuple(str(u) for u in m.get("uyarilar") or ())))
         except (OSError, ValueError, KeyError, TypeError):
             continue
     return sorted(sonuc, key=lambda k: -k.zaman)
@@ -112,6 +153,7 @@ def sahiplen(kimlik: str) -> None:
         with open(_dosya(kimlik, ".json"), encoding="utf-8") as f:
             m = json.load(f)
         m["pid"] = os.getpid()
+        m["baslangic"] = surec_baslangic(os.getpid())
         gecici = _dosya(kimlik, ".json.tmp")
         with open(gecici, "w", encoding="utf-8") as f:
             json.dump(m, f, ensure_ascii=False)

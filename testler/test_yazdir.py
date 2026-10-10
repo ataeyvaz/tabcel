@@ -191,18 +191,6 @@ def test_pdf_yazma_hatasi(tmp_path):
         yz.pdf_yaz([g], str(tmp_path / "yok_klasor" / "a.pdf"))
 
 
-def test_pdf_eski_dosya_bozulmaz(tmp_path):
-    g = pencere().izgara()
-    g.hucre_gir(1, 1, "a")
-    yol = tmp_path / "e.pdf"
-    yol.write_bytes(b"ESKI")
-    try:
-        yz.pdf_yaz([g], str(tmp_path / "yok_klasor" / "e.pdf"))
-    except OSError:
-        pass
-    assert yol.read_bytes() == b"ESKI"
-
-
 # ---------------------------------------------------------------- menü / pencere
 def test_menuden_pdf(tmp_path, monkeypatch):
     p = pencere()
