@@ -3,6 +3,7 @@
 
 - butce.xlsx   : başka bir programın (openpyxl) yazdığı biçimli çok sayfalı çizelge
 - grafikli.xlsx: grafik + resim + yorum + koşullu biçim + veri doğrulama + tanımlı ad (korunamayan öğeler)
+- stok.xlsx    : Faz 5 öğelerinin hepsi (filtre koşullu, doğrulama, koşullu biçim, tanımlı ad, not, ALTTOPLAM)
 - satis_tr.csv : Türkçe Excel'in `;` ayraçlı, Windows-1254 CSV'si
 - satis_utf8.csv: virgül ayraçlı UTF-8 (BOM'suz)
 """
@@ -14,7 +15,8 @@ import zipfile
 from openpyxl import Workbook
 from openpyxl.chart import BarChart, Reference
 from openpyxl.comments import Comment
-from openpyxl.formatting.rule import CellIsRule
+from openpyxl.formatting.rule import CellIsRule, ColorScaleRule, DataBarRule
+from openpyxl.worksheet.filters import CustomFilter, CustomFilters, FilterColumn, Filters
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -129,6 +131,61 @@ def grafikli(yol):
     os.replace(gecici, yol)
 
 
+def stok(yol):
+    """Stok listesi: Faz 5'in tüm öğeleri (başka bir programın — openpyxl — yazdığı biçimde)."""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Stok"
+    ws.append(["Ürün", "Kategori", "Adet", "Birim fiyat", "Tutar"])
+    veri = [("Kulaklık", "Elektronik", 4, 350), ("Şarj aleti", "Elektronik", 25, 120), ("Çay", "Gıda", 60, 45.5),
+            ("Kahve", "Gıda", 8, 210), ("Tişört", "Giyim", 30, 150), ("Çorap", "Giyim", 5, 35),
+            ("Bisküvi", "Gıda", 90, 12.75), ("Mont", "Giyim", 12, 900)]
+    for r, (u, k, a, f) in enumerate(veri, start=2):
+        ws.append([u, k, a, f, f"=C{r}*D{r}"])
+    for c in "ABCDE":
+        ws[f"{c}1"].font = Font(b=True)
+    ws["A11"] = "Görünen toplam"
+    ws["E11"] = "=SUBTOTAL(109,E2:E9)"
+    ws["A12"] = "Tüm toplam"
+    ws["E12"] = "=SUM(E2:E9)"
+    ws["G1"] = "KDV"
+    ws["G2"] = 0.2
+    ws["A9"].comment = Comment("Sezon sonu: fiyat güncellenecek", "Ata")
+    ws.freeze_panes = "A2"
+    # filtre: Kategori = Gıda ya da Giyim; gizli satırlar dosyada da hidden
+    ws.auto_filter.ref = "A1:E9"
+    fc = FilterColumn(colId=1)
+    fc.filters = Filters(filter=["Gıda", "Giyim"])
+    ws.auto_filter.filterColumn.append(fc)
+    for r in (2, 3):
+        ws.row_dimensions[r].hidden = True
+    dv = DataValidation(type="list", formula1='"Elektronik,Gıda,Giyim"', allow_blank=True, showErrorMessage=True,
+                        errorTitle="Kategori", error="Listeden seçin")
+    ws.add_data_validation(dv)
+    dv.add("B2:B9")
+    dv2 = DataValidation(type="whole", operator="between", formula1="0", formula2="10000", showErrorMessage=True)
+    ws.add_data_validation(dv2)
+    dv2.add("C2:C9")
+    ws.conditional_formatting.add("C2:C9", CellIsRule(operator="lessThan", formula=["10"],
+                                                      fill=PatternFill(bgColor="FFC7CE"), font=Font(color="9C0006")))
+    ws.conditional_formatting.add("E2:E9", DataBarRule(start_type="min", end_type="max", color="638EC6"))
+    ws.conditional_formatting.add("D2:D9", ColorScaleRule(start_type="min", start_color="63BE7B", end_type="max",
+                                                          end_color="F8696B"))
+    fy = wb.create_sheet("Fiyatlar")
+    fy.append(["Ürün", "Liste fiyatı"])
+    for u, _, _, f in veri:
+        fy.append([u, f])
+    wb.defined_names["FiyatListesi"] = DefinedName("FiyatListesi", attr_text="Fiyatlar!$A$2:$B$9")
+    wb.defined_names["KdvOrani"] = DefinedName("KdvOrani", attr_text="Stok!$G$2")
+    ws["F1"] = "KDV'li tutar"
+    for r in range(2, 10):
+        ws[f"F{r}"] = f"=E{r}*(1+KdvOrani)"
+    ws["H1"] = "Liste fiyatı"
+    for r in range(2, 10):
+        ws[f"H{r}"] = f"=VLOOKUP(A{r},FiyatListesi,2,FALSE)"
+    wb.save(yol)
+
+
 def csvler():
     with open(os.path.join(KLASOR, "satis_tr.csv"), "wb") as f:
         f.write("Ürün;Adet;Fiyat;Tarih\r\nÇay;10;12,5;12.10.2026\r\nŞeker;4;8,25;13.10.2026\r\n"
@@ -141,6 +198,7 @@ def main():
     os.makedirs(KLASOR, exist_ok=True)
     butce(os.path.join(KLASOR, "butce.xlsx"))
     grafikli(os.path.join(KLASOR, "grafikli.xlsx"))
+    stok(os.path.join(KLASOR, "stok.xlsx"))
     csvler()
     print("Üretildi:", ", ".join(sorted(os.listdir(KLASOR))))
 

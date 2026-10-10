@@ -48,6 +48,22 @@ DOSYA_ACIKLAMALARI = {
     "test_stil.py": "Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al",
     "test_pano_bicim.py": "Pano biçim taşıma (3b): PanoVerisi.stiller, JSON, HTML CSS, yapıştır/kes-taşı, Temizle menüsü, Delete biçimi korur",
     "test_senaryo_butce.py": "Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma)",
+    "test_faz5_altyapi.py": "Faz 5 ortak altyapı (5a): aralık yardımcıları, ek veri depoları + ekle-sil, harmanlama, ağaç kaydırma, ek/ad olayları, menü iskeleti",
+    "test_bul.py": "Bul/Değiştir modeli (5b): joker, büyük/küçük harf, formül/değer/not arama, Tümünü Değiştir",
+    "test_bul_arayuz.py": "Bul/Değiştir/Git penceresi ve kısayollar (5b)",
+    "test_sirala.py": "Sırala (5c): Türkçe harmanlama, karışık tür, çok düzey, renk, gizli satır, formül kayması, geri al",
+    "test_sirala_arayuz.py": "Sırala arayüzü (5c): A→Z/Z→A, Sıralama Uyarısı, Özel Sıralama penceresi",
+    "test_adlar.py": "Adlandırılmış aralıklar (5d): doğrulama, kapsam, göreli ad, yeniden adlandırma, ekle-sil, .xlsx",
+    "test_adlar_arayuz.py": "Ad Tanımla/Ad Yöneticisi/Ad Kutusu/Git (5d)",
+    "test_notlar.py": "Notlar (5e): model, komut, ekle-sil, sırala, kes-yapıştır, pano, .xlsx",
+    "test_notlar_arayuz.py": "Not arayüzü (5e): üçgen, fare üstü kutu, Shift+F2, menü, temizle",
+    "test_filtre.py": "Filtre + ALTTOPLAM (5f): her koşul türü, komut, ALTTOPLAM 1–11/101–111, motor yeniden hesap, .xlsx",
+    "test_filtre_arayuz.py": "Filtre arayüzü (5f): düğmeler, panel, özel filtre, özet, Delete",
+    "test_dogrulama.py": "Veri doğrulama (5g): model, komut, denetim (tür × işleç, liste, özel), ekle-sil, .xlsx",
+    "test_dogrulama_arayuz.py": "Veri doğrulama arayüzü (5g): pencere, giriş denetimi, açılır liste, giriş iletisi",
+    "test_kosullu.py": "Koşullu biçim (5h): 12 kural türü, öncelik+dur, ölçek/çubuk, ekle-sil, komut",
+    "test_kosullu_arayuz.py": "Koşullu biçim arayüzü (5h): çizim pikselleri, menü, pencereler, yönetici, yazdırma, .xlsx",
+    "test_senaryo_stok.py": "Faz 5 gerçek iş senaryosu: stok listesi (ad+DÜŞEYARA, doğrulama, koşullu biçim, sırala, filtre, ALTTOPLAM, not) + stok.xlsx örnek dosya gidiş-dönüşü",
 }
 
 BASLA, BITIR = "<!-- OTOMATIK:BASLA -->", "<!-- OTOMATIK:BITIR -->"

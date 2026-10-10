@@ -82,13 +82,38 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 
 <!-- OTOMATIK:BASLA -->
 
-**Son çalıştırma: 2026-10-09 — ✅ 1474/1474 test geçti, 0 olumsuz** (süre ≈ 10.0 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
+**Son çalıştırma: 2026-10-10 — ✅ 2518/2518 test geçti, 0 olumsuz** (süre ≈ 201.0 sn). Bu bölüm `araclar/test_raporu.py` ile üretilir; elle düzenlemeyin.
 
 | Dosya | Kapsam | Test | ✅ Olumlu | ❌ Olumsuz |
 |---|---|---|---|---|
+| `test_adlar.py` | Adlandırılmış aralıklar (5d): doğrulama, kapsam, göreli ad, yeniden adlandırma, ekle-sil, .xlsx | 74 | 74 | 0 |
+| `test_adlar_arayuz.py` | Ad Tanımla/Ad Yöneticisi/Ad Kutusu/Git (5d) | 17 | 17 | 0 |
 | `test_adres.py` | Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576) | 26 | 26 | 0 |
+| `test_akilli_giris.py` |  | 92 | 92 | 0 |
+| `test_arka_plan.py` |  | 7 | 7 | 0 |
+| `test_bicim_boyaci.py` |  | 14 | 14 | 0 |
+| `test_bicim_cubugu.py` |  | 23 | 23 | 0 |
+| `test_bicim_islem.py` |  | 23 | 23 | 0 |
+| `test_bicim_kodlari.py` |  | 6 | 6 | 0 |
+| `test_bicim_penceresi.py` |  | 12 | 12 | 0 |
+| `test_birlesim.py` |  | 16 | 16 | 0 |
+| `test_birlesim_arayuz.py` |  | 17 | 17 | 0 |
+| `test_birlesim_pano.py` |  | 12 | 12 | 0 |
+| `test_bul.py` | Bul/Değiştir modeli (5b): joker, büyük/küçük harf, formül/değer/not arama, Tümünü Değiştir | 29 | 29 | 0 |
+| `test_bul_arayuz.py` | Bul/Değiştir/Git penceresi ve kısayollar (5b) | 12 | 12 | 0 |
+| `test_csv_io.py` |  | 21 | 21 | 0 |
+| `test_csv_menu.py` |  | 8 | 8 | 0 |
 | `test_degerlendir.py` | Formül değerlendirici: tür dönüşümleri, dizi yayma, hata yayılımı, 15 basamak | 46 | 46 | 0 |
+| `test_dogrulama.py` | Veri doğrulama (5g): model, komut, denetim (tür × işleç, liste, özel), ekle-sil, .xlsx | 45 | 45 | 0 |
+| `test_dogrulama_arayuz.py` | Veri doğrulama arayüzü (5g): pencere, giriş denetimi, açılır liste, giriş iletisi | 21 | 21 | 0 |
+| `test_doldur.py` |  | 29 | 29 | 0 |
+| `test_doldur_arayuz.py` |  | 17 | 17 | 0 |
+| `test_dondurma.py` |  | 22 | 22 | 0 |
 | `test_dongu_arayuz.py` | Döngüsel başvuru uyarısı (6e): durum çubuğu etiketi, tek uyarı | 5 | 5 | 0 |
+| `test_dosya_menusu.py` |  | 17 | 17 | 0 |
+| `test_faz5_altyapi.py` | Faz 5 ortak altyapı (5a): aralık yardımcıları, ek veri depoları + ekle-sil, harmanlama, ağaç kaydırma, ek/ad olayları, menü iskeleti | 65 | 65 | 0 |
+| `test_filtre.py` | Filtre + ALTTOPLAM (5f): her koşul türü, komut, ALTTOPLAM 1–11/101–111, motor yeniden hesap, .xlsx | 60 | 60 | 0 |
+| `test_filtre_arayuz.py` | Filtre arayüzü (5f): düğmeler, panel, özel filtre, özet, Delete | 15 | 15 | 0 |
 | `test_fonk_metin_tarih.py` | Metin ve tarih fonksiyonları (1900 sistemi) | 356 | 356 | 0 |
 | `test_fonk_sayisal.py` | 115 fonksiyonun sayısal/mantık/istatistik/arama/finans grupları (kural 11: 4+ vaka) | 306 | 306 | 0 |
 | `test_formul_arayuz.py` | Formül motorunun arayüze bağlanması: hesap, Türkçe görünüm, hatalı formülde düzenleme açık kalır | 7 | 7 | 0 |
@@ -100,11 +125,20 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_isaretleme_arayuz.py` | İşaretleme modu arayüzde (6d): tıklama/ok, F4, odak kaybı, formül çubuğu, sekmeler arası, Alt+=, öneri listesi, renkli metin | 28 | 28 | 0 |
 | `test_iskelet.py` | Proje iskeleti: ad/sürüm sabiti, kaynak klasörü, model/formül paketlerinin Qt'siz olması | 3 | 3 | 0 |
 | `test_izgara.py` | Izgara arayüzü: çizim, gezinme, seçim, düzenleme, boyutlandırma, gizleme, pano, taşan metin, çoklu aralık, artımlı kaydırma | 108 | 108 | 0 |
+| `test_izgara_stil.py` |  | 23 | 23 | 0 |
 | `test_kaydir.py` | Başvuru kaydırma: kopyala, ekle-sil, taşı ($'lılar, #BAŞV!) | 33 | 33 | 0 |
+| `test_kaydir_metin.py` |  | 21 | 21 | 0 |
+| `test_kosullu.py` | Koşullu biçim (5h): 12 kural türü, öncelik+dur, ölçek/çubuk, ekle-sil, komut | 41 | 41 | 0 |
+| `test_kosullu_arayuz.py` | Koşullu biçim arayüzü (5h): çizim pikselleri, menü, pencereler, yönetici, yazdırma, .xlsx | 26 | 26 | 0 |
+| `test_kurtarma.py` |  | 15 | 15 | 0 |
 | `test_motor.py` | Hesaplayıcı: bağımlılık, yeniden hesaplama, döngü, sayfa işlemleri | 20 | 20 | 0 |
+| `test_notlar.py` | Notlar (5e): model, komut, ekle-sil, sırala, kes-yapıştır, pano, .xlsx | 26 | 26 | 0 |
+| `test_notlar_arayuz.py` | Not arayüzü (5e): üçgen, fare üstü kutu, Shift+F2, menü, temizle | 12 | 12 | 0 |
 | `test_olay.py` | Olay katmanı (K5): hücre/sonuç/yapı/boyut/sayfa olayları, toplu işlem tek olay | 18 | 18 | 0 |
 | `test_olcu.py` | Excel ölçü birimleri: karakter/punto ⇄ piksel | 3 | 3 | 0 |
 | `test_opus_faz2.py` |  | 11 | 11 | 0 |
+| `test_opus_faz3.py` |  | 54 | 54 | 0 |
+| `test_opus_faz4.py` |  | 36 | 36 | 0 |
 | `test_pano.py` | Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı | 25 | 25 | 0 |
 | `test_pano_bicim.py` | Pano biçim taşıma (3b): PanoVerisi.stiller, JSON, HTML CSS, yapıştır/kes-taşı, Temizle menüsü, Delete biçimi korur | 16 | 16 | 0 |
 | `test_pano_formul.py` | Pano ve formül (6c): kopyada başvuru kayması, kes-yapıştır taşıma, dış formül çevirisi | 6 | 6 | 0 |
@@ -112,12 +146,119 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 | `test_pencere_sayfa.py` | Sayfa sekmeleri ve sayfa komutları arayüzde (ekle/sil/yeniden adlandır/taşı, geri al) | 16 | 16 | 0 |
 | `test_sayfa.py` | Veri modeli: seyrek sayfa, satır/sütun ekle-sil, geri al yığını, sayfa adı kuralları, gizleme, kullanılan aralık önbelleği | 33 | 33 | 0 |
 | `test_sayfa_komutlari.py` | Geri alınabilir sayfa komutları (K6) | 7 | 7 | 0 |
+| `test_sayfalama.py` |  | 19 | 19 | 0 |
 | `test_sayi_bicimi.py` | Excel sayı biçimi kodu çözümleyici/biçimleyici (Faz 3 çekirdeği): Genel, 0#?, yüzde, bilimsel, kesir, bölümler, renk, tarih/saat, kanonik⇄yerel | 179 | 179 | 0 |
+| `test_senaryo_bicimli.py` |  | 8 | 8 | 0 |
 | `test_senaryo_butce.py` | Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma) | 8 | 8 | 0 |
+| `test_senaryo_stok.py` | Faz 5 gerçek iş senaryosu: stok listesi (ad+DÜŞEYARA, doğrulama, koşullu biçim, sırala, filtre, ALTTOPLAM, not) + stok.xlsx örnek dosya gidiş-dönüşü | 7 | 7 | 0 |
+| `test_sirala.py` | Sırala (5c): Türkçe harmanlama, karışık tür, çok düzey, renk, gizli satır, formül kayması, geri al | 28 | 28 | 0 |
+| `test_sirala_arayuz.py` | Sırala arayüzü (5c): A→Z/Z→A, Sıralama Uyarısı, Özel Sıralama penceresi | 12 | 12 | 0 |
 | `test_stil.py` | Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al | 26 | 26 | 0 |
 | `test_toplu_ve_sonuc.py` | Toplu yazım ve girdi/sonuç ayrımı (K4) | 12 | 12 | 0 |
+| `test_xlsx_io.py` |  | 17 | 17 | 0 |
+| `test_xlsx_ornekler.py` |  | 9 | 9 | 0 |
+| `test_yazdir.py` |  | 16 | 16 | 0 |
 | `test_yerellestirme.py` | TR ⇄ kanonik çeviri: ayırıcılar, fonksiyon/hata adları, sayfa başvuruları | 37 | 37 | 0 |
-| **Toplam** | | **1474** | **1474** | **0** |
+| **Toplam** | | **2518** | **2518** | **0** |
+
+### `testler/test_adlar.py` — 74/74 ✅
+*Adlandırılmış aralıklar (5d): doğrulama, kapsam, göreli ad, yeniden adlandırma, ekle-sil, .xlsx*
+
+- ✅ TestDogrulama::test gecerli `[Fiyat]
+- ✅ TestDogrulama::test gecerli `[KDV.Oran\u0131]
+- ✅ TestDogrulama::test gecerli `[_x]
+- ✅ TestDogrulama::test gecerli `[\xc7eyrek_1]
+- ✅ TestDogrulama::test gecerli `[\\x]
+- ✅ TestDogrulama::test gecerli `[XFE1]
+- ✅ TestDogrulama::test gecerli `[a1b]
+- ✅ TestDogrulama::test gecerli `[Rate]
+- ✅ TestDogrulama::test gecersiz `[]
+- ✅ TestDogrulama::test gecersiz `[A1]
+- ✅ TestDogrulama::test gecersiz `[XFD1048576]
+- ✅ TestDogrulama::test gecersiz `[KDV2]
+- ✅ TestDogrulama::test gecersiz `[R]
+- ✅ TestDogrulama::test gecersiz `[C]
+- ✅ TestDogrulama::test gecersiz `[r]
+- ✅ TestDogrulama::test gecersiz `[c]
+- ✅ TestDogrulama::test gecersiz `[R1C1]
+- ✅ TestDogrulama::test gecersiz `[R5]
+- ✅ TestDogrulama::test gecersiz `[C5]
+- ✅ TestDogrulama::test gecersiz `[RC]
+- ✅ TestDogrulama::test gecersiz `[Toplam 1]
+- ✅ TestDogrulama::test gecersiz `[1x]
+- ✅ TestDogrulama::test gecersiz `[a-b]
+- ✅ TestDogrulama::test gecersiz `[DO\u011eRU]
+- ✅ TestDogrulama::test gecersiz `[YANLI\u015e]
+- ✅ TestDogrulama::test gecersiz `[true]
+- ✅ TestDogrulama::test gecersiz `[False]
+- ✅ TestDogrulama::test gecersiz `[xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx]
+- ✅ TestDogrulama::test gecersiz `[ x]
+- ✅ TestDogrulama::test 255 karakter gecerli
+- ✅ TestDogrulama::test kontrol yinelenen buyuk kucuk duyarsiz
+- ✅ TestDogrulama::test kontrol kapsam yok ve formul yok
+- ✅ TestDegerlendirme::test aralik adi
+- ✅ TestDegerlendirme::test sabit ad
+- ✅ TestDegerlendirme::test buyuk kucuk harf duyarsiz
+- ✅ TestDegerlendirme::test turkce buyuk i
+- ✅ TestDegerlendirme::test tanimsiz ad hata
+- ✅ TestDegerlendirme::test ad sonradan tanimlaninca hesaplanir
+- ✅ TestDegerlendirme::test silinen ad hata formul metni korunur
+- ✅ TestDegerlendirme::test degisen hucre yeniden hesaplanir
+- ✅ TestDegerlendirme::test ad formulu degisince yeniden hesaplanir
+- ✅ TestDegerlendirme::test baska sayfa adi
+- ✅ TestDegerlendirme::test ad baska adi kullanir
+- ✅ TestDegerlendirme::test ozyinelemeli ad
+- ✅ TestDegerlendirme::test kendine basvuran ad
+- ✅ TestDegerlendirme::test hucre dongusu ad uzerinden
+- ✅ TestDegerlendirme::test hata degeri ad
+- ✅ TestDegerlendirme::test metin ve bos
+- ✅ TestDegerlendirme::test bozuk ad formulu
+- ✅ TestKapsam::test sayfa kapsami kitabi golgeler
+- ✅ TestKapsam::test sayfa kapsami baska sayfada gorunmez
+- ✅ TestKapsam::test ayni ad iki sayfada
+- ✅ TestKapsam::test sayfa silinince ad kalir geri alinca doner
+- ✅ TestGoreli::test goreli ad a1e gore — Ad A1'e göre saklanır: `=[1]!A1` (göreli) hücrenin kendi konumundan aynı kayma uygulanır.
+- ✅ TestGoreli::test goreli ad motor bagimliligi
+- ✅ TestGoreli::test goreli ad baska hucrede
+- ✅ TestKomut::test ekle geri al yinele
+- ✅ TestKomut::test duzenle
+- ✅ TestKomut::test sil
+- ✅ TestKomut::test yeniden adlandir formulleri duzeltir
+- ✅ TestKomut::test yeniden adlandir golgelenen sayfaya dokunmaz
+- ✅ TestKomut::test yeniden adlandir yalniz buyuk kucuk formul degismez
+- ✅ TestKomut::test adi degistir metin ve baska sozcuk
+- ✅ TestKomut::test yinelenen ad komutu kurulamaz
+- ✅ TestEkleSilTasi::test satir ekle ad formulunu duzeltir
+- ✅ TestEkleSilTasi::test satir sil aralik kuculur ve tamamen silinen ref
+- ✅ TestEkleSilTasi::test kes yapistir adi kaydirir
+- ✅ TestEkleSilTasi::test kes yapistir kismen tasinan ad degismez
+- ✅ TestEkleSilTasi::test kopyala yapistir ad etkilemez
+- ✅ TestPerformans::test ad eklemek 50000 formullu kitapta hizli
+- ✅ TestXlsx::test gidis donus
+- ✅ TestXlsx::test dosya icinde ingilizce metin
+- ✅ TestXlsx::test cevrilemeyen ad atlanir ve raporlanir
+- ✅ TestXlsx::test yazdirma alani ad sayilmaz
+
+### `testler/test_adlar_arayuz.py` — 17/17 ✅
+*Ad Tanımla/Ad Yöneticisi/Ad Kutusu/Git (5d)*
+
+- ✅ ad kutusu secimi adlandirir ve geri alinir
+- ✅ ad kutusu ada gider
+- ✅ ad kutusu baska sayfadaki ada gider
+- ✅ ad kutusu gecersiz ad uyarir
+- ✅ git mevcut olmayan ad tanimlamaz
+- ✅ sabit ad aralik degil uyarir
+- ✅ git penceresi adlari listeler
+- ✅ tamamlayici adlari gunceller
+- ✅ ad tanimla penceresi secimden
+- ✅ ad tanimla penceresi hatalar
+- ✅ ad tanimla turkce formul ve sayfaya baglama
+- ✅ ad tanimla pencere komutu ve duzenleme
+- ✅ ad yoneticisi listeler ve siler
+- ✅ ad yoneticisi kisayolu acar
+- ✅ formul oneri listesi tanimli adlari icerir
+- ✅ duzenleyici ad onerisi kabul parantez eklemez
+- ✅ ad formulde otomatik cozulur ve ad silinince hata
 
 ### `testler/test_adres.py` — 26/26 ✅
 *Adresleme: A1 ⇄ satır/sütun, $ mutlak, aralıklar, sınırlar (XFD, 1.048.576)*
@@ -148,6 +289,354 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ kotu aralik `[A:5]
 - ✅ kotu aralik `[1:1048577]
 - ✅ aralik icinde
+
+### `testler/test_akilli_giris.py` — 92/92 ✅
+**
+
+- ✅ yuzde `[15%-0.15-0%]
+- ✅ yuzde `[%15-0.15-0%]
+- ✅ yuzde `[15,5%-0.155-0.0%]
+- ✅ yuzde `[0%-0.0-0%]
+- ✅ yuzde `[-5%--0.05-0%]
+- ✅ yuzde `[1.234%-12.34-0%]
+- ✅ para `[\u20ba100-100.0-"\u20ba"#,##0]
+- ✅ para `[100 \u20ba-100.0-"\u20ba"#,##0]
+- ✅ para `[$1.234,50-1234.5-"$"#,##0.00]
+- ✅ para `[\u20ac5-5.0-#,##0 "\u20ac"]
+- ✅ para `[-\u20ba100--100.0-"\u20ba"#,##0]
+- ✅ para `[100\u20ac-100.0-#,##0 "\u20ac"]
+- ✅ kesir `[1 1/2-1.5-# ?/?]
+- ✅ kesir `[0 3/4-0.75-# ?/?]
+- ✅ kesir `[2 1/10-2.1-# ??/??]
+- ✅ kesir `[-1 1/2--1.5-# ?/?]
+- ✅ kesir sifira bolme metin
+- ✅ saat `[14:30-0.6041666666666666-hh:mm]
+- ✅ saat `[14:30:15-0.6043402777777778-hh:mm:ss]
+- ✅ saat `[2:30 \xd6S-0.6041666666666666-h:mm AM/PM]
+- ✅ saat `[12:00 AM-0.0-h:mm AM/PM]
+- ✅ saat `[12:30 PM-0.5208333333333334-h:mm AM/PM]
+- ✅ saat `[0:00-0.0-hh:mm]
+- ✅ gecersiz saat metin `[25:00]
+- ✅ gecersiz saat metin `[12:60]
+- ✅ gecersiz saat metin `[13:00 PM]
+- ✅ gecersiz saat metin `[14:30:75]
+- ✅ gecersiz saat metin `[1:2]
+- ✅ tarih `[12.10.2026-46307.0-d.mm.yyyy]
+- ✅ tarih `[12/10/2026-46307.0-d.mm.yyyy]
+- ✅ tarih `[12-10-2026-46307.0-d.mm.yyyy]
+- ✅ tarih `[12.10.26-46307.0-d.mm.yyyy]
+- ✅ tarih `[12.10-46307.0-d mmmm]
+- ✅ tarih `[12 Ekim 2026-46307.0-d mmmm yyyy]
+- ✅ tarih `[12 Eki 2026-46307.0-dd mmm yyyy]
+- ✅ tarih `[12 Eki-46307.0-d mmm]
+- ✅ tarih `[12 ekim-46307.0-d mmmm]
+- ✅ tarih `[29.2.2024-45351.0-d.mm.yyyy]
+- ✅ tarih `[1.1.1900-1.0-d.mm.yyyy]
+- ✅ tarih `[1.5-46143.0-d mmmm]
+- ✅ iki haneli yil penceresi
+- ✅ gecersiz tarih metin kalir `[31.2.2026]
+- ✅ gecersiz tarih metin kalir `[29.2.2025]
+- ✅ gecersiz tarih metin kalir `[32.1.2026]
+- ✅ gecersiz tarih metin kalir `[12.13.2026]
+- ✅ gecersiz tarih metin kalir `[0.5.2026]
+- ✅ gecersiz tarih metin kalir `[12.10/2026]
+- ✅ gecersiz tarih metin kalir `[1.50]
+- ✅ gecersiz tarih metin kalir `[12.34.56]
+- ✅ gecersiz tarih metin kalir `[1.1.1899]
+- ✅ tarih ve saat
+- ✅ duz sayi ve bilimsel
+- ✅ diger kurallar degismez
+- ✅ girdi coz degismedi dis yapistirma icin
+- ✅ duzenleme metni bicimli `[46307.0-d.mm.yyyy-12.10.2026]
+- ✅ duzenleme metni bicimli `[46307.0-d mmmm yyyy dddd-12.10.2026]
+- ✅ duzenleme metni bicimli `[46307.604166666664-d.mm.yyyy hh:mm-12.10.2026 14:30:00]
+- ✅ duzenleme metni bicimli `[0.6041666666666666-hh:mm-14:30:00]
+- ✅ duzenleme metni bicimli `[0.15-0%-15%]
+- ✅ duzenleme metni bicimli `[0.155-0.0%-15,5%]
+- ✅ duzenleme metni bicimsiz ve diger
+- ✅ hucreye tarih yazinca deger ve bicim
+- ✅ yuzde para saat yaziminda bicim onerilir
+- ✅ dolu bicimli hucrede bicim degismez
+- ✅ metin bicimli hucre her girdiyi metin tutar
+- ✅ duzenleme acilinca tarih gosterilir ve ayni deger kalir
+- ✅ formul ve duz sayi etkilenmez
+- ✅ tarih hucresi ekranda bicimli gorunur
+- ✅ metin tarihi aritmetikte sayiya cevrilir
+- ✅ text `[=TEXT(1234.5,"#.##0,00")-1.234,50-None]
+- ✅ text `[=TEXT(46307,"gg.aa.yyyy")-12.10.2026-None]
+- ✅ text `[=TEXT(0.256,"0,0%")-25,6%-None]
+- ✅ text `[=TEXT(12,"000")-012-None]
+- ✅ text `[=TEXT(46307,"d mmmm yyyy dddd")-12 Ekim 2026 Pazartesi-None]
+- ✅ text `[=TEXT(0.5,"hh:mm")-12:00-None]
+- ✅ text `[=TEXT(1234.5,"Genel")-1234,5-None]
+- ✅ text `[=TEXT(-5,"0,00")--5,00-None]
+- ✅ text `[=TEXT(1234.5,"#.##0,00 ""TL""")-1.234,50 TL-None]
+- ✅ text `[=TEXT(A1,"0,00")-0,00-veri9]
+- ✅ text `[=TEXT(5,"")--None]
+- ✅ text `[=TEXT(,"0")-0-None]
+- ✅ text `[=TEXT(#N/A,"0")-beklenen12-None]
+- ✅ text `[=TEXT(1/0,"0")-beklenen13-None]
+- ✅ text `[=TEXT(1,"[x")-beklenen14-None]
+- ✅ text `[=TEXT(A1,"0")-beklenen15-veri15]
+- ✅ text `[=TEXT("abc","0")-abc-None]
+- ✅ text `[=TEXT("12","0,0")-12,0-None]
+- ✅ text `[=TEXT(TRUE,"0")-DO\u011eRU-None]
+- ✅ text `[=TEXT("12.10.2026","gg.aa.yy")-12.10.26-None]
+- ✅ text `[=TEXT(A1,"0,0")-10,0-veri20]
+- ✅ text `[=TEXT(-1,"gg.aa.yyyy")-beklenen21-None]
+- ✅ text dizi yayilir
+
+### `testler/test_arka_plan.py` — 7/7 ✅
+**
+
+- ✅ sonuc ve ayri is parcacigi
+- ✅ istisna ana is parcacigina aktarilir
+- ✅ olay dongusu calismaya devam eder — İşlem sürerken ana iş parçacığının zamanlayıcıları işler (arayüz donmaz).
+- ✅ uzun islemde pencere kilitlenir ve acilir
+- ✅ kisa islemde pencere hic kilitlenmez
+- ✅ hata sonrasi pencere acik kalir
+- ✅ buyuk dosya arka planda acilir ve kaydedilir — Gerçek akış: 20.000 hücre kaydet → aç, ana iş parçacığı olay işler.
+
+### `testler/test_bicim_boyaci.py` — 14/14 ✅
+**
+
+- ✅ tek hucre kaynak tek hucre hedef
+- ✅ tek hucre kaynak buyuk hedefe yayilir
+- ✅ cok hucreli kaynak tek hucreye tum deseni boyar
+- ✅ desen buyuk hedefe yinelenir ve kirpilir
+- ✅ hedef sayfa sonunda kirpilir
+- ✅ satir stili kaynak hucrede okunur
+- ✅ cok buyuk hedef reddedilir
+- ✅ tek tik bir kez boyar
+- ✅ surukleyerek aralik boyar tek geri al
+- ✅ cift tik kalici esc bitirir
+- ✅ dugmeye yeniden basmak kapatir
+- ✅ coklu secimde alinamaz
+- ✅ kaynak kendine boyanirsa komut eklenmez
+- ✅ sayfa degisince boyaci biter
+
+### `testler/test_bicim_cubugu.py` — 23/23 ✅
+**
+
+- ✅ cubuk pencerede ve sozlesme
+- ✅ kalin italik alti cizili tum secime
+- ✅ dugme etkin hucreye bakar — Etkin hücre kalın, diğerleri değil: düğme kapatır ve hepsini kalın-dışı yapar (Excel gibi).
+- ✅ cubuk etkin hucreyi yansitir
+- ✅ geri al cubugu gunceller
+- ✅ tek geri al adimi
+- ✅ yazi boyutu kutusu ve buyut kucult
+- ✅ yazi tipi secimi
+- ✅ yazi ve dolgu rengi
+- ✅ renk paleti menusu var
+- ✅ kenarlik menusu
+- ✅ kenarlik tam sutunda
+- ✅ hizalama dugmeleri
+- ✅ metni kaydir ve girinti
+- ✅ sayi dugmeleri
+- ✅ ondalik genel bicimde gorunen ondaliktan baslar
+- ✅ sayi bicimi listesi
+- ✅ sayi bicimi ekranda gorunur
+- ✅ kisayollar
+- ✅ biçim formulleri ve icerigi degistirmez
+- ✅ duzenleme sirasinda odak calinmaz
+- ✅ cubuk baska sayfada
+- ✅ ekran goruntusu boyutlari — Çubuk 1100 px pencerede tek satırda sığar.
+
+### `testler/test_bicim_islem.py` — 23/23 ✅
+**
+
+- ✅ boyut adimlari
+- ✅ boyut coz
+- ✅ acma kapama dugmeleri `[kalin_yamasi-kalin-True-False]
+- ✅ acma kapama dugmeleri `[italik_yamasi-italik-True-False]
+- ✅ acma kapama dugmeleri `[ustu_cizili_yamasi-ustu_cizili-True-False]
+- ✅ acma kapama dugmeleri `[kaydir_yamasi-kaydir-True-False]
+- ✅ alti cizili
+- ✅ yatay ve dikey hiza tekrar basinca geri doner
+- ✅ girinti
+- ✅ sayi dugmeleri kodlari
+- ✅ ondalik artir azalt
+- ✅ ondalik bozuk kod none
+- ✅ hazir adi
+- ✅ dis kenarlik yalniz cerceve
+- ✅ tek hucrede dis kenarlik dort kenar
+- ✅ kalin dis
+- ✅ tum kenarliklar ic cizgiler dahil
+- ✅ tek kenar secenekleri
+- ✅ kenarlik yok hepsini kaldirir diger stili korur
+- ✅ kenarlik yok sinir hucrelerde dis kenarligi da siler
+- ✅ coklu secimde her bolge kendi cercevesi
+- ✅ kenarlik grubu tek adimda geri alinir
+- ✅ gecersiz secenek
+
+### `testler/test_bicim_kodlari.py` — 6/6 ✅
+**
+
+- ✅ kod olustur temel
+- ✅ hazir kodlar kategoriye gidis donus
+- ✅ bilinmeyen kod ozel
+- ✅ muhasebe ondalik
+- ✅ ozel kod yerel yazim
+- ✅ onizleme
+
+### `testler/test_bicim_penceresi.py` — 12/12 ✅
+**
+
+- ✅ baslangic degerleri
+- ✅ yalniz degisen alanlar
+- ✅ alanlar toplu
+- ✅ sayi sekmesi kategoriler
+- ✅ ozel kod yerel yazilir kanonik saklanir
+- ✅ gecersiz ozel kod uyarir kapanmaz
+- ✅ gecersiz boyut uyarir
+- ✅ kenarlik plani pencereden
+- ✅ ctrl1 uctan uca
+- ✅ iptal degistirmez
+- ✅ coklu secimde dokunulmayan alan korunur
+- ✅ pencere dugmesi ve formul degismez
+
+### `testler/test_birlesim.py` — 16/16 ✅
+**
+
+- ✅ yaz ve sorgula
+- ✅ gecersiz birlesimler
+- ✅ olay birlesim bilgisi
+- ✅ birlestir icerik siler sol ust kalir
+- ✅ veri kaybi yalniz sol ust doluysa yok
+- ✅ birlestir ve ortala stil
+- ✅ satirlar boyunca
+- ✅ tek hucre ve cozulecek yoksa none
+- ✅ coz
+- ✅ eski birlesimi kapsayan yeni birlesim
+- ✅ kismen kesen ve coklu aralik reddedilir
+- ✅ birlestirme formul motorunu gunceller
+- ✅ satir ekle birlesimi kaydirir buyutur
+- ✅ satir sil birlesimi kucultur ya da kaldirir
+- ✅ sutun ekle sil birlesimi
+- ✅ birlesim degis komutu geri al
+
+### `testler/test_birlesim_arayuz.py` — 17/17 ✅
+**
+
+- ✅ tiklama birlesimi secer etkin sol ust
+- ✅ secim birlesimi kesiyorsa genisler
+- ✅ ok tuslari birlesimi tek hucre gibi gezer
+- ✅ shift ok birlesimi atlamaz kapsar
+- ✅ enter birlesimden cikar
+- ✅ cizim ic cizgiler gorunmez
+- ✅ metin birlesimde ortalanir
+- ✅ dolgu birlesimin tamamini boyar
+- ✅ cizim birlesim kismen gorunurken
+- ✅ duzenleme birlesim alaninda
+- ✅ cubuk dugmesi ve menu
+- ✅ veri kaybi uyarisi
+- ✅ uyari gerektirmeyen birlestirme sormaz
+- ✅ coklu secim birlestirmez
+- ✅ satir ekle sil birlesim gorunur kalir
+- ✅ formul birlesik hucreyi okur
+- ✅ gizli sutunlu birlesim boyutu
+
+### `testler/test_birlesim_pano.py` — 12/12 ✅
+**
+
+- ✅ pano verisi tam kapsanan birlesimi alir
+- ✅ pano araligi bos birlesimi kirpmaz
+- ✅ yapistirma birlesimleri yinelemede cogalir
+- ✅ birlesim kismen kesiyor
+- ✅ hucre tasi birlesimi tasir ve geri alir
+- ✅ hucre tasi ust uste binen alan
+- ✅ hucre tasi hedefteki eski birlesim kalkar
+- ✅ hucre tasi sayfalar arasi
+- ✅ kopyala yapistir birlesimi tasir
+- ✅ yapistirma eski birlesimi kaldirir
+- ✅ yapistirma birlesimi kismen keserse reddedilir
+- ✅ kes yapistir birlesimi tasir
+
+### `testler/test_bul.py` — 29/29 ✅
+*Bul/Değiştir modeli (5b): joker, büyük/küçük harf, formül/değer/not arama, Tümünü Değiştir*
+
+- ✅ TestJoker::test alt dize ve buyuk kucuk turkce
+- ✅ TestJoker::test buyuk kucuk duyarli
+- ✅ TestJoker::test jokerler
+- ✅ TestJoker::test tam hucre
+- ✅ TestJoker::test ortak modulle ayni kurallar
+- ✅ TestEslesmeler::test sonraki hucreden baslar ve sarar
+- ✅ TestEslesmeler::test satir ve sutun sirasi
+- ✅ TestEslesmeler::test secimde ara
+- ✅ TestEslesmeler::test buyuk kucuk ve tam hucre
+- ✅ TestEslesmeler::test bos aranan bir sey bulmaz
+- ✅ TestEslesmeler::test formul modu turkce formul metninde arar
+- ✅ TestEslesmeler::test deger modu gorunen metin
+- ✅ TestEslesmeler::test not modu
+- ✅ TestEslesmeler::test birlesim kapsanan hucreler atlanir
+- ✅ TestEslesmeler::test kitap kapsami sayfa sirasi
+- ✅ TestEslesmeler::test yuz bin hucrede hizli
+- ✅ TestYeniMetin::test her eslesme degisir buyuk kucuk duyarsiz
+- ✅ TestYeniMetin::test buyuk kucuk duyarli
+- ✅ TestYeniMetin::test tam hucre tumunu degistirir
+- ✅ TestYeniMetin::test joker ve bos yeni metin
+- ✅ TestYeniMetin::test yeni metin oldugu gibi joker islenmez
+- ✅ TestDegistir::test tumunu degistir tek geri al
+- ✅ TestDegistir::test sayiya donusur elle yazilmis gibi
+- ✅ TestDegistir::test tarih genel hucreye sayi bicimi oner
+- ✅ TestDegistir::test formulde degistirir ve hesaplanir
+- ✅ TestDegistir::test gecersiz formul atlanir ve sayilir
+- ✅ TestDegistir::test not ve deger modunda degistirilmez
+- ✅ TestDegistir::test degisim yoksa komut yok
+- ✅ TestDegistir::test coklu sayfa tek adim
+
+### `testler/test_bul_arayuz.py` — 12/12 ✅
+*Bul/Değiştir/Git penceresi ve kısayollar (5b)*
+
+- ✅ menu eylemleri ve pencere
+- ✅ sonrakini bul hucreye gider ve sarar
+- ✅ onceki bul
+- ✅ secim icinde arama kisiti korur
+- ✅ tumunu bul listesi ve tiklayinca gider
+- ✅ sayfa degistirerek bulur
+- ✅ tumunu degistir tek geri al
+- ✅ degistir etkin hucre eslesirse degistirir sonrakine gecer
+- ✅ degerler ve notlar modunda degistir kapali
+- ✅ formul icinde degistir turkce metinde
+- ✅ git adrese
+- ✅ sonrakini bul kisayolu pencere kapaliyken
+
+### `testler/test_csv_io.py` — 21/21 ✅
+**
+
+- ✅ kodlama tani
+- ✅ cp1254 dosya dogru okunur
+- ✅ ayrac tani `[a;b;c\n1;2;3\n-;]
+- ✅ ayrac tani `[a,b,c\n1,2,3\n-,]
+- ✅ ayrac tani `[a\tb\tc\n1\t2\t3\n-\t]
+- ✅ ayrac tani `[a|b|c\n1|2|3\n-|]
+- ✅ ayrac tani `[ad;fiyat\nkalem;1,5\nsilgi;2,25\n-;]
+- ✅ ayrac tani `[ad,not\n"Ali, Veli",5\n"Ay\u015fe, Fatma",6\n-,]
+- ✅ ayrac tani `[tek s\xfctun\nba\u015fka\n-;]
+- ✅ ayrac tani `[-;]
+- ✅ tirnakli cok satirli alan
+- ✅ alanlar elle yazilmis gibi cozulur
+- ✅ metin olarak hicbir sey cevrilmez
+- ✅ bozuk formul metin kalir
+- ✅ bos alan ve kisa satir
+- ✅ sayfa adi uret
+- ✅ yaz gorunen metin ve tirnaklama
+- ✅ yaz formul sonucu ve bos sayfa
+- ✅ gidis donus dosya
+- ✅ yazma hatasinda eski dosya bozulmaz
+- ✅ eksik dosya
+
+### `testler/test_csv_menu.py` — 8/8 ✅
+**
+
+- ✅ csv ac yeni pencerede xlsx onerir
+- ✅ csv iptal
+- ✅ csv penceresi gercek onizleme
+- ✅ csv olarak kaydet
+- ✅ csv filtresiyle uzantisiz kaydet
+- ✅ csv cok sayfa uyarisi
+- ✅ ayni csv iki kez acilmaz
+- ✅ gercek csv penceresi yolu — Önizleme penceresi `exec` yamalanıp Tamam'a basılmış gibi: dosya → kitap tüm zinciri.
 
 ### `testler/test_degerlendir.py` — 46/46 ✅
 *Formül değerlendirici: tür dönüşümleri, dizi yayma, hata yayılımı, 15 basamak*
@@ -199,6 +688,160 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ karsilastir turkce
 - ✅ aralik deger buyuk aralik
 
+### `testler/test_dogrulama.py` — 45/45 ✅
+*Veri doğrulama (5g): model, komut, denetim (tür × işleç, liste, özel), ekle-sil, .xlsx*
+
+- ✅ TestKuralModeli::test gecersiz alanlar
+- ✅ TestKuralModeli::test yeni kural eskinin ustune gelir
+- ✅ TestKuralModeli::test kaldirma ve tamamen ortulen kural duser
+- ✅ TestKuralModeli::test sayfa dogrulama arama ve olay
+- ✅ TestKuralModeli::test liste sabiti
+- ✅ TestKomut::test yap geri al yinele ve bos
+- ✅ TestSayisalTurler::test tam sayi arasinda
+- ✅ TestSayisalTurler::test metin bool hata gecersiz
+- ✅ TestSayisalTurler::test bos girdi bos yoksay
+- ✅ TestSayisalTurler::test islecler `[arasinda_degil-1.0-3.0-gecen0-gecmeyen0]
+- ✅ TestSayisalTurler::test islecler `[esit-2.0-None-gecen1-gecmeyen1]
+- ✅ TestSayisalTurler::test islecler `[esit_degil-2.0-None-gecen2-gecmeyen2]
+- ✅ TestSayisalTurler::test islecler `[buyuk-2.0-None-gecen3-gecmeyen3]
+- ✅ TestSayisalTurler::test islecler `[kucuk-2.0-None-gecen4-gecmeyen4]
+- ✅ TestSayisalTurler::test islecler `[buyuk_esit-2.0-None-gecen5-gecmeyen5]
+- ✅ TestSayisalTurler::test islecler `[kucuk_esit-2.0-None-gecen6-gecmeyen6]
+- ✅ TestSayisalTurler::test tarih ve saat seri sayi
+- ✅ TestSayisalTurler::test metin uzunlugu
+- ✅ TestSayisalTurler::test baska hucreye bakan formul
+- ✅ TestSayisalTurler::test goreli basvuru hucreye gore kayar
+- ✅ TestSayisalTurler::test bozuk formul gecersiz
+- ✅ TestListe::test sabit liste buyuk kucuk duyarsiz turkce
+- ✅ TestListe::test sayi ve metin ayni gorunumde eslesir
+- ✅ TestListe::test aralik listesi ve degisince
+- ✅ TestListe::test ogeler bos hucre acilir listede bos satir
+- ✅ TestListe::test tanimli ad ve baska sayfa
+- ✅ TestListe::test hatali kaynak gecersiz ve bos
+- ✅ TestOzel::test formul yeni degerle degerlenir
+- ✅ TestOzel::test hucre degeri geri konur
+- ✅ TestOzel::test baska hucre ve sifir degil sayi
+- ✅ TestEkleSil::test satir ekle aralik ve formul kayar geri al
+- ✅ TestEkleSil::test liste sabiti ekle silde degismez
+- ✅ TestEkleSil::test aralik silinince kural duser
+- ✅ TestXlsx::test gidis donus `[dv0]
+- ✅ TestXlsx::test gidis donus `[dv1]
+- ✅ TestXlsx::test gidis donus `[dv2]
+- ✅ TestXlsx::test gidis donus `[dv3]
+- ✅ TestXlsx::test gidis donus `[dv4]
+- ✅ TestXlsx::test gidis donus `[dv5]
+- ✅ TestXlsx::test gidis donus `[dv6]
+- ✅ TestXlsx::test gidis donus `[dv7]
+- ✅ TestXlsx::test gidis donus `[dv8]
+- ✅ TestXlsx::test liste sayfa adi cevrilir
+- ✅ TestXlsx::test tara uyari vermez
+- ✅ TestXlsx::test dogrulamasiz dosya
+
+### `testler/test_dogrulama_arayuz.py` — 21/21 ✅
+*Veri doğrulama arayüzü (5g): pencere, giriş denetimi, açılır liste, giriş iletisi*
+
+- ✅ menu acik
+- ✅ pencereden uygula geri al temizle
+- ✅ etkisiz kural kaldirir
+- ✅ karisik secimde soru
+- ✅ ayni kuralla tamamen kapli secimde soru yok
+- ✅ geri yonlu secimde goreli formul capaya kayar
+- ✅ gecersiz giris durdur tekrar ve iptal
+- ✅ uyari stili devam yazar
+- ✅ hata uyarisi kapaliysa sessizce izin
+- ✅ formul girisi ve silme denetlenmez
+- ✅ yapistirma denetlenmez kopya notu
+- ✅ bos girdi bos yoksay
+- ✅ acilir liste ogeleri ve secim
+- ✅ acilir liste kapali ya da baska tur
+- ✅ dugme dikdortgeni tiklama ve alt asagi
+- ✅ giris iletisi gosterilir ve kapanir
+- ✅ tumunu temizle kurali da kaldirir
+- ✅ pencere liste ve sayi donusumu
+- ✅ pencere ozel ve formul hatasi ve tarih
+- ✅ pencere yukle ve yeniden olustur
+- ✅ pencere duzen alanlari
+
+### `testler/test_doldur.py` — 29/29 ✅
+**
+
+- ✅ tek sayi kopyalanir
+- ✅ iki sayi sabit adim
+- ✅ uc sayi dogrusal egilim
+- ✅ sayi serisi geri
+- ✅ ondalik adim artik birakmaz
+- ✅ tek tarih gun artar
+- ✅ iki tarih gun adimi
+- ✅ aylik tarih serisi ayni gun
+- ✅ yillik ve ay sonu kisaltma
+- ✅ tarih biçimsiz sayi gun degil sayi
+- ✅ tarih geri
+- ✅ ay adlari
+- ✅ ad buyuk kucuk harf korunur
+- ✅ ad geri ve duzensiz
+- ✅ metin sayi
+- ✅ metin sayi adim ve geri
+- ✅ formul kayar
+- ✅ formul geri ve yatay
+- ✅ metin mantiksal desen yinelenir
+- ✅ bos hucre hedefi bosaltir
+- ✅ bicim desen olarak kopyalanir
+- ✅ coklu serit ayri seri
+- ✅ yatay doldurma
+- ✅ gecersiz hedef
+- ✅ ctrl d ilk satir kopyalanir
+- ✅ ctrl d tek hucre ustten
+- ✅ ctrl r
+- ✅ ctrl d bicim gelir
+- ✅ bitisik son satir
+
+### `testler/test_doldur_arayuz.py` — 17/17 ✅
+**
+
+- ✅ ctrl d ve ctrl r
+- ✅ ctrl d tek hucre ustten ve ilk satir bos
+- ✅ ctrl d bicim gelir ve tam sutun sinirlanir
+- ✅ ctrl d coklu secimde uyarir
+- ✅ ctrl enter girdiyi tum secime yazar
+- ✅ ctrl enter tek hucrede olagan ve deger sabit
+- ✅ tutamac secimin sag altinda ve coklu secimde yok
+- ✅ tutamac gorunur ve imlec
+- ✅ surukle asagi seri
+- ✅ surukle yukari sola saga
+- ✅ surukle asagi formul kayar ve bicim
+- ✅ surukle kaynak icine degisiklik yok
+- ✅ onizleme cerceve cizilir
+- ✅ cift tik komsu veri sonuna doldurur
+- ✅ cift tik komsu yoksa bir sey yapmaz
+- ✅ birlesik hucrelere doldurma reddedilir
+- ✅ doldurma formul motorunu gunceller
+
+### `testler/test_dondurma.py` — 22/22 ✅
+**
+
+- ✅ model gorunum yaz ve olay
+- ✅ gorunum geri al yigininda degil
+- ✅ ust satir donar ve kaydirilirken gorunur kalir
+- ✅ ilk sutun donar
+- ✅ bolme etkin hucrenin ustu ve solu
+- ✅ etkin hucre ilk hucredeyse dondurma olmaz
+- ✅ dondurmayi kaldir
+- ✅ bilinmeyen tur
+- ✅ pencereyi dolduran dondurma reddedilir
+- ✅ nokta hucre eslemesi dondurmayla
+- ✅ gezinme dondurulmus bolgeye ve kayan bolgeye
+- ✅ secim dondurma siniri boyunca
+- ✅ pano ve ozet dondurmadan etkilenmez
+- ✅ dondurma cizgisi cizilir
+- ✅ dondurulmus bolme kaydirilinca ayni pikselleri verir
+- ✅ artimli kaydirma dondurmada tam cizimle ayni
+- ✅ metin dondurma cizgisini asmaz
+- ✅ kilavuz gizle goster piksel
+- ✅ kilavuz gizliyken dolgu ve kenarlik gorunur
+- ✅ gorunum menusu
+- ✅ gorunum sayfaya ozel
+- ✅ acilista kayitli dondurma uygulanir
+
 ### `testler/test_dongu_arayuz.py` — 5/5 ✅
 *Döngüsel başvuru uyarısı (6e): durum çubuğu etiketi, tek uyarı*
 
@@ -207,6 +850,179 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ dongu cozulunce etiket kalkar
 - ✅ kendine basvuru ve geri al uyarmaz
 - ✅ baska sayfadaki dongu adressiz etiket
+
+### `testler/test_dosya_menusu.py` — 17/17 ✅
+**
+
+- ✅ degisti isareti ve baslik
+- ✅ farkli kaydet ve kaydet
+- ✅ farkli kaydet iptal
+- ✅ ac yeni pencerede ve bos pencere kapanir
+- ✅ dolu pencere kapanmaz
+- ✅ ayni dosya iki kez acilmaz
+- ✅ ac penceresi diyalogdan
+- ✅ bozuk ve eksik dosya iletisi
+- ✅ veri kaybi bilgi cubugu ve onay
+- ✅ yine de kaydet
+- ✅ kapatirken sorma `[kaydetme-True-False]
+- ✅ kapatirken sorma `[iptal-False-False]
+- ✅ kapatirken sorma `[kaydet-True-True]
+- ✅ degismemis pencere sormadan kapanir
+- ✅ son dosyalar
+- ✅ son dosyalar bozuk json
+- ✅ sayfa yapisi gidis donus pencereden — Pencereden kaydedilen dosya yeniden açılınca aynı: biçim + formül + ikinci sayfa.
+
+### `testler/test_faz5_altyapi.py` — 65/65 ✅
+*Faz 5 ortak altyapı (5a): aralık yardımcıları, ek veri depoları + ekle-sil, harmanlama, ağaç kaydırma, ek/ad olayları, menü iskeleti*
+
+- ✅ TestAralikKaydir::test ekleme oncesi kaydirir icine buyutur sonrasi dokunmaz
+- ✅ TestAralikKaydir::test silme kucultur kaydirir tamamen silineni kaldirir
+- ✅ TestAralikKaydir::test sayfa sinirina itilen
+- ✅ TestAralikKaydir::test tam sutun satir korunur
+- ✅ TestAralikCikar::test kesisim yoksa aynen
+- ✅ TestAralikCikar::test tamamen ortulurse bos
+- ✅ TestAralikCikar::test ortadan delik dort parca
+- ✅ TestAralikCikar::test alan esitligi `[a0-b0]
+- ✅ TestAralikCikar::test alan esitligi `[a1-b1]
+- ✅ TestAralikCikar::test alan esitligi `[a2-b2]
+- ✅ TestAralikCikar::test alan esitligi `[a3-b3]
+- ✅ TestAralikCikar::test alan esitligi `[a4-b4]
+- ✅ TestBitisikBolge::test tek hucre
+- ✅ TestBitisikBolge::test bos hucre komsusuz kendisi
+- ✅ TestBitisikBolge::test dikdortgen tablo
+- ✅ TestBitisikBolge::test capraz komsu dahil
+- ✅ TestBitisikBolge::test bosluk ayirir
+- ✅ TestBitisikBolge::test sayfa kenarinda
+- ✅ TestBitisikBolge::test bos hucre icinden baslayinca
+- ✅ TestMetinAnahtari::test turkce alfabe sirasi
+- ✅ TestMetinAnahtari::test ozel harfler komsu harflerin arasinda
+- ✅ TestMetinAnahtari::test noktali noktasiz i buyuk harfler
+- ✅ TestMetinAnahtari::test buyuk kucuk harf birincil olarak esit
+- ✅ TestMetinAnahtari::test buyuk kucuk duyarli kucuk once
+- ✅ TestMetinAnahtari::test rakam harften once noktalama rakamdan once
+- ✅ TestMetinAnahtari::test rakamlar metin olarak karakter karakter
+- ✅ TestMetinAnahtari::test kisa cizgi ve kesme birincil yok sayilir
+- ✅ TestMetinAnahtari::test aksanli yabanci harf temel harfle esit sonra
+- ✅ TestMetinAnahtari::test onek kisa once
+- ✅ TestMetinAnahtari::test gercek isimler
+- ✅ TestDegerAnahtari::test artan duzen
+- ✅ TestDegerAnahtari::test azalan duzen
+- ✅ TestDegerAnahtari::test hatalar birbirine esit kararli
+- ✅ TestDegerAnahtari::test metin turkce harmanla
+- ✅ TestDegerAnahtari::test sayi onbes basamak
+- ✅ TestDegerAnahtari::test sayi metinden once bool sayidan ayri
+- ✅ TestDegerAnahtari::test buyuk kucuk duyarli metin
+- ✅ agac kaydir kopyala ile ayni rastgele formuller
+- ✅ agac kaydir sayfa disina cikan ref hatasi
+- ✅ agac kaydir degismeyeni paylasir ve onbellekler
+- ✅ agac kaydir hiz
+- ✅ TestEkVeriKaydirma::test notlar satir ekle sil
+- ✅ TestEkVeriKaydirma::test notlar sutun ekle sil
+- ✅ TestEkVeriKaydirma::test dogrulama ve kosullu araliklari kayar buyur kuculur duser
+- ✅ TestEkVeriKaydirma::test araligi kalmayan kural duser
+- ✅ TestEkVeriKaydirma::test filtre araligi kayar baslik silinirse kalkar
+- ✅ TestEkVeriKaydirma::test filtre tamamen silinirse kalkar
+- ✅ TestEkVeriKaydirma::test ek veri yoksa maliyetsiz ve hatasiz
+- ✅ TestEkDurumu::test gidis donus
+- ✅ TestEkDurumu::test durum kopyadir
+- ✅ TestEkDurumu::test yukle tek ek olayi degismediyse olay yok
+- ✅ TestAdDeposu::test kapsam onceligi ve buyuk kucuk duyarsiz
+- ✅ TestAdDeposu::test turkce buyuk kucuk
+- ✅ TestAdDeposu::test silinen sayfanin kapsamli adi gorunmez geri gelince doner
+- ✅ TestAdDeposu::test ad olaylari
+- ✅ TestAdDeposu::test yeniden adlandirma eski anahtari kaldirir
+- ✅ TestAdDeposu::test durum yukle
+- ✅ TestAdDeposu::test ad olayi motoru yeniden hesaplatir ve ek yok sayilir
+- ✅ TestEkKomutlari::test satir ekle geri al yinele
+- ✅ TestEkKomutlari::test satir sil geri al silinen notu ve kurali geri getirir
+- ✅ TestEkKomutlari::test sutun komutu ad formullerini duzeltir ve geri alir
+- ✅ TestEkKomutlari::test baska sayfadaki dogrulama formulu de duzelir
+- ✅ TestEkKomutlari::test ek duzeltmeleri degisiklik yoksa false
+- ✅ birlesim davranisi degismedi — `_birlesimleri_kaydir` artık `aralik_kaydir` kullanır; mevcut davranış aynı.
+- ✅ duzen ve veri menu iskeleti ve olaylar pencereyi bozmaz
+
+### `testler/test_filtre.py` — 60/60 ✅
+*Filtre + ALTTOPLAM (5f): her koşul türü, komut, ALTTOPLAM 1–11/101–111, motor yeniden hesap, .xlsx*
+
+- ✅ TestDegerKosulu::test normal buyuk kucuk duyarsiz
+- ✅ TestDegerKosulu::test turkce i
+- ✅ TestDegerKosulu::test bos
+- ✅ TestDegerKosulu::test hata degeri gorunen metin
+- ✅ TestDegerKosulu::test sayi ve metin karisimi
+- ✅ TestOzelKosul::test sayi buyuk
+- ✅ TestOzelKosul::test arasinda ve veya
+- ✅ TestOzelKosul::test esit degil metin ve bos gecer
+- ✅ TestOzelKosul::test metin islecleri ve joker
+- ✅ TestOzelKosul::test metin karsilastirma turkce siralama
+- ✅ TestIlkOrtalamaRenk::test ilk ve son
+- ✅ TestIlkOrtalamaRenk::test yuzde
+- ✅ TestIlkOrtalamaRenk::test ortalama
+- ✅ TestIlkOrtalamaRenk::test ilk diger sutun filtresinden bagimsiz
+- ✅ TestIlkOrtalamaRenk::test renk
+- ✅ TestListe::test degerler sirali benzersiz bos
+- ✅ TestListe::test diger sutun filtresi listeyi daraltir
+- ✅ TestListe::test kendi sutun filtresi listeyi daraltmaz
+- ✅ TestListe::test renkler
+- ✅ aralik genislet
+- ✅ TestKomut::test uygula geri al yinele
+- ✅ TestKomut::test kaldirinca satirlar gorunur
+- ✅ TestKomut::test filtre disindaki gizli satir korunur
+- ✅ TestKomut::test elle gizlenen filtre araliginda yeniden hesaplanir
+- ✅ TestKomut::test olaylar ek ve boyut
+- ✅ TestKomut::test ana sayfa ve ekle sil filtreyi kaydirir
+- ✅ TestAlttoplam::test ad cevirisi
+- ✅ TestAlttoplam::test filtre yokken tum satirlar
+- ✅ TestAlttoplam::test filtreyle gizli iki grupta da dislanir
+- ✅ TestAlttoplam::test elle gizli yalniz 101 den sonra dislanir
+- ✅ TestAlttoplam::test elle gizli filtre araligi disinda 9da sayilir
+- ✅ TestAlttoplam::test alttoplam hucreleri sayilmaz
+- ✅ TestAlttoplam::test islev numaralari `[1-3.5]
+- ✅ TestAlttoplam::test islev numaralari `[2-6.0]
+- ✅ TestAlttoplam::test islev numaralari `[3-6.0]
+- ✅ TestAlttoplam::test islev numaralari `[4-6.0]
+- ✅ TestAlttoplam::test islev numaralari `[5-1.0]
+- ✅ TestAlttoplam::test islev numaralari `[6-720.0]
+- ✅ TestAlttoplam::test islev numaralari `[7-1.8708286933869707]
+- ✅ TestAlttoplam::test islev numaralari `[8-1.707825127659933]
+- ✅ TestAlttoplam::test islev numaralari `[9-21.0]
+- ✅ TestAlttoplam::test islev numaralari `[10-3.5]
+- ✅ TestAlttoplam::test islev numaralari `[11-2.9166666666666665]
+- ✅ TestAlttoplam::test bos metin karisim ve hata
+- ✅ TestAlttoplam::test birden cok aralik
+- ✅ TestAlttoplam::test filtre kalkinca geri hesaplanir
+- ✅ TestXlsx::test gidis donus `[kosul0]
+- ✅ TestXlsx::test gidis donus `[kosul1]
+- ✅ TestXlsx::test gidis donus `[kosul2]
+- ✅ TestXlsx::test gidis donus `[kosul3]
+- ✅ TestXlsx::test gidis donus `[kosul4]
+- ✅ TestXlsx::test gidis donus `[kosul5]
+- ✅ TestXlsx::test gidis donus `[kosul6]
+- ✅ TestXlsx::test gidis donus `[kosul7]
+- ✅ TestXlsx::test gidis donus `[kosul8]
+- ✅ TestXlsx::test gidis donus `[kosul9]
+- ✅ TestXlsx::test gidis donus `[kosul10]
+- ✅ TestXlsx::test ortalama ve filtresiz dosya
+- ✅ TestXlsx::test kosulsuz filtre dugmesi korunur
+- ✅ TestXlsx::test renk filtresi uyarisi gizlilik kalir
+
+### `testler/test_filtre_arayuz.py` — 15/15 ✅
+*Filtre arayüzü (5f): düğmeler, panel, özel filtre, özet, Delete*
+
+- ✅ menu eylemleri acik
+- ✅ ac kapat bitisik bolge ve geri al
+- ✅ dugmeye tiklama sinyal secimi degistirmez
+- ✅ alt asagi baslik hucresinde listeyi acar
+- ✅ cizim dugme ve mavi satir hatasiz
+- ✅ panel listesi degerler bos ve tumu
+- ✅ panel tamam satirlari gizler ve ileti
+- ✅ panel arama ve diger sutun filtresi
+- ✅ sutun filtresini temizle digerleri kalir
+- ✅ filtreyi temizle ve yeniden uygula
+- ✅ ozel filtre penceresi kosulu
+- ✅ ilk on penceresi
+- ✅ panel metin sayi menusu sutun turune gore
+- ✅ delete ve ozet filtreyle gizlileri atlar
+- ✅ panelden siralama baslik sabit
 
 ### `testler/test_fonk_metin_tarih.py` — 356/356 ✅
 *Metin ve tarih fonksiyonları (1900 sistemi)*
@@ -1178,6 +1994,33 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ k3 geri al pano isaretini iptal eder
 - ✅ koru odak kaybinda sifirlanir
 
+### `testler/test_izgara_stil.py` — 23/23 ✅
+**
+
+- ✅ dolgu rengi cizilir
+- ✅ bos hucrede dolgu ve stilli liste
+- ✅ satir stili dolgusu tum satira uygulanir
+- ✅ kenarlik cizilir kalin komsuyu ezer
+- ✅ kalin italik boyut
+- ✅ yazi rengi ve font ailesi
+- ✅ hizalama metin sag orta girinti
+- ✅ sayi sola hizali ve metin sagda taşmaz
+- ✅ dikey hizalama konumu
+- ✅ sayi bicimi metne yansir
+- ✅ tarih bicimi ve renk
+- ✅ bicim siginca diyez ve gecersiz kod genel
+- ✅ metin bicimli sayi degeri degisince onbellek tazelenir
+- ✅ stilsiz sayfada stilli liste bos
+- ✅ yatay artimli kaydirma tam ciziminle ayni `[1]
+- ✅ yatay artimli kaydirma tam ciziminle ayni `[2]
+- ✅ yatay artimli kaydirma tam ciziminle ayni `[3]
+- ✅ yatay artimli kaydirma tam ciziminle ayni `[-1]
+- ✅ yatay kaydirma scroll cagirir ve son degeri izler
+- ✅ buyuk secimde ozet ertelenir kucukte aninda
+- ✅ shift ok yalniz fark bolgesini boyar
+- ✅ ok tusu tum izgarayi yeniden boyamaz
+- ✅ kalin ust kenarlik ustteki satirin piksellerine tasar
+
 ### `testler/test_kaydir.py` — 33/33 ✅
 *Başvuru kaydırma: kopyala, ekle-sil, taşı ($'lılar, #BAŞV!)*
 
@@ -1215,6 +2058,125 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ hucre tasi
 - ✅ hucre tasi baska sayfaya
 
+### `testler/test_kaydir_metin.py` — 21/21 ✅
+**
+
+- ✅ kaydirilmis metin satiri uzatir
+- ✅ sutun genisleyince satir kisalir
+- ✅ elle yukseklik kazanir ve otomatik sigdir geri acar
+- ✅ kaydirma kapatilinca satir eski haline doner
+- ✅ metin degisince yukseklik izler
+- ✅ alt enter kaydirmayi acar ve satir uzar
+- ✅ sayilar kaydirilmaz
+- ✅ formul sonucu metin kaydirilir
+- ✅ satir stili ile kaydirma
+- ✅ gizli satir ve birlesik hucre katilmaz
+- ✅ buyuk yazi boyutu satiri buyutur
+- ✅ yakinlastirmada yukseklik olcekli
+- ✅ satir ust alti konumlari ve kaydirma sonraki satirlari iter
+- ✅ metin satirlara bolunur ve hucre icinde kalir
+- ✅ kaydirma kapaliyken tek satir
+- ✅ uzun kelime hucre genisliginde boyunca boler
+- ✅ acik satir sonu satir sayisini belirler
+- ✅ dikey hiza ust ve alt
+- ✅ yatay ortalama sarilmis metinde
+- ✅ birlesik hucrede kaydirilmis metin cok satirli
+- ✅ stilli kaydirilmis hucre yazi rengi ve dolgu
+
+### `testler/test_kosullu.py` — 41/41 ✅
+*Koşullu biçim (5h): 12 kural türü, öncelik+dur, ölçek/çubuk, ekle-sil, komut*
+
+- ✅ TestHucreDegeri::test buyuk normal bos hata karisim
+- ✅ TestHucreDegeri::test bos hucre sifir gibi
+- ✅ TestHucreDegeri::test islecler `[arasinda-2.0-4.0-gecen0-gecmeyen0]
+- ✅ TestHucreDegeri::test islecler `[arasinda_degil-2.0-4.0-gecen1-gecmeyen1]
+- ✅ TestHucreDegeri::test islecler `[esit-3.0-None-gecen2-gecmeyen2]
+- ✅ TestHucreDegeri::test islecler `[esit_degil-3.0-None-gecen3-gecmeyen3]
+- ✅ TestHucreDegeri::test islecler `[buyuk_esit-3.0-None-gecen4-gecmeyen4]
+- ✅ TestHucreDegeri::test islecler `[kucuk_esit-3.0-None-gecen5-gecmeyen5]
+- ✅ TestHucreDegeri::test metin karsilastirma turkce ve buyuk kucuk duyarsiz
+- ✅ TestHucreDegeri::test hucre basvurulu goreli formul
+- ✅ TestMetinBosHata::test icerir icermez baslar biter
+- ✅ TestMetinBosHata::test sayi gorunen metinde aranir
+- ✅ TestMetinBosHata::test bos ve bos degil
+- ✅ TestMetinBosHata::test hata ve hata degil
+- ✅ TestYinelenen::test yinelenen ve benzersiz
+- ✅ TestYinelenen::test sayi ile metin ayri hata degerleri
+- ✅ TestYinelenen::test degisince gecersiz ile yenilenir
+- ✅ TestIlkOrtalama::test ilk son eslerle
+- ✅ TestIlkOrtalama::test yuzde ve bos aralik
+- ✅ TestIlkOrtalama::test ortalama ustu alti esit std
+- ✅ TestFormul::test goreli formul satirin baska hucresine bakar
+- ✅ TestFormul::test mantiksal sifir olmayan ve hata
+- ✅ TestFormul::test tum satir boyama formulu
+- ✅ TestOncelikVeDur::test yamalar birlesir ust oncelik kazanir
+- ✅ TestOncelikVeDur::test dur sonrakileri atlar
+- ✅ TestOncelikVeDur::test aralik disi ve kural yok
+- ✅ TestOncelikVeDur::test bozuk formul kural uygulanmaz digerleri calisir
+- ✅ TestRenkOlcegi::test uc renkli ara renk
+- ✅ TestRenkOlcegi::test ara renk dogrusal
+- ✅ TestRenkOlcegi::test sayi yuzde yuzdebirlik noktalari
+- ✅ TestRenkOlcegi::test yuzdebirlik islevi
+- ✅ TestRenkOlcegi::test gecersiz nokta sayisi
+- ✅ TestVeriCubugu::test oran ve alt ust sinir
+- ✅ TestVeriCubugu::test sabit uclar ve esit degerler
+- ✅ TestVeriCubugu::test cubuk ve renk kurallari birlikte
+- ✅ TestKuralModeli::test gecersiz alanlar
+- ✅ TestKuralModeli::test bicimsiz mu ve kural ekle oncelik
+- ✅ TestKuralModeli::test aralik temizle
+- ✅ TestKomutVeEkleSil::test yap geri al yinele islev ve olay
+- ✅ TestKomutVeEkleSil::test satir ekle aralik formul ve nokta kayar geri al
+- ✅ TestKomutVeEkleSil::test aralik silinince kural duser
+
+### `testler/test_kosullu_arayuz.py` — 26/26 ✅
+*Koşullu biçim arayüzü (5h): çizim pikselleri, menü, pencereler, yönetici, yazdırma, .xlsx*
+
+- ✅ kural hucreyi boyar geri al ve olay ile gecersiz
+- ✅ renk olcegi ve veri cubugu cizilir
+- ✅ yalniz cubuk metni gizler
+- ✅ birlesik hucre boyanir
+- ✅ baska sayfadaki degisiklik gecersiz kilar
+- ✅ menu ogeleri
+- ✅ yeni kural en yuksek oncelik ve capa kaymasi
+- ✅ temizle secim ve sayfa ve tumunu temizle
+- ✅ yonet sonucu uygular ve siralama
+- ✅ deger donusumleri
+- ✅ kural penceresi turleri ve geri yukleme
+- ✅ kural penceresi kural olusturur `[metin-<lambda>-beklenen0]
+- ✅ kural penceresi kural olusturur `[bos-<lambda>-beklenen1]
+- ✅ kural penceresi kural olusturur `[hata_degil-<lambda>-beklenen2]
+- ✅ kural penceresi kural olusturur `[benzersiz-<lambda>-beklenen3]
+- ✅ kural penceresi kural olusturur `[son-<lambda>-beklenen4]
+- ✅ kural penceresi kural olusturur `[ortalama_alti-<lambda>-beklenen5]
+- ✅ kural penceresi kural olusturur `[formul-<lambda>-beklenen6]
+- ✅ kural penceresi renk olcegi cubuk ve hatalar
+- ✅ ozel bicim yamasi
+- ✅ yonetici liste islemleri
+- ✅ kural aciklamalari
+- ✅ xlsx gidis donus ve oncelik
+- ✅ xlsx dxf fill bgcolor ve oncelik dosyada
+- ✅ xlsx desteklenmeyen tur uyari ve oncelik sirasi
+- ✅ yazdirma koşullu biçimi çizer
+
+### `testler/test_kurtarma.py` — 15/15 ✅
+**
+
+- ✅ surec canli mi
+- ✅ kopya yaz ve bekleyenler
+- ✅ en yeni once ve bozuklar atlanir
+- ✅ klasor yoksa bos
+- ✅ zamanlayici iki dakika
+- ✅ otokayit yalniz degisince ve yalniz yeni degisiklikte
+- ✅ otokayit ozgun dosyaya dokunmaz
+- ✅ kaydedince kurtarma kopyasi silinir
+- ✅ bilerek kapatinca kopya silinir
+- ✅ kapatma iptal edilirse kopya kalir
+- ✅ cokme sonrasi kurtarilir ve kaydedince silinir
+- ✅ kurtarma sil ve sonra
+- ✅ bozuk kurtarma kopyasi silinmez
+- ✅ kurtarma penceresi listesi
+- ✅ gercek surec cokmesi — Ayrı bir süreç değişiklik yapıp kopya yazar ve ölürse (os._exit) kopya bu süreçte önerilir.
+
 ### `testler/test_motor.py` — 20/20 ✅
 *Hesaplayıcı: bağımlılık, yeniden hesaplama, döngü, sayfa işlemleri*
 
@@ -1238,6 +2200,52 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ hareketli ortalama zinciri
 - ✅ tam sutun toplami kullanilan alanla sinirli — =TOPLA(A:A) 1.048.576 satırı gezmez (eskiden her turda ~0,4 sn); sonuç doğru kalır.
 - ✅ bos sayfada tam sutun toplami sifir
+
+### `testler/test_notlar.py` — 26/26 ✅
+*Notlar (5e): model, komut, ekle-sil, sırala, kes-yapıştır, pano, .xlsx*
+
+- ✅ TestModel::test not degismez ve kutu metni
+- ✅ TestModel::test yaz ve eskiler
+- ✅ TestModel::test none ve bos not siler
+- ✅ TestModel::test tek ek olayi
+- ✅ TestModel::test degisiklik yoksa olay yok
+- ✅ TestKomut::test yap geri al yinele
+- ✅ TestKomut::test bos mu
+- ✅ TestKomut::test ana sayfa
+- ✅ TestKomut::test hucre degeri notu silmez
+- ✅ TestEkleSil::test satir ekle notu kaydirir geri al
+- ✅ TestEkleSil::test satir sil notu siler geri al getirir
+- ✅ TestEkleSil::test sutun ekle sil
+- ✅ TestSirala::test not satirla birlikte tasinir
+- ✅ TestTasi::test kes yapistir notu tasir geri al
+- ✅ TestTasi::test baska sayfaya
+- ✅ TestTasi::test notsuz tasima notlara dokunmaz
+- ✅ TestPano::test veri notu tasir json
+- ✅ TestPano::test yapistir notu getirir
+- ✅ TestPano::test notsuz kaynak hedefteki notu siler
+- ✅ TestPano::test desen seciliye yinelenir
+- ✅ TestPano::test dis veri ve notsuz durum bos
+- ✅ TestXlsx::test gidis donus
+- ✅ TestXlsx::test excel onekli metin yazar ayrilir
+- ✅ TestXlsx::test onek yoksa metin oldugu gibi
+- ✅ TestXlsx::test dizili aciklama uyari
+- ✅ TestXlsx::test notsuz dosya notsuz
+
+### `testler/test_notlar_arayuz.py` — 12/12 ✅
+*Not arayüzü (5e): üçgen, fare üstü kutu, Shift+F2, menü, temizle*
+
+- ✅ uclu notlu hucrede cizilir
+- ✅ shift f2 ekler odak kaybinda kaydeder geri al
+- ✅ esc vazgecer
+- ✅ duzenle mevcut notu yazari korur
+- ✅ bos metin notu siler degisiklik yoksa komut yok
+- ✅ fare ustu kutu
+- ✅ kutu html kacisli
+- ✅ tus kutuyu kapatir
+- ✅ notu sil ve temizle secime uygulanir
+- ✅ delete notu silmez tumunu temizle siler
+- ✅ sag tik menusu
+- ✅ kopyala yapistir notu getirir kes yapistir tasir
 
 ### `testler/test_olay.py` — 18/18 ✅
 *Olay katmanı (K5): hücre/sonuç/yapı/boyut/sayfa olayları, toplu işlem tek olay*
@@ -1282,6 +2290,104 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ etopla ve cokolcutlu olcut dizisi
 - ✅ olcutte turkce hata adi
 - ✅ na fonksiyonu yoksay — NA() → #YOK; Türkçe adı YOKSAY (Microsoft tr-tr NA sayfası sözdizimi satırı: YOKSAY()).
+
+### `testler/test_opus_faz3.py` — 54/54 ✅
+**
+
+- ✅ metin duzenleme gidis donus `[12.10.2026]
+- ✅ metin duzenleme gidis donus `[15%]
+- ✅ metin duzenleme gidis donus `[1.5]
+- ✅ metin duzenleme gidis donus `[\u20ba100]
+- ✅ metin duzenleme gidis donus `[14:30]
+- ✅ metin duzenleme gidis donus `[1 1/2]
+- ✅ metin duzenleme gidis donus `[12 Ekim 2026]
+- ✅ yuzde duzenleme gidis donus `[1e-07]
+- ✅ yuzde duzenleme gidis donus `[0.123456789012345]
+- ✅ yuzde duzenleme gidis donus `[0.15]
+- ✅ yuzde duzenleme gidis donus `[0.0001]
+- ✅ yuzde duzenleme gidis donus `[12.5]
+- ✅ yuzde duzenleme gidis donus `[-0.07]
+- ✅ yuzde duzenleme gidis donus `[1e-10]
+- ✅ doldur uzun sayi serisi
+- ✅ cok buyuk sayi bicimlenir `[0-1e+26]
+- ✅ cok buyuk sayi bicimlenir `[0-1e+28]
+- ✅ cok buyuk sayi bicimlenir `[0-1e+100]
+- ✅ cok buyuk sayi bicimlenir `[0-1e+300]
+- ✅ cok buyuk sayi bicimlenir `[0--1.5e+308]
+- ✅ cok buyuk sayi bicimlenir `[0.00-1e+26]
+- ✅ cok buyuk sayi bicimlenir `[0.00-1e+28]
+- ✅ cok buyuk sayi bicimlenir `[0.00-1e+100]
+- ✅ cok buyuk sayi bicimlenir `[0.00-1e+300]
+- ✅ cok buyuk sayi bicimlenir `[0.00--1.5e+308]
+- ✅ cok buyuk sayi bicimlenir `[#,##0.00-1e+26]
+- ✅ cok buyuk sayi bicimlenir `[#,##0.00-1e+28]
+- ✅ cok buyuk sayi bicimlenir `[#,##0.00-1e+100]
+- ✅ cok buyuk sayi bicimlenir `[#,##0.00-1e+300]
+- ✅ cok buyuk sayi bicimlenir `[#,##0.00--1.5e+308]
+- ✅ cok buyuk sayi bicimlenir `[General-1e+26]
+- ✅ cok buyuk sayi bicimlenir `[General-1e+28]
+- ✅ cok buyuk sayi bicimlenir `[General-1e+100]
+- ✅ cok buyuk sayi bicimlenir `[General-1e+300]
+- ✅ cok buyuk sayi bicimlenir `[General--1.5e+308]
+- ✅ cok buyuk sayi bicimlenir `["\u20ba"#,##0.00-1e+26]
+- ✅ cok buyuk sayi bicimlenir `["\u20ba"#,##0.00-1e+28]
+- ✅ cok buyuk sayi bicimlenir `["\u20ba"#,##0.00-1e+100]
+- ✅ cok buyuk sayi bicimlenir `["\u20ba"#,##0.00-1e+300]
+- ✅ cok buyuk sayi bicimlenir `["\u20ba"#,##0.00--1.5e+308]
+- ✅ cok buyuk sayi bicimlenir `[0.00E+00-1e+26]
+- ✅ cok buyuk sayi bicimlenir `[0.00E+00-1e+28]
+- ✅ cok buyuk sayi bicimlenir `[0.00E+00-1e+100]
+- ✅ cok buyuk sayi bicimlenir `[0.00E+00-1e+300]
+- ✅ cok buyuk sayi bicimlenir `[0.00E+00--1.5e+308]
+- ✅ sonsuz sayi metin kalir
+- ✅ cift isaret para
+- ✅ tam satir sutun kesisimi
+- ✅ tum sayfa cok bicimli satir
+- ✅ kaydirilmis metin onbellegi sinirli
+- ✅ genel ile tarih harfi gecersiz `[Genel m]
+- ✅ genel ile tarih harfi gecersiz `[General m]
+- ✅ genel ile tarih harfi gecersiz `[Genel a]
+- ✅ genel ile tarih harfi gecersiz `[General dd]
+
+### `testler/test_opus_faz4.py` — 36/36 ✅
+**
+
+- ✅ 1904 tarih sistemi takvim tarihini korur
+- ✅ gecersiz denetim karakteri silinir ve bildirilir
+- ✅ uzun metin ve sonsuz sayi
+- ✅ beklenmeyen kayit hatasi pencereyi kapatmaz
+- ✅ closeevent istisnada kabul etmez
+- ✅ arka plan sirasinda kapatma ertelenir
+- ✅ seyrek dosya hizli acilir
+- ✅ xlfn bilinmeyen islev oneki korunur `[=_xlfn.STDEV.S(A1:A3)]
+- ✅ xlfn bilinmeyen islev oneki korunur `[=_xlfn._xlws.SORT(A1:A3)]
+- ✅ xlfn bilinmeyen islev oneki korunur `[=_xlfn.CONCAT(A1,B1)]
+- ✅ tablo koprul gruplama ustbilgi koruma uyarilir
+- ✅ dizi formulu uyarilir
+- ✅ gizli sayfa kayip sayilir
+- ✅ duz dosyada yanlis uyari yok
+- ✅ genis sutun araligi korunur
+- ✅ ayrac ondalik virgul `[12,5;13,7\n14,2;15,9\n-;]
+- ✅ ayrac ondalik virgul `[1,5\n2,5\n3,25\n-;]
+- ✅ ayrac ondalik virgul `[a;b\n1,5;2,5\n-;]
+- ✅ ayrac ondalik virgul `[a,b,c\n1,2,3\n-,]
+- ✅ ayrac ondalik virgul `[1,2,3\n4,5,6\n-,]
+- ✅ ayrac ondalik virgul `[ad,not\n"Ali, Veli",5\n-,]
+- ✅ ayrac ondalik virgul `[a\tb\n1,5\t2\n-\t]
+- ✅ utf16 unicode metin okunur
+- ✅ csv genel sayi 15 basamak
+- ✅ kurtarilan belgede veri kaybi uyarisi korunur
+- ✅ kurtarilan belge varken ozgun dosya acilabilir
+- ✅ pid yeniden kullanimi kopyayi gizlemez
+- ✅ dondurma kilavuz sekme rengi degisti sayilir
+- ✅ gorunum degisikligi dosyaya yazilir ve otokayit tetikler
+- ✅ disk degisti onayi
+- ✅ otomatik satir yuksekligi elle sayilmaz
+- ✅ hizli formul yolu bastaki sifir ayirt eder
+- ✅ hizli yol rastgele formullerde yavasla ayni
+- ✅ cakisan birlesim atlanir
+- ✅ tema renkleri dosyanin kendi temasindan
+- ✅ pdf hatasinda ayni yoldaki eski dosya bozulmaz
 
 ### `testler/test_pano.py` — 25/25 ✅
 *Pano: TSV/HTML okuma-yazma, kopyalanan veri, yapıştırma planı*
@@ -1434,6 +2540,29 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ karisik gecmis sayfa silme dahil tutarli geri alinir — Sayfadaki yazım → sayfa silme → ikisi de sırayla geri alınır (geçmiş silinmez).
 - ✅ sayfa komutlari sayfa olaylari yayar
 - ✅ silme geri al sayfa sirasi birden cok silmede
+
+### `testler/test_sayfalama.py` — 19/19 ✅
+**
+
+- ✅ varsayilan excel gibi
+- ✅ gecersiz ayar `[kw0]
+- ✅ gecersiz ayar `[kw1]
+- ✅ gecersiz ayar `[kw2]
+- ✅ gecersiz ayar `[kw3]
+- ✅ gecersiz ayar `[kw4]
+- ✅ gecersiz ayar `[kw5]
+- ✅ bos sayfa yazdirilmaz
+- ✅ kucuk icerik tek sayfa
+- ✅ gizli satir sutun yazdirilmaz
+- ✅ sayfa numarasi once asagi sonra saga
+- ✅ dilimler tum satirlari tam bir kez kapsar
+- ✅ baslik satirlari her sayfada
+- ✅ baslik sayfadan buyukse yinelenmez
+- ✅ sigdir genislik ve olcek
+- ✅ yazdirma alani ayarli ve birlesim
+- ✅ dev hucre tek basina sayfa
+- ✅ komut geri al ve xlsx gidis donus
+- ✅ xlsx sigdir genislik gidis donus
 
 ### `testler/test_sayi_bicimi.py` — 179/179 ✅
 *Excel sayı biçimi kodu çözümleyici/biçimleyici (Faz 3 çekirdeği): Genel, 0#?, yüzde, bilimsel, kesir, bölümler, renk, tarih/saat, kanonik⇄yerel*
@@ -1618,6 +2747,18 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ hizli yol genel yolla ayni `[_-* #,##0.00_-]
 - ✅ basarim kaba
 
+### `testler/test_senaryo_bicimli.py` — 8/8 ✅
+**
+
+- ✅ baslik birlesim ve biçim
+- ✅ para ve yuzde gorunumu
+- ✅ tarih girisi ve ay doldurma
+- ✅ boyaci ile biçim tasima ve geri al
+- ✅ kopyala yapistir biçim ve formul tasir
+- ✅ dondur ve gorunum sayfaya ozel
+- ✅ hucreleri degistirince para biçimi degeri bozmaz
+- ✅ metni kaydir otomatik satir yuksekligi
+
 ### `testler/test_senaryo_butce.py` — 8/8 ✅
 *Faz 2 gerçek iş senaryosu: aylık bütçe çizelgesi (iki sayfa, kopyalama, ekle-sil, geri al, döngü, taşıma)*
 
@@ -1629,6 +2770,65 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ sifira bolme ve hata yayilimi
 - ✅ dongu senaryosu uyari ve cozum
 - ✅ kes yapistir sutunu tasiyinca basvurular izler
+
+### `testler/test_senaryo_stok.py` — 7/7 ✅
+*Faz 5 gerçek iş senaryosu: stok listesi (ad+DÜŞEYARA, doğrulama, koşullu biçim, sırala, filtre, ALTTOPLAM, not) + stok.xlsx örnek dosya gidiş-dönüşü*
+
+- ✅ formuller adlar ve fiyat tablosu
+- ✅ dogrulamali kategori ve adet
+- ✅ kritik stok koşullu biçim ve tutar cubugu
+- ✅ sirala filtrele alttoplam ve notlar
+- ✅ kaydet yeniden ac geri al ve pdf
+- ✅ ornek dosya stok xlsx gidis donus
+- ✅ ornek dosya degismez
+
+### `testler/test_sirala.py` — 28/28 ✅
+*Sırala (5c): Türkçe harmanlama, karışık tür, çok düzey, renk, gizli satır, formül kayması, geri al*
+
+- ✅ TestPlan::test artan azalan sayi
+- ✅ TestPlan::test turkce harf sirasi
+- ✅ TestPlan::test karisik tur ve bos en sonda
+- ✅ TestPlan::test kararli ve cok duzey
+- ✅ TestPlan::test baslik atlanir
+- ✅ TestPlan::test buyuk kucuk duyarli
+- ✅ TestPlan::test formul sonucuna gore
+- ✅ TestPlan::test gizli satirlar yerinde kalir
+- ✅ TestPlan::test birlesim reddedilir
+- ✅ TestPlan::test olcut aralik disinda ve olcutsuz
+- ✅ TestPlan::test renge gore
+- ✅ TestPlan::test sutun sirala soldan saga
+- ✅ TestBaslikTahmin::test metin ustu sayi
+- ✅ TestBaslikTahmin::test hepsi sayi degil
+- ✅ TestBaslikTahmin::test hepsi metin baslik sayilmaz
+- ✅ TestBaslikTahmin::test kalin baslik
+- ✅ TestBaslikTahmin::test tek satir
+- ✅ TestKomut::test hucreler stil not tasinir geri al
+- ✅ TestKomut::test formuller kopyala gibi kayar
+- ✅ TestKomut::test mutlak basvuru sabit
+- ✅ TestKomut::test disaridan baglanti degismez
+- ✅ TestKomut::test gizli ve digerleri yerinde tek olay
+- ✅ TestKomut::test birlesim yerinde
+- ✅ TestKomut::test sutun sirala komutu
+- ✅ TestKomut::test ana sayfa
+- ✅ TestKomut::test yuz bin satir hizli
+- ✅ TestKarsilastirmaTurkce::test karsilastir
+- ✅ TestKarsilastirmaTurkce::test formul ve olcut
+
+### `testler/test_sirala_arayuz.py` — 12/12 ✅
+*Sırala arayüzü (5c): A→Z/Z→A, Sıralama Uyarısı, Özel Sıralama penceresi*
+
+- ✅ menu eylemleri acik
+- ✅ tek hucre artan baslik tahmini ve geri al
+- ✅ azalan sayi sutunu
+- ✅ sutun secimi yaninda veri uyarisi
+- ✅ uyari genislet ve iptal
+- ✅ birlesim varsa reddedilir
+- ✅ coklu secim reddedilir
+- ✅ ozel siralama penceresi duzeyler
+- ✅ ozel siralama en cok 64 duzey
+- ✅ ozel siralama uygula cok duzey
+- ✅ ozel siralama renk secenekleri
+- ✅ sag tik menusunde sirala
 
 ### `testler/test_stil.py` — 26/26 ✅
 *Stil modeli (3a): Stil/StilYama/havuz, etkin stil önceliği, bicim olayı, BicimDegis, bicim_komutu, ekle-sil + geri al*
@@ -1675,6 +2875,60 @@ Bu dosya: **neyin nasıl test edildiği** ve **her testin sonucu**. Güncel duru
 - ✅ ozet ust uste binen araliklar bir kez sayilir
 - ✅ toplu yaz kullanilan aralik onbellegi rastgele islemlerle eslesir
 - ✅ toplu yaz ata ile ayni sonucu verir
+
+### `testler/test_xlsx_io.py` — 17/17 ✅
+**
+
+- ✅ degerler ve formuller
+- ✅ sayi bicimi ve tarih
+- ✅ stil gidis donus
+- ✅ varsayilan font none kalir
+- ✅ olculer gizli birlesim dondurma
+- ✅ satir sutun stili
+- ✅ cok sayfa ve sayfalar arasi formul
+- ✅ xlfn oneki
+- ✅ baska programda olusturulmus dosya
+- ✅ veri kaybi taramasi
+- ✅ kosullu bicim ve dogrulama uyarisi
+- ✅ bozuk dosya anlasilir hata
+- ✅ kayit gecici dosya kalmaz
+- ✅ kayit hatasinda eski dosya bozulmaz
+- ✅ gizli sayfa uyarisi
+- ✅ hizli formul yolu yavasla ayni sonuc
+- ✅ buyuk dosya gidis donus ayni
+
+### `testler/test_xlsx_ornekler.py` — 9/9 ✅
+**
+
+- ✅ butce okunur beklenen icerik
+- ✅ butce hesap dogru
+- ✅ butce gidis donus kayipsiz
+- ✅ butce openpyxl ile de ayni — Bizim yazdığımız dosyayı başka bir okuyucu (openpyxl) de aynı görür.
+- ✅ grafikli uyarilar ve veri korunur
+- ✅ ozgun dosya degismez
+- ✅ turkce csv
+- ✅ utf8 virgullu csv tirnakli alan
+- ✅ is akisi ac duzenle kaydet pdf csv
+
+### `testler/test_yazdir.py` — 16/16 ✅
+**
+
+- ✅ dolgu ve kenarlik cizilir
+- ✅ kilavuz yalniz istenince
+- ✅ metin cizilir ve tasar
+- ✅ birlesim tek dikdortgen ve yatay ortala
+- ✅ olcek cizimi kucultur
+- ✅ pdf yaz sayfa sayisi ve yon
+- ✅ pdf bos sayfa dosya yazmaz
+- ✅ pdf tum sayfalar farkli yon
+- ✅ pdf yazma hatasi
+- ✅ menuden pdf
+- ✅ menuden bos sayfa pdf uyarir
+- ✅ sayfa yapisi penceresi ve geri al
+- ✅ sayfa yapisi gecersiz giris pencereyi kapatmaz
+- ✅ baslik satirlari yazim
+- ✅ otomatik satir yuksekligi yazdirmaya yansir
+- ✅ sigmayan sayi diyez basar
 
 ### `testler/test_yerellestirme.py` — 37/37 ✅
 *TR ⇄ kanonik çeviri: ayırıcılar, fonksiyon/hata adları, sayfa başvuruları*
@@ -2076,3 +3330,63 @@ Salt okunur Opus 5.5 alt ajanı (58 araç çağrısı, ~25 dk; openpyxl ile üre
 **Temiz çıkanlar:** kural 2 ve 8 (xlsx/csv/pdf/json hepsi geçici dosya→yerine koy); hata değeri gidiş-dönüşü; `=` ile başlayan düz metin; sayfa adları; bozuk dosyalar `XlsxHatasi`; 30.000 rastgele formülde istisna yok; `_xlfn` listesi kütüphanedeki 117 işlev için eksiksiz; CSV CR/boş/tırnak/çok satırlı; yazdırma gizli sütun; arka plan model güvenliği; performans (100.000 hücre: açılış 4,2+2,4 sn, kayıt 5,1 sn).
 
 **İncelenmeyenler:** gerçek Excel'de açma (4, 5, 13, 14 numaralıların Excel web'de doğrulanması); gerçek yazıcı/PDF okuyucuları; iki ayrı süreçle gerçek eşzamanlılık; tepe bellek; 1 milyon yoğun hücre; zip bombası (`tara` her sayfa XML'ini belleğe okur).
+
+
+---
+
+## 15. Faz 5 — veri araçları (2026-10-10)
+
+**Sonuç: 2518 test, hepsi geçiyor** (Faz 4 sonunda 2028 → Faz 5 ile +490). Opus gözden geçirmesi (§16) henüz yapılmadı.
+
+### 15.1 Kapsam
+| Alan | Katman | Durum | Test dosyası |
+|---|---|---|---|
+| Ortak altyapı: `ek`/`ad` olayları, aralık yardımcıları, ek veri depoları + ekle-sil + anlık durumla geri al, Türkçe harmanlama, ağaç kaydırma | A | ✅ | `test_faz5_altyapi` (65) |
+| Bul / Değiştir / Git (joker, Formüller/Değerler/Notlar, kitap kapsamı, Tümünü Değiştir tek geri al) | A/B | ✅ | `test_bul` (29), `test_bul_arayuz` (12) |
+| Sırala (Türkçe harmanlama, çok düzey, renk, gizli satır, formül kayması, birleşim reddi) + formülde metin karşılaştırmasının Türkçe harmanlamaya geçişi | A/B | ✅ | `test_sirala` (28), `test_sirala_arayuz` (12) |
+| Adlandırılmış aralıklar (kapsam, göreli ad, yeniden adlandırma, ekle-sil/taşı, motor bağımlılığı, .xlsx, Ad Yöneticisi/Ad Kutusu) | A/B/E | ✅ | `test_adlar` (74), `test_adlar_arayuz` (17) |
+| Notlar (üçgen, fare üstü kutu, Shift+F2, ekle-sil/sırala/kes/pano taşır, Delete korur, .xlsx) | A/B/E | ✅ | `test_notlar` (26), `test_notlar_arayuz` (12) |
+| Filtre (6 koşul türü, değer listesi, görünen-hücre işlemleri, .xlsx) + ALTTOPLAM 1–11/101–111 (motor `boyut` olayında yeniden hesaplar) | A/B/E | ✅ | `test_filtre` (60), `test_filtre_arayuz` (15) |
+| Veri doğrulama (7 tür × 8 işleç, liste kaynakları, özel formül, 3 hata stili, açılır liste, giriş iletisi, .xlsx) | A/B/E | ✅ | `test_dogrulama` (37), `test_dogrulama_arayuz` (25) |
+| Koşullu biçim (12 kural türü, öncelik + durdur, renk ölçeği, veri çubuğu, çizim + yazdırma, Kuralları Yönet, .xlsx) | A/B/E | ✅ | `test_kosullu` (41), `test_kosullu_arayuz` (26) |
+| **Örnek dosya** `testler/ornekler/stok.xlsx` (openpyxl; Faz 5'in tüm öğeleri): uyarısız açılır, kaydedilip yeniden açılınca aynı, özgün dosya değişmez | B | ✅ | `test_senaryo_stok` (2) |
+| **Gerçek iş senaryosu: stok listesi** — adlı fiyat tablosu + DÜŞEYARA, doğrulamalı kategori/adet, kritik stok koşullu biçim + tutar çubuğu, sırala, kategoriye süz (ALTTOPLAM görünen toplam, TOPLA hepsi), not, kaydet → yeniden aç → geri al → PDF | B/E | ✅ | `test_senaryo_stok` (5) |
+| Görsel (not üçgeni/kutu, filtre düğmeleri, açılır liste oku + giriş iletisi, koşullu biçim) | E | ✅ | ekran görüntüleriyle incelendi (yazı tipi olmayan ekransız ortamda metin kutucuk görünür; yerleşim doğru) |
+| Gerçek Excel'de açma (`.xlsx` ile 5 öğe) / Excel'in yazdığı dosyayı açma | F | ⏳ | kullanıcı |
+
+### 15.2 Performans (`araclar/performans_olcum.py`, `araclar/kosullu_olcum.py`; ayrıntı `surec.md` §8)
+| Ölçüm | Sonuç | Ölçüt | Durum |
+|---|---|---|---|
+| Filtre uygula (100.000 satır × 5) | 0,7 sn | — | ✅ |
+| Açılır liste kurma (500 benzersiz değer) | ≈ 1,6 sn | — | ✅ |
+| Tümünü Bul (500.000 hücre) | 4,4 sn (100.000 hücrede ≈ 0,9) | ≤ 1 sn / 100.000 hücre | ✅ |
+| Sırala (100.000 satır × 5, tek anahtar) | plan 0,9 + komut 3,1 ≈ **4 sn** | ≤ 2 sn | ❌ kabul önerildi |
+| Ad ekleme (50.000 formüllü kitap) | ≤ 6 sn (test eşiği) | ≤ 3 sn | ⚠ ölçülmedi/yüklü makine |
+| Koşullu biçim: ilk çizim / değişince yeniden çizim (100.000 hücre, 3 kural) | ≈ 430–690 / 340–800 ms | ≤ 60 / ≤ 50 ms | ❌ kabul önerildi (istatistik gerektiren kurallar; basit kurallar etkilenmez) |
+| Koşullu biçim: sıcak çizim | 23–31 ms (kural yokken 40) | ≤ 16 ms (artımlı) | ✅ |
+| Izgara: kaydırma/sıçrama/Shift+Ok (Faz 3'ten ertelenen **piksel önbelleği kararı**) | sıçrama 31–36 ms, ilk çizim 24–54 ms, Shift+Ok stilli 21 ms | 16–40 ms | ❌ **önbellek yazılmadı:** 2 kare süren tek seferlik sıçramalar; filtre/koşullu biçim çizime girdi, önbelleği yazmak bunları da geçersiz kılma karmaşasına katardı. Faz 7 (.exe öncesi) tekrar ölçülür |
+
+### 15.3 Açık / bilinen kusurlar
+| # | Konu | Durum |
+|---|---|---|
+| 1 | Kopyalama filtreli aralıkta gizli satırları da alır (Excel yalnız görünenleri); Ctrl+D/Ctrl+Enter/biçim uygulama filtreyle gizli satırları atlamaz (yalnız Delete/Tümünü Temizle/özet atlar) | ➖ |
+| 2 | Renge göre filtre dosyaya yazılamaz (uyarı; gizlilik korunur); tarih/dinamik süzgeçler okunmaz | ➖ |
+| 3 | Veri doğrulama yalnız elle girişte denetlenir; formül girişi/yapıştırma/doldurma denetlenmez (Excel formül girişinde sonucu denetler) | ➖ bilerek fark |
+| 4 | Koşullu biçim/doğrulama pano, doldurma, biçim boyacısı ve kes-yapıştırla taşınmaz | ➖ sonraki faz |
+| 5 | Veri çubuğu Excel 2007 biçimi (negatif eksen/kenarlık yok); gradyan/düz ayrımı .xlsx'e yazılmaz | ➖ |
+| 6 | Not kutusu taşıma/boyutlandırma, "Tüm Notları Göster", dizili açıklama yanıtları yok | ➖ |
+| 7 | Sıralamada özel liste (ay/gün adları) ve aynı boyutlu birleşim yok | ➖ |
+| 8 | Koşullu biçim menüsü başlık şeridinde (tasarım: biçim çubuğu; çubuk 1100 px'i aşıyordu) | ➖ şerit (5j) yeniden düzenler |
+| 9 | Simge kümeleri, tarih oluşumu kuralları, Excel Tablosu nesnesi yok (açılışta uyarı) | ➖ Faz 8 |
+
+### 15.4 Elle test bekleyenler (kullanıcı)
+| # | Ne | Nasıl | Durum |
+|---|---|---|---|
+| 1 | `stok.xlsx`'i Excel'de aç | `testler/ornekler/stok.xlsx`'in kopyasını Excel'de aç: filtre düğmesi + gizli satırlar, kategori doğrulama listesi, <10 adet kırmızı, tutar çubuğu, fiyat ölçeği, not üçgeni, adlı aralıklar | ⏳ |
+| 2 | Tabcel'de kaydedip Excel'de aç | Tabcel'de stok listesi kur → Kaydet → Excel'de aç: kurallar öncelik sırasında, doğrulama çalışıyor, filtre koşulu görünüyor | ⏳ |
+| 3 | Excel'in kaydettiği dosyayı Tabcel'de aç | Kendi dosyan: dxf renkleri (`bgColor`), doğrulama listeleri, filtre koşulları, notlar | ⏳ |
+| 4 | Pencereler ve menüler | Özel Sıralama, Ad Yöneticisi, Veri Doğrulama, Kural/Kuralları Yönet pencerelerinin metin görünümü ve yerleşimi (ekransız testte yazı tipi yok) | ⏳ |
+| 5 | Açılır liste oku + giriş iletisi + not kutusu | konum ve odak (Popup liste), giriş iletisinin Excel'deki konumu (sağ alt) | ⏳ |
+| 6 | Filtre paneli | Popup panel odağı, alt menüler, Alt+Aşağı, büyük listede arama | ⏳ |
+| 7 | Excel iletileri/adları | §8b-58, 62, 64–74: Türkçe iletiler, harmanlama ve başlık tahmini davranışları Excel web'de doğrulanacak | ⏳ |
+
