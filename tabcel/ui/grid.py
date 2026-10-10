@@ -39,6 +39,7 @@ from ..model.sayfa import Hucre, Sayfa
 from . import theme
 from .renkli import renkli_ciz
 
+FILTRE_MAVISI = "#0563C1"        # filtreli listede satır numaraları (Excel)
 VARSAYILAN_PUNTO = 11.0     # `Stil.boyut` bu değere göre ölçeklenir (Excel varsayılanı 11 punto)
 _YATAY_BAYRAK = {"genel": Qt.AlignLeft, "sol": Qt.AlignLeft, "doldur": Qt.AlignLeft,
                  "iki_yana": Qt.AlignLeft, "orta": Qt.AlignHCenter,
@@ -247,6 +248,7 @@ class Izgara(QAbstractScrollArea):
     gecmisIslemi = Signal(bool)           # geri al/yinele başladı (True) / bitti (False)
     yakinlastirmaDegisti = Signal(float)
     uyari = Signal(str)                   # kullanıcıya gösterilecek iletiler
+    filtreDugmesi = Signal(int)           # filtre açılır düğmesine tıklandı / Alt+Aşağı (mutlak sütun)
     uzakOnay = Signal()                   # devredilen (başka sayfadan) formül düzenlemesi sürerken işaret dışı tıklama
 
     TOPLU_SINIR = 20000                   # tek işlemde en çok satır/sütun (gizle, boyutlandır)
@@ -1047,6 +1049,8 @@ class Izgara(QAbstractScrollArea):
             self._birlesimleri_ciz(p, kirp, pad)
         if self.sayfa.notlar:
             self._not_uclari_ciz(p, sutunlar_k, satirlar)
+        if self.sayfa.filtre is not None:
+            self._filtre_dugmeleri_ciz(p, kirp)
         p.setFont(self._yazi_tipi())
 
         # seçim
@@ -1120,12 +1124,15 @@ class Izgara(QAbstractScrollArea):
             for c, x, g in sutunlar_k:
                 self._baslik_ciz(p, QRect(x, 0, g, bh), sutun_harfe(c),
                                  any(a.ilk_sutun <= c <= a.son_sutun for a in tum), izgara)
+        fk = self.sayfa.filtre
+        mavi = (fk.aralik.ilk_satir, fk.aralik.son_satir) if fk is not None and fk.kosullar else None
         if kirp.left() < bg:
             for r, y, h in satirlar:
                 if y + h <= kirp.top() or y > kirp.bottom():
                     continue
                 self._baslik_ciz(p, QRect(0, y, bg, h), str(r),
-                                 any(a.ilk_satir <= r <= a.son_satir for a in tum), izgara)
+                                 any(a.ilk_satir <= r <= a.son_satir for a in tum), izgara,
+                                 FILTRE_MAVISI if mavi and mavi[0] < r <= mavi[1] else None)
 
     def _not_uclari_ciz(self, p: QPainter, sutunlar, satirlar) -> None:
         """Notlu hücrenin sağ üst köşesinde kırmızı üçgen (Excel ~6 px); birleşimde tüm alanın köşesi."""
@@ -1151,6 +1158,50 @@ class Izgara(QAbstractScrollArea):
                 sag, ust = a[0] + a[1] - 1, d[0]
             p.drawPolygon(QPolygon([QPoint(sag - z, ust), QPoint(sag, ust), QPoint(sag, ust + z)]))
         p.setBrush(Qt.NoBrush)
+
+    # --- filtre düğmeleri ---
+    def _filtre_dugmesi_dikdortgeni(self, sutun: int) -> Optional[QRect]:
+        """Filtre başlık hücresinin sağ altındaki açılır düğme (16×16, yakınlaştırmayla ölçeklenir)."""
+        f = self.sayfa.filtre
+        if f is None or not f.aralik.ilk_sutun <= sutun <= f.aralik.son_sutun:
+            return None
+        ar = self.hucre_dikdortgeni(f.aralik.ilk_satir, sutun)
+        if ar is None:
+            return None
+        k = self._z(16)
+        if ar.width() < k + 4 or ar.height() < k // 2:
+            return None
+        return QRect(ar.right() - k - 1, ar.bottom() - min(k, ar.height() - 2), k, min(k, ar.height() - 2))
+
+    def _filtre_dugmeleri_ciz(self, p: QPainter, kirp: QRect) -> None:
+        f = self.sayfa.filtre
+        for c in range(f.aralik.ilk_sutun, f.aralik.son_sutun + 1):
+            d = self._filtre_dugmesi_dikdortgeni(c)
+            if d is None or not d.intersects(kirp):
+                continue
+            kosullu = c in f.kosullar
+            p.setPen(QPen(QColor(FILTRE_MAVISI if kosullu else "#a6a6a6"), 1))
+            p.setBrush(QColor("#dbe9f8" if kosullu else "#ffffff"))
+            p.drawRect(d.adjusted(0, 0, -1, -1))
+            ortax, ortay, w = d.center().x(), d.center().y(), self._z(3)
+            p.setPen(Qt.NoPen)
+            p.setBrush(QColor(FILTRE_MAVISI if kosullu else "#444444"))
+            p.drawPolygon(QPolygon([QPoint(ortax - w - 1, ortay - 1), QPoint(ortax + w, ortay - 1),
+                                    QPoint(ortax, ortay + w)]))
+            if kosullu:                          # huni simgesi yerine alta ince çizgi: koşullu sütun
+                p.setPen(QPen(QColor(FILTRE_MAVISI), 1))
+                p.drawLine(ortax - w, ortay + w + 1, ortax + w - 1, ortay + w + 1)
+        p.setBrush(Qt.NoBrush)
+
+    def filtre_dugmesi_sutunu(self, p: QPoint) -> Optional[int]:
+        f = self.sayfa.filtre
+        if f is None:
+            return None
+        for c in range(f.aralik.ilk_sutun, f.aralik.son_sutun + 1):
+            d = self._filtre_dugmesi_dikdortgeni(c)
+            if d is not None and d.contains(p):
+                return c
+        return None
 
     # --- notlar ---
     def _not_gizle(self) -> None:
@@ -1425,13 +1476,13 @@ class Izgara(QAbstractScrollArea):
         if sagda:
             p.drawLine(x1 + w, y_ilk, x1 + w, y_son)
 
-    def _baslik_ciz(self, p, ar: QRect, metin: str, secili: bool, izgara: QPen):
+    def _baslik_ciz(self, p, ar: QRect, metin: str, secili: bool, izgara: QPen, renk: Optional[str] = None):
         if secili:
             p.fillRect(ar, QColor(theme.HEADER_BG_SELECTED))
         p.setPen(izgara)
         p.drawLine(ar.right(), ar.top(), ar.right(), ar.bottom())
         p.drawLine(ar.left(), ar.bottom(), ar.right(), ar.bottom())
-        p.setPen(QColor(theme.HEADER_TEXT_SELECTED if secili else theme.HEADER_TEXT))
+        p.setPen(QColor(renk or (theme.HEADER_TEXT_SELECTED if secili else theme.HEADER_TEXT)))
         st = self._baslik_onb.get(metin)
         if st is None:
             st = self._baslik_onb[metin] = QStaticText(metin)
@@ -1466,6 +1517,10 @@ class Izgara(QAbstractScrollArea):
         if self.duzenleniyor():
             return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır
         nokta = olay.position().toPoint()
+        fc = self.filtre_dugmesi_sutunu(nokta)
+        if fc is not None:                     # düğme alanına tıklama hücre seçimini değiştirmez
+            self.filtreDugmesi.emit(fc)
+            return
         if self._tutamacta_mi(nokta):
             self._surukleme = "doldur"
             self._doldur = {"kaynak": self.secim, "hedef": None}
@@ -1604,6 +1659,11 @@ class Izgara(QAbstractScrollArea):
             self._not_gizle()
         if k == Qt.Key_F2 and shift and not ctrl:
             self.not_duzenle()
+            return
+        f = self.sayfa.filtre
+        if (k == Qt.Key_Down and (m & Qt.AltModifier) and f is not None and self._aktif[0] == f.aralik.ilk_satir
+                and f.aralik.ilk_sutun <= self._aktif[1] <= f.aralik.son_sutun):
+            self.filtreDugmesi.emit(self._aktif[1])          # Alt+Aşağı: başlık hücresinde listeyi açar
             return
         yon = {Qt.Key_Up: (-1, 0), Qt.Key_Down: (1, 0),
                Qt.Key_Left: (0, -1), Qt.Key_Right: (0, 1)}.get(k)
@@ -2631,8 +2691,15 @@ class Izgara(QAbstractScrollArea):
         self._guncelle()
         return True
 
+    def filtreyle_gizli(self, satir: int) -> bool:
+        """Satır etkin filtrenin veri aralığında ve gizli mi (Delete/Temizle/biçim yalnız görünenlere)."""
+        f = self.sayfa.filtre
+        return (f is not None and satir in self.sayfa.gizli_satir
+                and f.aralik.ilk_satir < satir <= f.aralik.son_satir)
+
     def secimi_temizle(self) -> None:
-        yeni = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)}
+        yeni = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)
+                if not self.filtreyle_gizli(r)}
         if yeni:
             self.yigin.calistir(HucrelerDegis(self.sayfa, yeni))
             self._guncelle()
@@ -2737,7 +2804,8 @@ class Izgara(QAbstractScrollArea):
 
     def tumunu_temizle(self) -> None:
         """İçerik + biçim + not (Temizle ▸ Tümü); tek geri al adımı."""
-        icerik = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)}
+        icerik = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)
+                  if not self.filtreyle_gizli(r)}
         try:
             kmt = bicim_komutu(self.sayfa, self.secimler, sifirla=True)
         except AdresHatasi as h:

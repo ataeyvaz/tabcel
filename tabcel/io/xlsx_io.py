@@ -20,6 +20,10 @@ from typing import Dict, List, Optional
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.comments import Comment
+from openpyxl.worksheet.filters import (
+    CustomFilter, CustomFilters, DynamicFilter, FilterColumn, Filters, Top10,
+)
+from openpyxl.worksheet.cell_range import CellRange
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.styles.colors import COLOR_INDEX
 from openpyxl.utils import get_column_letter
@@ -34,6 +38,7 @@ from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
+from ..model.filtre import DegerKosulu, Filtre, IlkKosul, OrtalamaKosulu, OzelKosul, RenkKosulu
 from ..model.notlar import Not
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
 from ..model.sayfa_yapisi import SayfaYapisi
@@ -143,7 +148,7 @@ _TARA = (
 # sayfa XML'inde aranan, openpyxl ile korunamayan/bozulan öğeler
 _SAYFA_ISARETLERI = (
     (b"<conditionalFormatting", "koşullu biçim"), (b"<dataValidations", "veri doğrulama"),
-    (b"<autoFilter", "filtre"), (b"<hyperlinks", "köprü"), (b"outlineLevel=", "satır/sütun gruplama"),
+    (b"<hyperlinks", "köprü"), (b"outlineLevel=", "satır/sütun gruplama"),
     (b"<headerFooter", "üst/alt bilgi"), (b"<sheetProtection", "sayfa koruması"),
     (b't="array"', "dizi formülü (normal formüle dönüştürülür)"),
 )
@@ -517,6 +522,8 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
             ws.freeze_panes = f"{get_column_letter(sayfa.dondur[1])}{sayfa.dondur[0]}"
         ws.sheet_view.showGridLines = sayfa.kilavuz
         _yapi_yaz(ws, sayfa.sayfa_yapisi)
+        if sayfa.filtre is not None:
+            _filtre_yaz(ws, sayfa.filtre, rapor)
 
     _adlari_yaz(wb, kitap)
     if sayac.get("karakter"):
@@ -555,6 +562,99 @@ def _not_oku(yorum) -> Optional[Not]:
     if metin == "" and yazar == "":
         return None
     return Not(metin, yazar)
+
+
+_ISLEC_YAZ = {"esit": "equal", "esit_degil": "notEqual", "buyuk": "greaterThan", "buyuk_esit": "greaterThanOrEqual",
+              "kucuk": "lessThan", "kucuk_esit": "lessThanOrEqual"}
+_ISLEC_OKU = {v: k for k, v in _ISLEC_YAZ.items()}
+# metin işleçleri dosyada joker deseniyle yazılır: (işleç, desen öneki, sonek, olumsuz mu)
+_METIN_YAZ = {"baslar": ("equal", "", "*"), "baslamaz": ("notEqual", "", "*"), "biter": ("equal", "*", ""),
+              "bitmez": ("notEqual", "*", ""), "icerir": ("equal", "*", "*"), "icermez": ("notEqual", "*", "*")}
+
+
+def _ozel_yaz(k):
+    islec, deger = k
+    if isinstance(deger, (int, float)) and not isinstance(deger, bool):
+        return CustomFilter(operator=_ISLEC_YAZ.get(islec, "equal"), val=repr(float(deger)).removesuffix(".0"))
+    if islec in _METIN_YAZ:
+        op, on, son = _METIN_YAZ[islec]
+        return CustomFilter(operator=op, val=f"{on}{deger}{son}")
+    return CustomFilter(operator=_ISLEC_YAZ.get(islec, "equal"), val=str(deger))
+
+
+def _ozel_oku(cf):
+    """Dosyadaki özel süzgeç → `(işleç, değer)`; çevrilemezse None."""
+    op, val = cf.operator or "equal", cf.val
+    if val is None or op not in _ISLEC_OKU:
+        return None
+    try:
+        return _ISLEC_OKU[op], float(val)
+    except (TypeError, ValueError):
+        pass
+    val = str(val)
+    if op in ("equal", "notEqual"):
+        olumsuz = op == "notEqual"
+        if len(val) >= 3 and val.startswith("*") and val.endswith("*"):
+            return ("icermez" if olumsuz else "icerir"), val[1:-1]
+        if val.endswith("*") and not val.startswith("*") and len(val) >= 2:
+            return ("baslamaz" if olumsuz else "baslar"), val[:-1]
+        if val.startswith("*") and not val.endswith("*") and len(val) >= 2:
+            return ("bitmez" if olumsuz else "biter"), val[1:]
+    return _ISLEC_OKU[op], val
+
+
+def _filtre_yaz(ws, f: Filtre, rapor: Rapor) -> None:
+    a = f.aralik
+    ws.auto_filter.ref = f"{get_column_letter(a.ilk_sutun)}{a.ilk_satir}:{get_column_letter(a.son_sutun)}{a.son_satir}"
+    for c, k in sorted(f.kosullar.items()):
+        fc = FilterColumn(colId=c - a.ilk_sutun)
+        if isinstance(k, DegerKosulu):
+            fc.filters = Filters(blank=True if k.bos else None, filter=sorted(k.metinler))
+        elif isinstance(k, OzelKosul):
+            fc.customFilters = CustomFilters(_and=True if (k.k2 is not None and k.ve) else None,
+                                             customFilter=[_ozel_yaz(x) for x in (k.k1, k.k2) if x is not None])
+        elif isinstance(k, IlkKosul):
+            fc.top10 = Top10(top=not k.alt, percent=True if k.yuzde else None, val=k.n)
+        elif isinstance(k, OrtalamaKosulu):
+            fc.dynamicFilter = DynamicFilter(type="aboveAverage" if k.ustu else "belowAverage")
+        else:                                           # renk süzgeci: dosyada dxf gerekir (yazılmaz)
+            rapor.ekle("Renge göre filtre dosyaya yazılamadı; süzülen satırlar gizli kalır ama koşul kaybolur.")
+            continue
+        ws.auto_filter.filterColumn.append(fc)
+
+
+def _filtre_oku(ws, s: Sayfa, rapor: Rapor) -> None:
+    af = ws.auto_filter
+    if not af.ref:
+        return
+    try:
+        a = _aralik(CellRange(af.ref))
+    except Exception:
+        rapor.ekle(f"'{ws.title}' sayfasındaki filtre aralığı okunamadı; filtre atlandı.")
+        return
+    kosullar = {}
+    atlanan = 0
+    for fc in af.filterColumn:
+        c = a.ilk_sutun + (fc.colId or 0)
+        if fc.filters is not None and (fc.filters.filter or fc.filters.blank) and not fc.filters.dateGroupItem:
+            kosullar[c] = DegerKosulu(frozenset(str(x) for x in fc.filters.filter), bool(fc.filters.blank))
+        elif fc.customFilters is not None and fc.customFilters.customFilter:
+            ks = [_ozel_oku(x) for x in fc.customFilters.customFilter]
+            if None in ks:
+                atlanan += 1
+            else:
+                kosullar[c] = OzelKosul(ks[0], ks[1] if len(ks) > 1 else None,
+                                    bool(fc.customFilters._and) if len(ks) > 1 else True)
+        elif fc.top10 is not None and fc.top10.val is not None:
+            kosullar[c] = IlkKosul(int(fc.top10.val), fc.top10.top in (False, 0), bool(fc.top10.percent))
+        elif fc.dynamicFilter is not None and fc.dynamicFilter.type in ("aboveAverage", "belowAverage"):
+            kosullar[c] = OrtalamaKosulu(fc.dynamicFilter.type == "aboveAverage")
+        else:
+            atlanan += 1
+    if atlanan:
+        rapor.ekle(f"'{ws.title}' sayfasında {atlanan} filtre koşulu (renk/tarih grubu vb.) desteklenmiyor; "
+                   "satırlar gizli kalır ama koşul kaybolur.")
+    s.filtre_yaz(Filtre(a, kosullar))
 
 
 def _aralik(hucre_araligi) -> Aralik:
@@ -730,6 +830,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
                 dondur = None
         s.gorunum_yaz(dondur=dondur, kilavuz=bool(ws.sheet_view.showGridLines is not False))
         s.sayfa_yapisi = _yapi_oku(ws)
+        _filtre_oku(ws, s, rapor)
         tab = ws.sheet_properties.tabColor
         if tab is not None:
             s.sekme_rengi = _renk_oku(tab, tema)

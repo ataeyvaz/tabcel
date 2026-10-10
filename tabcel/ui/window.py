@@ -288,6 +288,14 @@ class Pencere(DosyaIslemleri, QMainWindow):
                              ("ozel_sirala", self.sirala_ozel)):
             self.veri_eylemleri[eylem].setEnabled(True)
             self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
+        for eylem, kisayol, islev in (("filtre", "Ctrl+Shift+L", self.filtre_ac_kapat),
+                                      ("filtre_temizle", "", self.filtre_temizle),
+                                      ("filtre_yeniden", "Ctrl+Alt+L", self.filtre_yeniden_uygula)):
+            self.veri_eylemleri[eylem].setEnabled(True)
+            self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
+            if kisayol:
+                self.veri_eylemleri[eylem].setText(self.veri_eylemleri[eylem].text() + "	" + kisayol)
+                QShortcut(QKeySequence(kisayol), self, activated=islev)
         for eylem, islev in (("ad_tanimla", self.ad_tanimla_ac), ("ad_yoneticisi", self.ad_yoneticisi_ac)):
             self.veri_eylemleri[eylem].setEnabled(True)
             self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
@@ -364,6 +372,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
         g.uzakOnay.connect(self._uzak_onayla)
+        g.filtreDugmesi.connect(self.filtre_paneli_ac)
         g.veri_kaybi_onayi = self._birlestirme_onayi
         g.gecmisIslemi.connect(self._gecmis_islemi_ayarla)
         self._izgaralar[sayfa] = g
@@ -744,6 +753,90 @@ class Pencere(DosyaIslemleri, QMainWindow):
         anahtarlar, baslik, bk, yon = sonuc
         return self._siralama_uygula(aralik, anahtarlar, baslik, bk, yon)
 
+    # ------------------------------------------------------------------ filtre (5f)
+    def filtre_ac_kapat(self) -> bool:
+        """Ctrl+Shift+L: sayfada filtre varsa kaldırır; yoksa seçimin (tek hücreyse bitişik bölgenin)
+        başlık satırına filtre koyar."""
+        from ..model.adres import bitisik_bolge
+        from ..model.filtre import Filtre
+        g = self.izgara()
+        if g.sayfa.filtre is not None:
+            return self._filtre_uygula(None)
+        ar = g.secim
+        if ar.ilk_satir == ar.son_satir and ar.ilk_sutun == ar.son_sutun:
+            ar = bitisik_bolge(g.sayfa, *g.aktif)
+        if g.sayfa.kullanilan_aralik() is None:
+            return False
+        return self._filtre_uygula(Filtre(ar), bildir=False)
+
+    def filtre_temizle(self) -> bool:
+        """Tüm sütun koşullarını kaldırır; filtre düğmeleri kalır, gizli satırlar açılır."""
+        from ..model.filtre import Filtre
+        f = self.izgara().sayfa.filtre
+        if f is None or not f.kosullar:
+            return False
+        return self._filtre_uygula(Filtre(f.aralik, {}), genislet=False, bildir=False)
+
+    def filtre_yeniden_uygula(self) -> bool:
+        """Ctrl+Alt+L: koşullar değişen veriye göre yeniden uygulanır (aralık alttaki yeni satırlara uzar)."""
+        f = self.izgara().sayfa.filtre
+        return f is not None and self._filtre_uygula(f)
+
+    def _filtre_uygula(self, yeni, genislet: bool = True, bildir: bool = True) -> bool:
+        from ..model.filtre import Filtre, aralik_genislet, veri_satirlari
+        from ..model.komutlar import FiltreDegis
+        g = self.izgara()
+        if yeni is not None and genislet:
+            yeni = Filtre(aralik_genislet(g.sayfa, yeni.aralik), yeni.kosullar)
+        if yeni == g.sayfa.filtre and not (yeni is not None and yeni.kosullar):
+            return False
+        kmt = FiltreDegis(g.sayfa, yeni)
+        self.yigin.calistir(kmt)
+        g._guncelle(pano_iptal=False)
+        if bildir and yeni is not None and yeni.kosullar:
+            n = len(veri_satirlari(yeni))
+            self.statusBar().showMessage(f"{n} kayıttan {n - kmt.gizlenen} kayıt bulundu", 6000)
+        return True
+
+    def filtre_paneli_ac(self, sutun: int):
+        from .filtre_paneli import FiltrePaneli
+        g = self.izgara()
+        f = g.sayfa.filtre
+        if f is None:
+            return None
+        from ..model.filtre import Filtre, aralik_genislet
+        genis = Filtre(aralik_genislet(g.sayfa, f.aralik), f.kosullar)     # liste yeni satırları da görsün
+        pan = FiltrePaneli(g.sayfa, genis, sutun, self)
+        pan.kosulSecildi.connect(lambda k, s=sutun: self.filtre_kosulu_uygula(s, k))
+        pan.sirala.connect(lambda artan, s=sutun: self._filtre_sirala(s, artan))
+        d = g._filtre_dugmesi_dikdortgeni(sutun)
+        if d is not None:
+            pan.move(g.viewport().mapToGlobal(d.bottomLeft()))
+        self._filtre_paneli = pan
+        pan.show()
+        return pan
+
+    def filtre_kosulu_uygula(self, sutun: int, kosul) -> bool:
+        """`sutun`un koşulunu değiştirir (None = temizle); diğer sütunların koşulları korunur."""
+        from ..model.filtre import Filtre
+        f = self.izgara().sayfa.filtre
+        if f is None:
+            return False
+        kosullar = dict(f.kosullar)
+        if kosul is None:
+            kosullar.pop(sutun, None)
+        else:
+            kosullar[sutun] = kosul
+        return self._filtre_uygula(Filtre(f.aralik, kosullar))
+
+    def _filtre_sirala(self, sutun: int, artan: bool):
+        """Panelden A→Z / Z→A: filtre aralığının veri satırları bu sütuna göre sıralanır (başlık sabit)."""
+        from ..model.sirala import SiralamaAnahtari
+        g = self.izgara()
+        f = g.sayfa.filtre
+        if f is not None:
+            self._siralama_uygula(f.aralik, [SiralamaAnahtari(sutun, artan)], True)
+
     def git_ac(self):
         pen = GitPenceresi(self, [t.ad for t in gorunur_adlar(self.kitap, self.izgara().sayfa)])
         if pen.exec() == QDialog.Accepted and pen.metin():
@@ -915,6 +1008,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
         gorulen = set() if len(aralik_listesi) > 1 else None   # üst üste binen aralıklarda hücre bir kez sayılır
         for a in aralik_listesi:
             for r, c, h in g.sayfa.aralikta(a):
+                if g.filtreyle_gizli(r):
+                    continue                       # Excel: filtreyle gizlenen satırlar özete girmez
                 if gorulen is not None:
                     if (r, c) in gorulen:
                         continue

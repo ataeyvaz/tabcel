@@ -12,6 +12,8 @@ Yeni fonksiyon eklemek (Sonnet'e sözleşme, faz2_tasarim.md §7):
   (`args[0]()` değerlendirir) — EĞER, EĞERHATA gibi yalnız seçilen dalı hesaplayanlar için.
 - `degisken=True`: her yeniden hesaplamada hesaplanır (BUGÜN, ŞİMDİ, S_SAYI_ÜRET).
 - `dinamik=True`: başvurusu çalışma anında belirlenir (DOLAYLI, KAYDIR) → değişken sayılır.
+- `gizlilik=True`: sonuç satırların gizli olup olmamasına bağlı (ALTTOPLAM); motor bu hücreleri
+  `boyut` olayında (gizle/göster/filtre) yeniden hesaplar.
 - Dönüş: skaler, `AralikDeger` (başvuru döndürenler: İNDİS, KAYDIR, DOLAYLI) ya da `Dizi`.
 - Her fonksiyon için en az 4 test vakası (CLAUDE.md kural 11).
 """
@@ -28,15 +30,16 @@ class Tanim:
     tembel: bool = False
     degisken: bool = False
     dinamik: bool = False
+    gizlilik: bool = False            # satır gizliliğine bağlı (ALTTOPLAM): `boyut` olayında yeniden hesaplanır
 
 
 KAYIT: Dict[str, Tanim] = {}
 
 
 def fonksiyon(ad: str, en_az: int = 0, en_cok: Optional[int] = None, tembel: bool = False,
-              degisken: bool = False, dinamik: bool = False):
+              degisken: bool = False, dinamik: bool = False, gizlilik: bool = False):
     def kaydet(f):
-        KAYIT[ad.upper()] = Tanim(ad.upper(), f, en_az, en_cok, tembel, degisken, dinamik)
+        KAYIT[ad.upper()] = Tanim(ad.upper(), f, en_az, en_cok, tembel, degisken, dinamik, gizlilik)
         return f
     return kaydet
 

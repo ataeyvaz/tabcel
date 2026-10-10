@@ -484,6 +484,14 @@ class Sayfa:
         if degisti:
             self._bildir("ek", alan="hepsi", anahtarlar=set(eski_notlar) | set(notlar))
 
+    def filtre_yaz(self, filtre) -> None:
+        """Otomatik filtreyi değiştirir (None = kaldır); değişirse `ek` olayı (`alan="filtre"`).
+        Satır gizliliği ayrıca `gizli_satir` + `boyut_degisti` ile yazılır (`komutlar.FiltreDegis`)."""
+        if self.filtre == filtre:
+            return
+        self.filtre = filtre
+        self._bildir("ek", alan="filtre")
+
     def notlari_yaz(self, yeni: Dict[Anahtar, Any]) -> Dict[Anahtar, Any]:
         """Notları toplu değiştirir (`None` ya da boş `Not` = sil); değişen varsa TEK `ek` olayı
         (`alan="not"`, `anahtarlar`). Döner: değişen hücrelerin ESKİ notları (None = yoktu) — geri al

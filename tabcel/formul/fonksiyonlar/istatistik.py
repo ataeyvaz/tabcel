@@ -260,3 +260,57 @@ def _ifs_uc(ad, islev):
 
 _ifs_uc("MAXIFS", max)
 _ifs_uc("MINIFS", min)
+
+
+# --- ALTTOPLAM (SUBTOTAL) — faz5_tasarim.md §6.4 ---------------------------------------------
+def _gizli_dislanir(sayfa, r: int, tum_gizli: bool) -> bool:
+    """101–111: her gizli satır dışlanır. 1–11: yalnız filtreyle gizlenenler (filtre veri aralığında
+    gizli satır; model gizliliği tek bit tutar — Excel gibi)."""
+    if r not in sayfa.gizli_satir:
+        return False
+    if tum_gizli:
+        return True
+    f = sayfa.filtre
+    return f is not None and f.aralik.ilk_satir < r <= f.aralik.son_satir
+
+
+def _gorunen_dizi(a: AralikDeger, tum_gizli: bool) -> Dizi:
+    """Aralığın dışlanmayan satırlarındaki değerler (başka ALTTOPLAM hücreleri sayılmaz)."""
+    r1, c1, r2, c2 = a.kirpilmis()
+    sayfa, hucreler = a.sayfa, a.sayfa._hucreler
+    degerler = []
+    for r in range(r1, r2 + 1):
+        if _gizli_dislanir(sayfa, r, tum_gizli):
+            continue
+        for c in range(c1, c2 + 1):
+            h = hucreler.get((r, c))
+            if h is not None and h.formul is not None and "SUBTOTAL(" in h.formul.upper():
+                continue
+            degerler.append(a.hucre_degeri(r, c))
+    return Dizi([degerler]) if degerler else Dizi([[]])
+
+
+_ALTTOPLAM_ISLEV = {1: "AVERAGE", 2: "COUNT", 3: "COUNTA", 4: "MAX", 5: "MIN", 6: "PRODUCT",
+                    7: "STDEV", 8: "STDEVP", 9: "SUM", 10: "VAR", 11: "VARP"}
+
+
+@fonksiyon("SUBTOTAL", en_az=2, en_cok=255, gizlilik=True)
+def _subtotal(b, no, *args):
+    from ..donustur import sayiya
+    from ..degerler import skalere
+    n = sayiya(skalere(no, b.satir, b.sutun))
+    if isinstance(n, Hata):
+        return n
+    n = int(n)
+    tum_gizli = 101 <= n <= 111
+    ad = _ALTTOPLAM_ISLEV.get(n - 100 if tum_gizli else n)
+    if ad is None:
+        return D.DEGER_HATASI
+    veri = [_gorunen_dizi(a, tum_gizli) if isinstance(a, AralikDeger) else a for a in args]
+    if ad == "STDEVP":
+        v = _varyans(veri, ornek=False)
+        return v if isinstance(v, Hata) else math.sqrt(v)
+    if ad == "VARP":
+        return _varyans(veri, ornek=False)
+    from . import KAYIT
+    return KAYIT[ad].uygula(b, *veri)

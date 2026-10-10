@@ -266,6 +266,37 @@ class NotlarDegis:
         self.sayfa.notlari_yaz(self.eski)
 
 
+class FiltreDegis:
+    """Otomatik filtreyi koyar / değiştirir / kaldırır (`yeni=None`) ve satır gizliliğini baştan hesaplar
+    (faz5_tasarim.md §6.2). Filtre aralığındaki (eski ve yeni) tüm veri satırlarının gizliliği baştan
+    belirlenir — elle gizlenmiş satır da açılabilir (Excel de ayrım tutmaz). Tek geri al adımı."""
+
+    def __init__(self, sayfa: Sayfa, yeni, metin_al=None):
+        self.sayfa, self.yeni, self.metin_al = sayfa, yeni, metin_al
+        self._eski_filtre = None
+        self._eski_boyut = None
+        self.gizlenen = 0                     # son uygulamada filtreyle gizlenen satır sayısı
+
+    def yap(self) -> None:
+        from .filtre import gizlenecekler, veri_satirlari
+        s = self.sayfa
+        self._eski_filtre, self._eski_boyut = s.filtre, s.boyut_durumu()
+        etkilenen = set()
+        for f in (s.filtre, self.yeni):
+            if f is not None:
+                etkilenen.update(veri_satirlari(f))
+        gizli = (gizlenecekler(s, self.yeni) if self.metin_al is None
+                 else gizlenecekler(s, self.yeni, self.metin_al)) if self.yeni is not None else set()
+        self.gizlenen = len(gizli)
+        s.filtre_yaz(self.yeni)                # önce filtre: ALTTOPLAM `boyut` olayında yeni aralığı görür
+        s.gizli_satir = (s.gizli_satir - etkilenen) | gizli
+        s.boyut_degisti()
+
+    def geri_al(self) -> None:
+        self.sayfa.filtre_yaz(self._eski_filtre)
+        self.sayfa.boyut_durumu_yukle(self._eski_boyut)
+
+
 class AdDegis:
     """Tanımlı ad ekler / düzenler / yeniden adlandırır / siler (tek geri al adımı).
     `eski_anahtar`: düzenlenen/silinen adın anahtarı (yeni ad için None); `yeni`: yeni `TanimliAd`
@@ -616,7 +647,7 @@ def ana_sayfa(komut, geri_al: bool = False):
         return None
     return getattr(komut, "sayfa", None) if isinstance(
         komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala,
-                NotlarDegis)) else None
+                NotlarDegis, FiltreDegis)) else None
 
 
 class GeriAlYigini:

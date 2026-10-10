@@ -35,7 +35,7 @@ class _Kayit:
 
 
 def _oncul_topla(agac: Dugum, kendi: int, kitap, satir: int = 1,
-                 sutun: int = 1) -> Tuple[List[Anahtar], List[Tuple[int, Kutu]], bool]:
+                 sutun: int = 1, gizlilik: Optional[list] = None) -> Tuple[List[Anahtar], List[Tuple[int, Kutu]], bool]:
     """Ağaçtaki durağan başvurular (tek hücreler, aralıklar) ve değişken fonksiyon var mı.
     Tanımlı adlar (`Ad`) açılır: adın ağacı (hücreye göre kaydırılmış) aynı taramaya katılır."""
     hucreler, araliklar, degisken = [], [], False
@@ -69,6 +69,8 @@ def _oncul_topla(agac: Dugum, kendi: int, kitap, satir: int = 1,
             t = fonksiyonlar.bul(d.ad)
             if t is not None and (t.degisken or t.dinamik):
                 degisken = True
+            if t is not None and t.gizlilik and gizlilik is not None:
+                gizlilik.append(True)
             yigin.extend((x, adlar) for x in d.argumanlar)
             continue
         for alan in getattr(d, "__dataclass_fields__", ()):
@@ -120,6 +122,7 @@ class Hesaplayici:
             lambda: defaultdict(dict))
         self._aralik_genis: Dict[int, Dict[Anahtar, List[Kutu]]] = defaultdict(dict)
         self._degisken: Set[Anahtar] = set()
+        self._gizlilik: Set[Anahtar] = set()          # ALTTOPLAM gibi satır gizliliğine bağlı hücreler
         self._sayfalar: Dict[int, object] = {}
         self._yaziyor = False
         self.tumunu_hesapla()
@@ -157,13 +160,15 @@ class Hesaplayici:
                 for c in range(c1, c2 + 1):
                     sutunlar[c].pop(anahtar, None)
         self._degisken.discard(anahtar)
+        self._gizlilik.discard(anahtar)
 
     def _kaydet(self, anahtar: Anahtar, formul: str) -> None:
         agac = self._agac(formul)
         if agac is None:
             self._kayit[anahtar] = _Kayit(None, [], [], False)
             return
-        hucreler, araliklar, degisken = _oncul_topla(agac, anahtar[0], self.kitap, anahtar[1], anahtar[2])
+        gizlilik: list = []
+        hucreler, araliklar, degisken = _oncul_topla(agac, anahtar[0], self.kitap, anahtar[1], anahtar[2], gizlilik)
         self._kayit[anahtar] = _Kayit(agac, hucreler, araliklar, degisken)
         for h in hucreler:
             self._hucre_bag[h].add(anahtar)
@@ -177,6 +182,8 @@ class Hesaplayici:
                     sutunlar[c].setdefault(anahtar, []).append(kutu)
         if degisken:
             self._degisken.add(anahtar)
+        if gizlilik:
+            self._gizlilik.add(anahtar)
 
     def _hucreyi_yenile(self, sayfa, r: int, c: int) -> None:
         anahtar = (sayfa.kimlik, r, c)
@@ -191,6 +198,7 @@ class Hesaplayici:
         self._aralik_sutun.clear()
         self._aralik_genis.clear()
         self._degisken.clear()
+        self._gizlilik.clear()
         self._sayfalar = {s.kimlik: s for s in self.kitap.sayfalar}
         for s in self.kitap.sayfalar:
             for r, c, h in s.dolu_hucreler(sirali=False):
@@ -212,6 +220,9 @@ class Hesaplayici:
             self._yeniden_hesapla(degisen)
         elif t == "yapi":
             self.tumunu_hesapla()
+        elif t == "boyut":                # satır gizle/göster/filtre: yalnız gizliliğe bağlı hücreler
+            if self._gizlilik:
+                self._yeniden_hesapla([], self._gizlilik)
         elif t == "ad":                    # tanımlı ad değişti (olay.sayfa None): seyrek, basit ve doğru
             self.tumunu_hesapla()
         elif t == "sayfa":
@@ -261,8 +272,8 @@ class Hesaplayici:
                                 break
         return sonuc
 
-    def _yeniden_hesapla(self, degisen: List[Anahtar]) -> None:
-        tohum = set(degisen) | self._degisken
+    def _yeniden_hesapla(self, degisen: List[Anahtar], ek: Iterable[Anahtar] = ()) -> None:
+        tohum = set(degisen) | self._degisken | set(ek)
         kirli = {a for a in tohum if a in self._kayit}
         sinir = tohum
         while sinir:
