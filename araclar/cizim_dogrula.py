@@ -41,6 +41,13 @@ for _r in range(1, 400):
     for _c in range(1, 12):
         if (_r * 7 + _c * 3) % 5 == 0:
             s.bicim_yaz({(_r, _c): s.havuz.kimlik(_stiller[(_r + _c) % len(_stiller)])})
+# Faz 6 / 6d: yüzen grafikler (artımlı kaydırma nesnelerle de tam çizimle aynı pikselleri vermeli)
+from tabcel.model.adres import Aralik  # noqa: E402
+from tabcel.model.grafik import Grafik, Konum, Referans, Seri  # noqa: E402
+for _konum, _boyut in ((Konum(10, 5, 4, 6), (320, 200)), (Konum(28, 2, 30, 10), (280, 160)), (Konum(60, 4), (300, 220))):
+    s.nesne_ekle(Grafik(seriler=(Seri(deger=Referans(s.kimlik, Aralik(1, 4, 12, 4)),
+                                      kategori=Referans(s.kimlik, Aralik(1, 1, 12, 1))),), konum=_konum, boyut=_boyut,
+                        baslik="Deneme", gosterge=None))
 p = Pencere(k)
 p.resize(900, 560)
 p.move(50, 50)

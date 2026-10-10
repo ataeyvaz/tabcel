@@ -39,6 +39,7 @@ from ..model.notlar import Not, varsayilan_yazar
 from ..model.bicim_islem import boyaci_stilleri
 from ..model.sayfa import Hucre, Sayfa
 from . import theme
+from .grid_nesneler import NesneKatmani
 from .renkli import renkli_ciz
 
 VARSAYILAN_DOGRULAMA_IL = "Bu değer, bu hücre için tanımlanan veri doğrulama kısıtlamalarıyla eşleşmiyor."
@@ -240,7 +241,7 @@ class _NotDuzenleyici(QPlainTextEdit):
         self._bitir(self.toPlainText())
 
 
-class Izgara(QAbstractScrollArea):
+class Izgara(NesneKatmani, QAbstractScrollArea):
     aktifDegisti = Signal(int, int)       # satır, sütun
     secimDegisti = Signal(object)         # Aralik
     degisti = Signal()                    # içerik değişti (düzenleme, silme, geri al)
@@ -314,6 +315,7 @@ class Izgara(QAbstractScrollArea):
         self.verticalScrollBar().setRange(0, MAX_ROW - 1)
         self._dondur_uygula()
         self.aktifDegisti.connect(lambda *_: self._giris_iletisi_guncelle())
+        self._nesne_kur()                                    # Faz 6: yüzen nesne katmanı
         self.horizontalScrollBar().valueChanged.connect(self._yatay_kaydi)
         self.verticalScrollBar().valueChanged.connect(self._dikey_kaydi)
         QApplication.clipboard().dataChanged.connect(self._pano_degisti)
@@ -1159,6 +1161,8 @@ class Izgara(QAbstractScrollArea):
             p.fillRect(tut, QColor("#ffffff"))
             p.fillRect(tut.adjusted(1, 1, -1, -1), QColor(theme.ACCENT))
 
+        if self.sayfa.nesneler:                 # grafik/resim: hücrelerin ve seçimin üstünde (faz6_tasarim.md §5)
+            self._nesneleri_ciz(p, kirp)
         if self.sayfa.dondur:                   # dondurma çizgisi (Excel: koyu gri, ince)
             dg, dy = self._donuk_olcu()
             p.setPen(QPen(QColor("#7f7f7f"), 1))
