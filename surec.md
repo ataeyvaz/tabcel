@@ -126,6 +126,9 @@ Testler: 2028 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
 - 2026-10-09 (Faz 3 / 3k):
   - **Biçim boyacısı** kaynak = seçim (tek aralık; çoklu seçimde alınamaz, Excel gibi). Tek tık düğme: bir kez; çift tık: kalıcı; düğmeye yeniden basmak ya da Esc bitirir; sayfa sekmesi değişince biter (Excel sayfalar arası boyar — bilerek fark). Hedef tek hücreyse kaynağın tamamı oradan başlayarak boyanır, çok hücreliyse desen seçime yinelenir (kırpılır); kaynaktaki biçimsiz hücre hedefi sıfırlar
   - Yalnız **hücre biçimi** (stil) taşır; **birleşim ve sütun genişliği/satır yüksekliği taşınmaz** (Excel birleşimi de taşır). Hedef >200.000 hücre (tam sütun/satır) reddedilir (uyarı); satır/sütun stiline yazma yok. Kaynak çerçevesi (kayan karıncalar) yok, yalnız imleç/düğme durumu
+- 2026-10-10 (kullanıcı kararı, karar Claude'a bırakıldı):
+  - **Faz 3 performans ❌'leri (sıçrama, Shift+Ok, stilli 3 satır, ilk çizim) kabul edildi;** satır/karo piksel önbelleği **Faz 5 sonuna ertelendi** (filtre/sıralama/koşullu biçim çizimi değiştireceği için önbelleği iki kez yazmamak; kullanıcı gözle fark etmiyor: tek seferlik 27–37 ms). Faz 5 sonu ölçümünde hâlâ ❌ ise yapılır
+  - **Elle testler** (`test.md` §11.4, §13.4) kullanıcıda; Claude çalışırken paralel yapabilir. Kural: örnek dosyaları (`testler/ornekler/`) **kopyalayıp** başka klasörde dener, proje klasöründeki dosyaları değiştirmez; Claude'un test paketi (RAM 7,9 GB) çalışırken Tabcel'i aynı anda açmaması önerilir. Bulgular `test.md` tablolarındaki ⏳ → ✅/❌ olarak işlenir
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
