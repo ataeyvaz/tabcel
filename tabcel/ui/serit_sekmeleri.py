@@ -9,7 +9,7 @@ from .serit import SeritGrubu, SeritSayfasi
 
 
 class EkleSayfasi(SeritSayfasi):
-    """Ekle sekmesi (`faz6_tasarim.md` §6.1). Resim grubu 6g'de eklenir."""
+    """Ekle sekmesi (`faz6_tasarim.md` §6.1): Grafikler ve Resimler."""
 
     def __init__(self, pencere):
         super().__init__()
@@ -23,6 +23,9 @@ class EkleSayfasi(SeritSayfasi):
         g.buyuk(menu=m(tuple(f"grafik_ekle.alan.{a}" for a, _ in GALERI["alan"])), ikon="chart_alan32", metin="Alan")
         g.buyuk(pencere.eylemler["grafik_ekle.dagilim.kumelenmis"], ikon="chart_dagilim32", metin="Dağılım")
         self.grup_ekle(g)
+        r = SeritGrubu("Resimler", 4, "picture32")
+        r.buyuk(pencere.eylemler["resim_ekle"], ikon="picture32", metin="Resim")
+        self.grup_ekle(r)
 
 
 class GrafikSayfasi(SeritSayfasi):

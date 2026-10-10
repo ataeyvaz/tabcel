@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 10 Ekim 2026
 
+- **Resim ekleme:** **Ekle → Resim…** ile PNG, JPEG, GIF ya da BMP dosyası ekleyin; taşıyıp boyutlandırabilirsiniz. Bkz. [Grafikler ve Resimler](konu:grafikler).
 - **Grafikler:** **Ekle** sekmesinden sütun, çubuk, çizgi, pasta, halka, alan ve dağılım grafiği ekleyin. Grafik sayfanın üzerinde yüzer; taşıyıp boyutlandırabilir, verisi değişince canlı güncellendiğini görebilirsiniz. Bkz. [Grafikler](konu:grafikler).
 - **Sekmeli şerit:** menüler yerini Excel'deki gibi sekmeli şeride bıraktı.
 - **Yardım:** bu pencere (`F1`).
@@ -158,8 +159,8 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **Koşullu Biçimlendirme** (**Giriş → Stiller**): değere göre renklendirme (büyüktür, arasında, yinelenen, en yüksek/en düşük, ortalamanın üstü, renk ölçekleri, veri çubukları, formüle dayalı kurallar). **Kuralları Yönet** ile sıra ve kapsam düzenlenir.
 - **Notlar:** `Shift+F2` hücreye not ekler/düzenler; notlu hücrelerin köşesinde işaret görünür. **Gözden Geçir** sekmesinden silinir.
 
-<!-- konu: grafikler | Grafikler -->
-# Grafikler
+<!-- konu: grafikler | Grafikler ve Resimler -->
+# Grafikler ve Resimler
 
 ## Grafik ekleme
 
@@ -174,6 +175,10 @@ Grafik görünen alanın ortasına yerleşir. {APP_NAME} seçimden **serileri ke
 - Klavye: ok tuşları 1 piksel, `Ctrl` + ok 10 piksel taşır; `Delete` siler; `Esc` seçimi bırakır; `Ctrl+C` / `Ctrl+X` / `Ctrl+V` kopyalar, keser, yapıştırır (etkin hücreye).
 - Sağ tık menüsü: Kes, Kopyala, Sil, Öne Getir, Arkaya Gönder, Veriyi Seç, Grafik Türünü Değiştir, Grafik Ayarları.
 - Grafiğin verisi değiştiğinde grafik **canlı güncellenir**; satır ya da sütun eklerken/silerken grafik başvuruları da kayar.
+
+## Resim ekleme
+
+**Ekle → Resim…** ile bir resim dosyası (PNG, JPEG, GIF, BMP; en çok 25 MB) seçin. Resim görünen alanın ortasına, doğal boyutunda (en çok 600 piksel genişlik) eklenir. Grafiklerdeki gibi taşınır, boyutlandırılır (köşeden sürüklerken oran korunur, `Shift` oranı serbest bırakır), `Delete` ile silinir, kopyalanıp yapıştırılır ve sağ tık menüsüyle öne/arkaya getirilir. Resim kırpma, döndürme ve parlaklık ayarı yoktur.
 
 ## Grafik sekmesi
 

@@ -11,8 +11,8 @@
 """
 from typing import Dict, Optional, Set, Tuple
 
-from PySide6.QtCore import QPoint, QRect, QSize, Qt, QTimer
-from PySide6.QtGui import QPainter, QPixmap
+from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt, QTimer
+from PySide6.QtGui import QImage, QPainter, QPixmap
 
 from ..model.adres import Aralik
 from ..model.grafik import Grafik, Konum, Resim, grafik_aralik_kesisir
@@ -28,6 +28,7 @@ class NesneKatmani:
 
     def _nesne_kur(self) -> None:
         self._nesne_onb: Dict[int, tuple] = {}            # kimlik → (anahtar, QPixmap)
+        self._resim_onb: Dict[int, tuple] = {}            # kimlik → (bayt nesnesi, çözülmüş QImage)
         self._nesne_kirli: Set[int] = set()               # veri değişti, görüntü zamanlayıcı dolana dek eski kalır
         self._nesne_zamanlayici = QTimer(self)
         self._nesne_zamanlayici.setSingleShot(True)
@@ -53,9 +54,12 @@ class NesneKatmani:
             kimlik = olay.ayrinti.get("kimlik")
             if kimlik is None:
                 self._nesne_onb.clear()
+                self._resim_onb.clear()
                 self._nesne_kirli.clear()
             else:
                 self._nesne_onb.pop(kimlik, None)
+                if olay.ayrinti.get("islem") == "sil":      # taşıma/boyut değişiminde çözülmüş resim yeniden çözülmez
+                    self._resim_onb.pop(kimlik, None)
                 self._nesne_kirli.discard(kimlik)
             self._nesne_secim_dogrula()
             self.viewport().update()
@@ -159,11 +163,29 @@ class NesneKatmani:
         self._nesne_onb[n.kimlik] = (anahtar, pm)
         return pm
 
+    def _resim_goruntusu(self, n: Resim) -> QImage:
+        """Çözülmüş resim (baytlar değişmedikçe yeniden çözülmez; yeniden boyutlandırmada her seferinde çözmek yavaş)."""
+        giris = self._resim_onb.get(n.kimlik)
+        if giris is not None and giris[0] is n.veri:
+            return giris[1]
+        img = QImage.fromData(n.veri)
+        self._resim_onb[n.kimlik] = (n.veri, img)
+        return img
+
     def _nesne_olustur(self, n, w: int, h: int, dpr: float) -> QPixmap:
         pm = QPixmap(max(1, round(w * dpr)), max(1, round(h * dpr)))
         pm.setDevicePixelRatio(dpr)
-        pm.fill(Qt.white)
-        if isinstance(n, Grafik):
+        pm.fill(Qt.transparent if isinstance(n, Resim) else Qt.white)
+        if isinstance(n, Resim):
+            img = self._resim_goruntusu(n)
+            if not img.isNull():
+                p = QPainter(pm)
+                try:
+                    p.setRenderHint(QPainter.SmoothPixmapTransform)
+                    p.drawImage(QRectF(0, 0, w, h), img)
+                finally:
+                    p.end()
+        elif isinstance(n, Grafik):
             p = QPainter(pm)
             try:
                 veri = grafik_verisi(self.sayfa.kitap, n)
@@ -184,8 +206,6 @@ class NesneKatmani:
             dik, pencere = sonuc
             if n.kimlik == self._secili_nesne:
                 secili_dik = dik
-            if isinstance(n, Resim):
-                continue                                  # resim çizimi 6g'de
             kirpma = dik.intersected(pencere).intersected(kirp)
             if kirpma.isEmpty():
                 continue

@@ -4,8 +4,10 @@ kullanır); hepsi seçili grafiği etkin sayfanın ızgarasından okur."""
 from typing import Optional, Tuple
 
 from PySide6.QtGui import QAction, QActionGroup
+from PySide6.QtWidgets import QFileDialog
 
 from ..model.grafik import VARSAYILAN_BOYUT, Grafik
+from ..model.resim_yukle import UZANTILAR, resim_yukle
 from ..model.grafik_islem import GALERI, RENK_SEMALARI, grafik_kur, renk_sema_uygula, satir_sutun_degistir
 from . import icons
 from .grafik_pencereleri import GOSTERGE_ADLARI, GrafikAyarlariPenceresi
@@ -56,6 +58,7 @@ class GrafikEylemleri:
                                     ("grafik_bir_arkaya", "Bir Arkaya Gönder", "bir_arkaya")):
             yeni(anahtar, metin, lambda y=yon: self.sirala(y))
         yeni("grafik_sil", "Grafiği Sil", self.sil)
+        yeni("resim_ekle", "Resim…", self.resim_sec, "picture32", ipucu="Resim Ekle")
 
     # ------------------------------------------------------------------ yardımcılar
     def secili(self) -> Optional[Tuple[object, Grafik]]:
@@ -87,6 +90,24 @@ class GrafikEylemleri:
         g.nesne_ekle(grafik.degistir(konum=g.nesne_yerlesim_konumu(VARSAYILAN_BOYUT)))
         self.sekmeyi_esitle()
         p.serit.sec(BAGLAM_SEKMESI)
+        return True
+
+    def resim_sec(self) -> bool:
+        """Ekle → Resim…: dosya iletişim kutusu, sonra `resim_ekle_dosya`."""
+        yol, _ = QFileDialog.getOpenFileName(self.pencere, "Resim Ekle", self.pencere._baslangic_klasoru(),
+                                             f"Resimler ({UZANTILAR});;Tüm dosyalar (*.*)")
+        return bool(yol) and self.resim_ekle_dosya(yol)
+
+    def resim_ekle_dosya(self, yol: str) -> bool:
+        """Resmi görünen alanın ortasına ekler (TEK geri al adımı) ve seçer; açılamazsa uyarır."""
+        p = self.pencere
+        g = p.izgara()
+        try:
+            resim = resim_yukle(yol)
+        except ValueError as hata:
+            p._uyari(str(hata))
+            return False
+        g.nesne_ekle(resim.degistir(konum=g.nesne_yerlesim_konumu(resim.boyut)))
         return True
 
     # ------------------------------------------------------------------ bağlamsal komutlar
