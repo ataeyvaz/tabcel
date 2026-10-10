@@ -149,7 +149,7 @@ Faz 4'te grafik/resim **her zaman** "kaybolur" uyarısı veriyordu. Yeni kural:
 | # | Karar | Gerekçe / durum |
 |---|---|---|
 | D1 | **Grafik gidiş-dönüşü openpyxl ile; kendi XML okuyucusu gerekmez** | §0 bulgu. Faz 8'deki "Excel grafiklerini okuma" yalnız düşenleri kurtarır |
-| D2 | **Pillow bağımlılığı** (resim yazma/okuma için) | **Kullanıcı onayı bekliyor:** (a) Pillow ekle (öneri), (b) resimleri kendi XML kodumuzla yaz/oku, (c) resim özelliğini Faz 6'dan çıkar. Grafikler Pillow'suz çalışır, yani karar yalnız 6g'yi etkiler |
+| D2 | **Pillow bağımlılığı** (resim yazma/okuma için) | ✅ **Kullanıcı onayladı (2026-10-10): Pillow eklendi** (`requirements.txt`: `Pillow>=10.0`; 12.3.0 kuruldu; lisans MIT-CMU/HPND, izinli; `README`/Hakkında bileşen listesine Faz 7'de yazılır) |
 | D3 | oneCell çapa (esnemez); twoCell dosyalar okunurken boyuta çevrilir | §2.1 |
 | D4 | Nesneler `Izgara._boya` içinde + pixmap önbelleği, çocuk widget yok | §5 |
 | D5 | Çizim listesi Qt'siz (`model/grafik_cizim.py`), boyayıcı ince | §4; testler sayısal |

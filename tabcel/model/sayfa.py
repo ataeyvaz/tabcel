@@ -85,6 +85,9 @@ class Sayfa:
         self.kosullu: List[Any] = []                # liste sırası = öncelik (0 en yüksek)
         self.filtre: Optional[Any] = None           # sayfa başına en çok bir otomatik filtre
         self.silinen_notlar: Dict[Anahtar, Any] = {}   # son satır/sütun silmede düşen notlar (bilgi)
+        # Faz 6 (faz6_tasarim.md §1): yüzen nesneler (Grafik | Resim); liste sırası = z sırası (son en üstte)
+        self.nesneler: List[Any] = []
+        self._sonraki_nesne = 1                    # kimlik sayacı: asla yeniden kullanılmaz
 
     # --- okuma / yazma ---
     def hucre(self, satir: int, sutun: int) -> Optional[Hucre]:
@@ -484,6 +487,95 @@ class Sayfa:
         if degisti:
             self._bildir("ek", alan="hepsi", anahtarlar=set(eski_notlar) | set(notlar))
 
+    # --- Faz 6: yüzen nesneler (grafik, resim) ---
+    def nesne(self, kimlik: int):
+        """Kimliğe göre nesne (yoksa None)."""
+        for n in self.nesneler:
+            if n.kimlik == kimlik:
+                return n
+        return None
+
+    def nesne_ekle(self, nesne, indeks: Optional[int] = None):
+        """Nesneyi ekler (`indeks` None = en üste). `kimlik == 0` ise yeni kimlik atanır; dolu kimlik (geri alma,
+        yükleme) korunur ve çakışırsa ValueError. Döner: sayfada saklanan nesne. TEK `nesne` olayı."""
+        if nesne.kimlik == 0:
+            nesne = nesne.degistir(kimlik=self._sonraki_nesne)
+        elif self.nesne(nesne.kimlik) is not None:
+            raise ValueError(f"nesne kimliği zaten var: {nesne.kimlik}")
+        self._sonraki_nesne = max(self._sonraki_nesne, nesne.kimlik + 1)
+        if indeks is None or indeks > len(self.nesneler):
+            indeks = len(self.nesneler)
+        self.nesneler.insert(max(0, indeks), nesne)
+        self._bildir("nesne", islem="ekle", kimlik=nesne.kimlik)
+        return nesne
+
+    def nesne_sil(self, kimlik: int):
+        """Nesneyi siler. Döner: `(nesne, indeks)` (geri alırken `nesne_ekle(nesne, indeks)`)."""
+        for i, n in enumerate(self.nesneler):
+            if n.kimlik == kimlik:
+                del self.nesneler[i]
+                self._bildir("nesne", islem="sil", kimlik=kimlik)
+                return n, i
+        raise KeyError(f"nesne yok: {kimlik}")
+
+    def nesne_degistir(self, yeni):
+        """Aynı kimlikli nesneyi yenisiyle değiştirir (tür aynı kalmalı). Döner: eski nesne; değişen yoksa
+        olay yayılmaz."""
+        for i, n in enumerate(self.nesneler):
+            if n.kimlik == yeni.kimlik:
+                if type(n) is not type(yeni):
+                    raise ValueError("nesne türü değiştirilemez")
+                if n == yeni:
+                    return n
+                self.nesneler[i] = yeni
+                self._bildir("nesne", islem="degis", kimlik=yeni.kimlik)
+                return n
+        raise KeyError(f"nesne yok: {yeni.kimlik}")
+
+    def nesne_sirala(self, kimlik: int, indeks: int) -> int:
+        """Nesneyi z sırasında `indeks` konumuna taşır (0 = en altta). Döner: eski indeks."""
+        for i, n in enumerate(self.nesneler):
+            if n.kimlik == kimlik:
+                indeks = max(0, min(indeks, len(self.nesneler) - 1))
+                if indeks != i:
+                    del self.nesneler[i]
+                    self.nesneler.insert(indeks, n)
+                    self._bildir("nesne", islem="sira", kimlik=kimlik)
+                return i
+        raise KeyError(f"nesne yok: {kimlik}")
+
+    def nesne_durumu(self):
+        """Nesnelerin anlık görüntüsü (geri al için; öğeler değişmez → sığ kopya). `ek_durumu`ndan ayrıdır:
+        o demet 4'lü kalır."""
+        return list(self.nesneler)
+
+    def nesne_durumu_yukle(self, liste) -> None:
+        """`nesne_durumu` görüntüsünü aynen yükler; değişen varsa TEK `nesne` olayı (`islem="hepsi"`)."""
+        if list(liste) == self.nesneler:
+            return
+        self.nesneler = list(liste)
+        for n in self.nesneler:
+            self._sonraki_nesne = max(self._sonraki_nesne, n.kimlik + 1)
+        self._bildir("nesne", islem="hepsi", kimlik=None)
+
+    def nesne_baglari_yaz(self, liste) -> bool:
+        """Başvuruları kitap düzeyinde düzeltilmiş nesne listesini yazar (`komutlar` ekle-sil); değişen varsa
+        TEK `nesne` olayı (`islem="hepsi"`). Döner: değişti mi."""
+        if list(liste) == self.nesneler:
+            return False
+        self.nesneler = list(liste)
+        self._bildir("nesne", islem="hepsi", kimlik=None)
+        return True
+
+    def _nesneleri_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
+        """Ekle-sil sonrası nesnelerin ÇAPA hücreleri kayar (olay yok: aynı işlemin `yapi` olayı gelir).
+        Başvurular (seriler) kitap düzeyinde `komutlar._SatirSutun`da düzelir."""
+        if not self.nesneler:
+            return
+        from .grafik import konum_kaydir
+        self.nesneler = [n.degistir(konum=konum_kaydir(n.konum, eksen, nerede, fark, sinir))
+                         for n in self.nesneler]
+
     def kosullulari_yaz(self, liste) -> None:
         """Koşullu biçim kural listesini aynen yazar (sıra = öncelik); değişirse `ek` olayı (`alan="kosullu"`)."""
         if list(liste) == self.kosullu:
@@ -625,6 +717,7 @@ class Sayfa:
         self._stilleri_kaydir(eksen, nerede, fark, sinir)
         self._birlesimleri_kaydir(eksen, nerede, fark, sinir)
         self._ekleri_kaydir(eksen, nerede, fark, sinir)
+        self._nesneleri_kaydir(eksen, nerede, fark, sinir)
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():

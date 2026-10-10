@@ -56,6 +56,22 @@ class _SatirSutun:
         from ..formul.kaydir import ek_duzeltmeleri
         ek_duzeltmeleri(self.sayfa.kitap, self.sayfa, "sutun" if self.eksen else "satir",
                         self.nerede, self.adet if self.ekle else -self.adet)
+        self._nesne_basvurularini_duzelt()
+
+    def _nesne_basvurularini_duzelt(self) -> None:
+        """Kitaptaki TÜM sayfaların grafik başvuruları (seriler) ekle-sil yapılan sayfaya bakıyorsa kayar
+        (faz6_tasarim.md §2.2). Nesnelerin kendi çapaları `Sayfa._kaydir`da kaydı."""
+        from .adres import MAX_COL, MAX_ROW
+        from .grafik import Grafik, grafik_referanslarini_kaydir
+        kitap = self.sayfa.kitap
+        sinir = MAX_COL if self.eksen else MAX_ROW
+        fark = self.adet if self.ekle else -self.adet
+        for s in (kitap.sayfalar if kitap else [self.sayfa]):
+            if not s.nesneler:
+                continue
+            yeni = [grafik_referanslarini_kaydir(n, self.sayfa.kimlik, self.eksen, self.nerede, fark, sinir)
+                    if isinstance(n, Grafik) else n for n in s.nesneler]
+            s.nesne_baglari_yaz(yeni)
 
     def _formulleri_geri_yukle(self) -> None:
         for s, degisen in self._duzeltmeler.items():
@@ -73,7 +89,8 @@ class _SatirSutun:
         self._birlesim_once = self.sayfa.birlesim_durumu()
         kitap = self.sayfa.kitap
         self._ek_once = ([(s, s.ek_durumu()) for s in (kitap.sayfalar if kitap else [self.sayfa])],
-                         kitap.ad_durumu() if kitap else None)
+                         kitap.ad_durumu() if kitap else None,
+                         [(s, s.nesne_durumu()) for s in (kitap.sayfalar if kitap else [self.sayfa])])
         if self.ekle:
             self._ekle()
         else:
@@ -92,11 +109,13 @@ class _SatirSutun:
             self.sayfa.bicim_geri_koy(self.eksen, self.nerede, self.adet, self._bicim_silinen)
         self.sayfa.boyut_durumu_yukle(self._olcu_once)
         self.sayfa.birlesim_yukle(self._birlesim_once)
-        sayfa_durumlari, ad_durumu = self._ek_once
+        sayfa_durumlari, ad_durumu, nesne_durumlari = self._ek_once
         for s, durum in sayfa_durumlari:
             s.ek_durumu_yukle(durum)
         if ad_durumu is not None:
             self.sayfa.kitap.ad_durumu_yukle(ad_durumu)
+        for s, durum in nesne_durumlari:
+            s.nesne_durumu_yukle(durum)
 
 
 class SatirEkleSil(_SatirSutun):
@@ -690,7 +709,8 @@ def ana_sayfa(komut, geri_al: bool = False):
         return None
     return getattr(komut, "sayfa", None) if isinstance(
         komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala,
-                NotlarDegis, FiltreDegis, DogrulamaDegis, KosulluDegis)) else None
+                NotlarDegis, FiltreDegis, DogrulamaDegis, KosulluDegis, NesneEkle, NesneSil, NesneDegis,
+                NesneSirala)) else None
 
 
 class GeriAlYigini:
@@ -760,6 +780,81 @@ class SayfaYapisiDegis:
 
     def geri_al(self) -> None:
         self.sayfa.sayfa_yapisi = self.eski
+
+
+class NesneEkle:
+    """Yüzen nesne (grafik/resim) ekler (tek geri al adımı). İlk `yap`ta kimlik atanır; yinelemede aynı
+    kimlikle aynı sıraya geri konur. `nesne` ekledikten sonra sayfada saklanan (kimlikli) halidir."""
+
+    def __init__(self, sayfa: Sayfa, nesne, indeks: Optional[int] = None):
+        self.sayfa, self.nesne, self.indeks = sayfa, nesne, indeks
+
+    def yap(self) -> None:
+        self.nesne = self.sayfa.nesne_ekle(self.nesne, self.indeks)
+        self.indeks = self.sayfa.nesneler.index(self.nesne)
+
+    def geri_al(self) -> None:
+        self.sayfa.nesne_sil(self.nesne.kimlik)
+
+
+class NesneSil:
+    """Nesneyi siler (tek geri al adımı; geri alınca aynı kimlik ve z sırasıyla döner)."""
+
+    def __init__(self, sayfa: Sayfa, kimlik: int):
+        self.sayfa, self.kimlik = sayfa, kimlik
+        self._nesne = None
+        self._indeks = 0
+
+    def yap(self) -> None:
+        self._nesne, self._indeks = self.sayfa.nesne_sil(self.kimlik)
+
+    def geri_al(self) -> None:
+        self.sayfa.nesne_ekle(self._nesne, self._indeks)
+
+
+class NesneDegis:
+    """Aynı kimlikli nesneyi `yeni` ile değiştirir: taşıma, boyutlandırma, tür/başlık/seri değişimi (tek
+    geri al adımı). Sürüklerken canlı önizleme komutsuz yapılır; bırakınca BU komut çalışır."""
+
+    def __init__(self, sayfa: Sayfa, yeni):
+        self.sayfa, self.yeni = sayfa, yeni
+        self.eski = sayfa.nesne(yeni.kimlik)
+
+    def bos_mu(self) -> bool:
+        return self.eski is None or self.eski == self.yeni
+
+    def yap(self) -> None:
+        self.eski = self.sayfa.nesne_degistir(self.yeni)
+
+    def geri_al(self) -> None:
+        self.sayfa.nesne_degistir(self.eski)
+
+
+class NesneSirala:
+    """Nesneyi z sırasında taşır. `yon`: `one_getir` | `arkaya_gonder` | `bir_one` | `bir_arkaya`."""
+    YONLER = ("one_getir", "arkaya_gonder", "bir_one", "bir_arkaya")
+
+    def __init__(self, sayfa: Sayfa, kimlik: int, yon: str):
+        if yon not in self.YONLER:
+            raise ValueError(f"yön şunlardan biri olmalı: {self.YONLER}")
+        self.sayfa, self.kimlik, self.yon = sayfa, kimlik, yon
+        self._eski = None
+
+    def _hedef(self) -> int:
+        n = len(self.sayfa.nesneler)
+        i = next(i for i, x in enumerate(self.sayfa.nesneler) if x.kimlik == self.kimlik)
+        return {"one_getir": n - 1, "arkaya_gonder": 0, "bir_one": min(i + 1, n - 1),
+                "bir_arkaya": max(i - 1, 0)}[self.yon]
+
+    def bos_mu(self) -> bool:
+        return self.sayfa.nesne(self.kimlik) is None or self._hedef() == next(
+            i for i, x in enumerate(self.sayfa.nesneler) if x.kimlik == self.kimlik)
+
+    def yap(self) -> None:
+        self._eski = self.sayfa.nesne_sirala(self.kimlik, self._hedef())
+
+    def geri_al(self) -> None:
+        self.sayfa.nesne_sirala(self.kimlik, self._eski)
 
 
 class Sirala:

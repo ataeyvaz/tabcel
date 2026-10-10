@@ -18,6 +18,9 @@ Türler ve `ayrinti` anahtarları:
 - ``ek``     : sayfaya bağlı ek veriler değişti (Faz 5): `alan` ('not'|'dogrulama'|'kosullu'|'filtre'|
   'hepsi' — geri al/yinele anlık görüntüyü yüklediğinde), isteğe bağlı `anahtarlar` (değişen hücreler;
   'not' için). Formül motoru yok sayar; ızgara 'not' için ilgili hücreleri, diğerleri için tam yeniden çizer
+- ``nesne``  : yüzen nesne (grafik/resim) değişti (Faz 6): `islem` ('ekle'|'sil'|'degis'|'sira'|'hepsi'), `kimlik`
+  ('hepsi' için None — geri al/yinele ya da başvuruları kitap düzeyinde düzelten ekle-sil anlık görüntüyü
+  yükledi). Formül motoru yok sayar; ızgara ilgili nesnenin önbelleğini düşürüp yeniden çizer
 - ``ad``     : kitap düzeyi tanımlı ad değişti. `sayfa` None'dır (ad kitaba aittir); `eski`, `yeni`
   (`TanimliAd` | None). Dinleyiciler `olay.sayfa`ya erişmeden önce None denetlemelidir
 - ``sayfa``  : `islem` ('ekle'|'sil'|'ad'|'tasi'), `indeks`; 'ad' için `eski_ad`, 'tasi' için `eski_indeks`
