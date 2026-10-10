@@ -3376,7 +3376,7 @@ Salt okunur Opus 5.5 alt ajanı (58 araç çağrısı, ~25 dk; openpyxl ile üre
 | 5 | Veri çubuğu Excel 2007 biçimi (negatif eksen/kenarlık yok); gradyan/düz ayrımı .xlsx'e yazılmaz | ➖ |
 | 6 | Not kutusu taşıma/boyutlandırma, "Tüm Notları Göster", dizili açıklama yanıtları yok | ➖ |
 | 7 | Sıralamada özel liste (ay/gün adları) ve aynı boyutlu birleşim yok | ➖ |
-| 8 | Koşullu biçim menüsü başlık şeridinde (tasarım: biçim çubuğu; çubuk 1100 px'i aşıyordu) | ➖ şerit (5j) yeniden düzenler |
+| 8 | Koşullu biçim menüsü başlık şeridinde (tasarım: biçim çubuğu; çubuk 1100 px'i aşıyordu) | ✅ 5j: Giriş ▸ Stiller grubuna taşındı |
 | 9 | Simge kümeleri, tarih oluşumu kuralları, Excel Tablosu nesnesi yok (açılışta uyarı) | ➖ Faz 8 |
 
 ### 15.4 Elle test bekleyenler (kullanıcı)
@@ -3390,3 +3390,43 @@ Salt okunur Opus 5.5 alt ajanı (58 araç çağrısı, ~25 dk; openpyxl ile üre
 | 6 | Filtre paneli | Popup panel odağı, alt menüler, Alt+Aşağı, büyük listede arama | ⏳ |
 | 7 | Excel iletileri/adları | §8b-58, 62, 64–74: Türkçe iletiler, harmanlama ve başlık tahmini davranışları Excel web'de doğrulanacak | ⏳ |
 
+## 16. Faz 5 / 5j — sekmeli şerit (2026-10-10)
+
+Tasarım: `faz5j_tasarim.md`. Uygulama: `ui/serit.py` (bileşenler, saf `daralma_plani`), `ui/serit_sekmeleri.py` (Sayfa Düzeni, Formüller, Veri, Gözden Geçir, Görünüm), `ui/bicim_cubugu.py` (Giriş), `Pencere._eylemleri_kur` (eylem kataloğu), `ui/icons.py` (32 px ızgara), `theme.serit_stil`.
+
+### 16.1 Otomatik testler
+| Alan | Dosya | Vaka |
+|---|---|---|
+| Daralma planı (aşamalı: önce durum 1, sonra 2; öncelik; eşitse sağdaki; hiç sığmaz; boş) | `test_serit.py` | 19 (widget'lar dahil: grup durumları, açılır çerçeve içeriği taşır/geri getirir, sayfa daralınca düşük öncelikli küçülür, Dosya sekmesi menü açar seçimi değiştirmez, daraltma, `eylemler()`) |
+| İkonlar (20/32 px ızgara, 1x/1,5x/2x boş değil, tasarımdaki her ad var) | `test_ikonlar.py` | 40 |
+| Eylem kataloğu (tek `QAction`, eski sözlükler aynı nesneler, kısayol yok, eylemler etkin sayfada çalışır) | `test_eylem_katalogu.py` | 10 |
+| Şerit pencerede (sekmeler, grup sırası, başlıkta yalnız hızlı erişim, 800/700 px taşma yok, düğmeler odak almaz, not/filtre durumu, Ctrl+F1 ve çift tık daraltma, açılır sayfa stili, tema) | `test_serit_pencere.py` | 15 |
+| Diğer sekmeler (eski menü eylemleri şeritte, 800/640 px × 5 sekme taşma yok, yönlendirme/kağıt/kenar + geri al, yazdırma alanı, ölçek/sığdır, kılavuz yazdır, sayfaya özel ayar, geçersiz değer, filtre/sırala/not/dondur/%100) | `test_serit_sekmeleri.py` | 24 |
+
+### 16.2 Ölçütler (`faz5j_tasarim.md` §9)
+| Ölçüt | Sonuç | Durum |
+|---|---|---|
+| Eski menülerdeki her eylem şeritten erişilir | `test_eski_menulerdeki_her_eylem_seritten_erisilir` | ✅ |
+| Kısayollar çalışır (QShortcut'lar korundu; Ctrl+F1 eklendi) | mevcut testler + `test_ctrl_f1_*` | ✅ |
+| Mevcut testler değişmeden geçer | iki onaylı/bildirilmiş değişiklik: `test_faz5_altyapi` menü düğmesi metni → şerit denetimi (kullanıcı onayı), `test_kaydir_metin` pencere yüksekliği 600 → 800 (şerit ızgara alanını daralttı; assertion'lar aynı) | ✅ |
+| 1100 px: Giriş'te hiçbir grup durum 2'ye inmez | `araclar/serit_olcum.py` (gerçek yazı tipi): Düzenleme durum 1, diğerleri tam | ✅ (pytest'te değil: ekransız Qt yazıyı kutu ölçer) |
+| 800 px: sayfa dışına taşma yok (5 sekme) | pytest + `serit_olcum.py` | ✅ |
+| Düğmeye tıklamak odağı ızgaradan almaz | `test_dugmeler_odagi_izgaradan_almaz` | ✅ |
+| Pencere açılış süresi ≤ +100 ms | ölçülmedi | ⏳ `performans_olcum.py`'ye satır eklenecek |
+
+### 16.3 Açık / bilinen kusurlar
+| # | Konu | Durum |
+|---|---|---|
+| 1 | Boyut ve Kenar Boşlukları menülerinde seçili olanın ✓ işareti yok | ➖ |
+| 2 | Üst/alt bilgi boşluğu, Yapıştır menüsü (Özel Yapıştır), Hızlı Erişim'e ekleme, Alt tuş ipuçları, Dosya arka sahne sayfası, şerit özelleştirme, daraltma durumunun kalıcılığı yok | ➖ Faz 7 |
+| 3 | Biçim Boyacısı ve harfli ikonlar ekransız ortamda kutu görünür; ikon şekilleri ilk taslak | ⏳ elle |
+| 4 | `sizeHint` gerçek ekranda 1100 px'te 1106 (kenar boşlukları + ayırıcılar) — yerleşim sığıyor, taşma yok | ➖ |
+
+### 16.4 Elle test bekleyenler (kullanıcı)
+| # | Ne | Nasıl | Durum |
+|---|---|---|---|
+| 1 | Excel ile görsel karşılaştırma | sekme/grup adları, düğme sırası, ikonların okunurluğu | ⏳ |
+| 2 | Windows ölçeği %125 / %150 | ikon ve yazı keskinliği, taşma | ⏳ |
+| 3 | Daraltma | Ctrl+F1, sekmeye çift tık; daraltılmışken sekme tıkında açılan sayfa; dar pencerede açılır grup düğmesi | ⏳ |
+| 4 | Dosya sekmesi | menü konumu, yeşil görünüm | ⏳ |
+| 5 | Sayfa Düzeni | kenar/yön/boyut/alan/ölçek değişimi PDF/önizlemede görünüyor mu; Ctrl+Z | ⏳ |

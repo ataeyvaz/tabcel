@@ -26,6 +26,10 @@ PRESSED = "#e0e0e0"
 
 
 def stylesheet() -> str:
+    return _ana_stil() + serit_stil()
+
+
+def _ana_stil() -> str:
     return f"""
 QMainWindow, #central {{ background: {WINDOW}; }}
 QToolTip {{ background: {SURFACE}; color: {TEXT}; border: 1px solid {BORDER};
@@ -77,6 +81,25 @@ QSlider::handle:horizontal {{ background: {ACCENT}; width: 12px; margin: -5px 0;
 QMenu {{ background: {SURFACE}; border: 1px solid {BORDER}; padding: 4px; }}
 QMenu::item {{ padding: 5px 22px; border-radius: 3px; }}
 QMenu::item:selected {{ background: {HEADER_BG_SELECTED}; color: {TEXT}; }}
+"""
+
+
+def serit_stil() -> str:
+    """Sekmeli şerit (ui/serit.py). Pencerenin stil sayfasına eklenir; üst pencerenin çocuğu olmayan açılır
+    çerçeveler (Qt.Popup) bunu kendileri uygular."""
+    return f"""
+#serit {{ background: {SURFACE}; border-bottom: 1px solid {BORDER}; }}
+#seritSekmeleri::tab {{ padding: 5px 14px; color: {TEXT}; border: none; background: transparent; }}
+#seritSekmeleri::tab:selected {{ color: {ACCENT}; border-bottom: 3px solid {ACCENT}; }}
+#seritSekmeleri::tab:hover:!selected {{ background: {HOVER}; }}
+#seritSekmeleri::tab:first {{ background: {ACCENT}; color: #ffffff; font-weight: 600; border-bottom: none; }}
+#seritYigin, #seritSayfasi {{ background: {SURFACE}; }}
+#seritGrupAdi {{ color: {TEXT_MUTED}; font-size: 11px; }}
+#seritAyirac {{ color: {BORDER}; }}
+#seritDugme {{ border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; }}
+#seritDugme:hover {{ background: {HOVER}; }}
+#seritDugme:checked, #seritDugme:pressed {{ background: {HEADER_BG_SELECTED}; }}
+#seritAcilir {{ background: {SURFACE}; border: 1px solid {BORDER}; }}
 """
 
 

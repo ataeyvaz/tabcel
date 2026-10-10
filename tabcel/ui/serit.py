@@ -85,6 +85,7 @@ class _Acilir(QFrame):
     def __init__(self, geri_ver: Callable[[], None]):
         super().__init__(None, Qt.Popup)
         self.setObjectName("seritAcilir")
+        self.setStyleSheet(theme.serit_stil())      # Qt.Popup üst pencerenin stil sayfasını almaz
         self._geri_ver = geri_ver
         self._d = QHBoxLayout(self)
         self._d.setContentsMargins(6, 6, 6, 6)
@@ -230,6 +231,9 @@ class SeritGrubu(QWidget):
         """[durum 0, durum 1, durum 2] genişlikleri (önbellekli; içerik eklenince/yazı tipi değişince
         `genislik_sifirla`)."""
         if self._genislik is None:
+            self.ensurePolished()                  # stil sayfası uygulanmadan ölçülürse genişlikler eksik çıkar
+            for w in self.findChildren(QWidget):
+                w.ensurePolished()
             eski = self._durum
             olc: List[Optional[int]] = []
             for d in (0, 1, 2):
@@ -394,23 +398,6 @@ class Serit(QWidget):
         self._d.addWidget(self.yigin)
         QShortcut(QKeySequence("Ctrl+F1"), self, activated=lambda: self.daralt(not self._daraltilmis),
                   context=Qt.WindowShortcut)
-        self.setStyleSheet(self._stil())
-
-    @staticmethod
-    def _stil() -> str:
-        return f"""
-#serit {{ background: {theme.SURFACE}; border-bottom: 1px solid {theme.BORDER}; }}
-#seritSekmeleri::tab {{ padding: 5px 14px; color: {theme.TEXT}; border: none; background: transparent; }}
-#seritSekmeleri::tab:selected {{ color: {theme.ACCENT}; border-bottom: 3px solid {theme.ACCENT}; }}
-#seritSekmeleri::tab:hover:!selected {{ background: {theme.HOVER}; }}
-#seritYigin, #seritSayfasi {{ background: {theme.SURFACE}; }}
-#seritGrupAdi {{ color: {theme.TEXT_MUTED}; font-size: 11px; }}
-#seritAyirac {{ color: {theme.BORDER}; }}
-#seritDugme {{ border: 1px solid transparent; border-radius: 4px; padding: 2px 4px; }}
-#seritDugme:hover {{ background: {theme.HOVER}; }}
-#seritDugme:checked, #seritDugme:pressed {{ background: {theme.HEADER_BG_SELECTED}; }}
-#seritAcilir {{ background: {theme.SURFACE}; border: 1px solid {theme.BORDER}; }}
-"""
 
     # ------------------------------------------------------------------ sekmeler
     def sekme_ekle(self, ad: str, sayfa: QWidget) -> int:
@@ -425,8 +412,6 @@ class Serit(QWidget):
         i = self.sekmeler.insertTab(0, ad)
         self.sekmeler.blockSignals(False)
         self._dosya_indeksi, self._dosya_menusu = i, menu
-        self.setStyleSheet(self.styleSheet() + f"#seritSekmeleri::tab:first {{ background: {theme.ACCENT}; "
-                           "color: #ffffff; font-weight: 600; }}")        # Excel 2016 gibi yeşil Dosya sekmesi
         self._onceki = 1 if self.sekmeler.count() > 1 else 0
         return i
 
@@ -484,6 +469,7 @@ class Serit(QWidget):
             return
         self._d.removeWidget(self.yigin)
         self.yigin.setParent(None, Qt.Popup)
+        self.yigin.setStyleSheet(theme.serit_stil())
         self.yigin.setFixedWidth(self.width())
         self.yigin.move(self.mapToGlobal(QPoint(0, self.sekmeler.height())))
         self.yigin.show()
@@ -495,6 +481,7 @@ class Serit(QWidget):
         self._yigin_acik = None
         self.yigin.hide()
         self.yigin.setParent(self, Qt.Widget)
+        self.yigin.setStyleSheet("")
         self.yigin.setMinimumWidth(0)
         self.yigin.setMaximumWidth(16777215)
         self._d.addWidget(self.yigin)

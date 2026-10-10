@@ -117,3 +117,50 @@ def test_giris_sekmesi_sayfa_degisince_etkin_sayfaya_gore_esitlenir(pencere):
     assert pencere.izgara().sayfa.kilavuz is False
     pencere.sekmeler.setCurrentIndex(0)
     assert pencere.eylemler["kilavuz"].isChecked()                       # ilk sayfa değişmedi
+
+
+# ------------------------------------------------------------------ 5j-6: daraltma + tema
+def test_ctrl_f1_seridi_daraltir_ve_acar(pencere):
+    from PySide6.QtCore import Qt
+    from PySide6.QtTest import QTest
+    g = pencere.izgara()
+    QApplication.processEvents()
+    once = g.viewport().height()
+    pencere.activateWindow()
+    QTest.keyClick(pencere, Qt.Key_F1, Qt.ControlModifier)
+    QApplication.processEvents()
+    QApplication.processEvents()                                     # yerleşim isteği bir tur sonra uygulanır
+    assert pencere.serit.daraltilmis() and not pencere.serit.yigin.isVisible()
+    assert g.viewport().height() > once                              # ızgara şerit yüksekliği kadar büyüdü
+    QTest.keyClick(pencere, Qt.Key_F1, Qt.ControlModifier)
+    QApplication.processEvents()
+    QApplication.processEvents()
+    assert not pencere.serit.daraltilmis() and pencere.serit.yigin.isVisible()
+    assert abs(g.viewport().height() - once) <= 2
+
+
+def test_sekmeye_cift_tik_daraltir(pencere):
+    pencere.serit.sekmeler.ciftTik.emit(1)
+    assert pencere.serit.daraltilmis()
+    pencere.serit.sekmeler.ciftTik.emit(1)
+    assert not pencere.serit.daraltilmis()
+
+
+def test_daraltilmisken_sekme_tiki_acilir_sayfa_komut_calisinca_calisir(pencere):
+    pencere.serit.daralt(True)
+    pencere.serit._sekme_tiklandi(pencere.serit.sekme_adlari().index("Görünüm"))
+    pencere.serit.sec("Görünüm")
+    assert pencere.serit._yigin_acik is not None
+    assert "seritDugme" in pencere.serit.yigin.styleSheet()          # açılır çerçeve stilini kendi taşır
+    pencere.eylemler["kilavuz"].setChecked(False)
+    assert pencere.izgara().sayfa.kilavuz is False
+    pencere.serit.daralt(False)
+    assert pencere.serit.yigin.styleSheet() == "" and pencere.serit.yigin.parent() is pencere.serit
+
+
+def test_serit_stili_temada_ve_pencerede(pencere):
+    from tabcel.ui import theme
+    css = theme.serit_stil()
+    assert "#seritSekmeleri::tab:first" in css and theme.ACCENT in css      # yeşil Dosya sekmesi
+    assert css in pencere.styleSheet()                                     # pencere stil sayfasına dahil
+    assert pencere.serit.styleSheet() == ""                                # bileşen kendi stilini taşımaz
