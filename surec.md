@@ -10,12 +10,12 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
-| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅ 5b ✅ 5c ✅ (performans ölçütü ❌, aşağıda); sıradaki **5d** (Sonnet 5.5; §2 madde 10) |
+| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅ 5b ✅ 5c ✅ (performans ölçütü ❌, aşağıda) 5d ✅; sıradaki **5e** Notlar (Sonnet 5.5; §2 madde 10) |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 2174 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 2265 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -42,7 +42,7 @@ Testler: 2174 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
-10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; 5c ✅ Sırala; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
+10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; 5c ✅ Sırala; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d ✅ Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -285,6 +285,8 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 69 | Türkçe Excel'de liste kaynağı ayırıcısı `;` mü (`Evet;Hayır`)? | Evet; dosyada `"Evet,Hayır"` | ⏳ |
 | 70 | Doğrulama hata iletilerinin Türkçe metinleri (Durdur/Uyarı/Bilgi) | `faz5_tasarim.md` §7.3'teki metinler | ⏳ |
 | 71 | Koşullu biçim "Yinelenen Değerler" büyük/küçük harf duyarlı mı? | Duyarsız | ⏳ |
+| 73 | .xlsx `definedName` içindeki **göreli** başvurular A1'e göre mi saklanır (Excel dosyasında)? | Evet (tasarım §4.1): ad hücreye göre `(satır−1, sütun−1)` kaydırılarak çözülür (`=[1]!A1`'li ad C5'te C5'in kendisi olur) | ⏳ |
+| 74 | Ad Kutusu'ndan yeni ad tanımlarken seçim çoklu aralıksa ne olur? Kapsamı sayfa mı kitap mı? | Kitap kapsamı, yalnız seçimin sınır aralığı | ⏳ |
 | 72 | Koşullu biçim hazır biçim adlarının Türkçe yazımı ("Koyu Kırmızı Metinli Açık Kırmızı Dolgu"…) | `faz5_tasarim.md` §8.4 | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
@@ -661,6 +663,23 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
   - Sıralanan hücrelerin notları taşınır (notlar henüz arayüzsüz; 5e'de `NotlarDegis` gelince aynı yoldan); doğrulama/koşullu biçim aralıkları, satır yüksekliği/stili, birleşimler yerinde kalır; birleşim varsa Excel iletisiyle reddedilir
   - Görsel denetim (ekran görüntüsü) yapılmadı; elle test: Özel Sıralama penceresinin yerleşimi
 - Sıradaki: **5d** Adlandırılmış aralıklar
+
+## [2026-10-10] — Faz 5 / 5d Adlandırılmış aralıklar (Sonnet 5.5)
+- **Yapıldı:** `model/ad.py` (`ad_dogrula`, `ad_kontrol`, `AdHatasi`); `formul/degerlendir.py` (`Ad` düğümü artık çözülür: `ad_coz`, `ad_agaci` önbelleği, `Baglam.ad_yigini` özyineleme koruması, derinlik 64); `formul/motor.py` (`_oncul_topla` adı açar → ad içindeki hücre/aralık öncülleri ve değişken fonksiyonlar kaydedilir); `formul/kaydir.py` (`adi_degistir`, `ad_yeniden_adlandir`, `adlari_tasi`, `sayfaya_bagla`); `komutlar.AdDegis` (ekle/düzenle/yeniden adlandır/sil, tek geri al adımı; yeniden adlandırma hücre + doğrulama + koşullu biçim + diğer adların formüllerini düzeltir) ve `HucreTasi` adları da kaydırır; `formul/ad_yardim.py` (hedef aralık, seçimin adı, Başvurur metni); `io/xlsx_io.py` (`definedName` okuma/yazma: kitap + sayfa kapsamı, gizli, açıklama; çevrilemeyen/geçersiz ad atlanır ve raporlanır); `ui/ad_penceresi.py` (Ad Tanımla, Ad Yöneticisi, Git penceresi); pencere: Veri ▸ Ad Tanımla / Ad Yöneticisi (Ctrl+F3), Ad Kutusu ad yazınca gider ya da seçimi adlandırır + tamamlayıcı liste + seçim bir adın aralığıysa adı gösterir, Git (Ctrl+G/F5) tanımlı adları listeler, formül yazarken otomatik tamamlamada tanımlı adlar (en çok 4, "(" eklenmez)
+- **Testler:** `test_adlar.py` (74: doğrulama, değerlendirme, kapsam, göreli ad, komut, ekle-sil/taşı, .xlsx, performans), `test_adlar_arayuz.py` (17). Toplam 2265 geçiyor. 50.000 formüllü kitapta ad eklemek ≤ 6 sn eşiğiyle geçti (ölçüt ≤ 3 sn; makine yükü payı — gerçek ölçüm ayrıca bakılacak)
+- **Mevcut testler değişti (kural 12, bilgi):** (1) `test_xlsx_ornekler.py::test_grafikli_uyarilar_ve_veri_korunur`: artık tanımlı ad korunduğu için "tanımlı ad" uyarısı **çıkmamalı** ve `SatisToplam` yüklenmeli (uyarı listesinden çıkarıldı, yerine ad doğrulaması geldi); (2) `test_faz5_altyapi.py` menü iskeleti testi `ad_tanimla`/`ad_yoneticisi` artık açık
+- **Hata düzeltmesi (5c'den kalma):** `window.py` `pen.Accepted` bu PySide6'da (6.12) örnek üzerinden erişilemiyordu → Özel Sıralama penceresi gerçekte açılınca `AttributeError` verirdi (testler pencereyi `sonuc` ile atlıyordu, yakalanmadı). `QDialog.Accepted` yapıldı (3 yer)
+- **Kararlar/notlar:**
+  - Ad doğrulama: harf/`_`/`\` ile başlar; harf, rakam, `.`, `_`, `\`; hücre başvurusuna (`A1`, `XFD1048576`) ve R1C1 biçimine (`R`, `C`, `R5`, `RC`, `R1C1`) benzemez; `DOĞRU/YANLIŞ/TRUE/FALSE` olamaz; ≤255; kapsamda büyük/küçük harf duyarsız (Türkçe: `IYI` ≠ `Iyi`, `VERİ` = `veri`) benzersiz. `XFE1` geçerli (sütun sınırı dışı)
+  - Başvurur'daki sayfasız hücre başvurusu **ad tanımlanırken** etkin sayfaya (kapsamlıysa kapsam sayfasına) bağlanır (`=B2` → `=[1]!B2`); aksi halde ad her sayfada başka yeri gösterirdi. Başvurur alanında K7 işaretleme yok (tasarım §11)
+  - Düzenlemede kapsam değişmez (Excel gibi); sayfa kapsamlı ad aynı adlı kitap adını o sayfada gölgeler; yeniden adlandırma yalnız o adın çözüldüğü sayfa/adlardaki formülleri düzeltir (gölgelenen sayfaya dokunmaz); yalnız büyük/küçük harf değişen yeniden adlandırma formül metnine dokunmaz
+  - Silinen adın formülleri metni korur, `#AD?` hesaplanır; geri al dönüştürür. Ad Yöneticisi "Değer": tek hücre görünen değer, çok hücreli `{…}` (Excel dizi değerini açar — bilerek basit)
+  - Ad Kutusu'ndan yeni ad: **seçimin tamamı** (çoklu seçimde mevcut tasarımda tek sınır aralığı) kitap kapsamında tanımlanır; açılır liste yerine yazarken tamamlayıcı açılır liste (QCompleter) — Excel'in ok düğmesi yok
+  - Gizli adlar (`.xlsx` `hidden`) Ad Yöneticisi/Git/tamamlayıcıda görünmez ama hesapta çalışır; açıklama dosyaya yazılır/okunur
+  - **Görsel denetim:** ekransız ekran görüntüsünde yazı tipi olmadığı için kutucuk görünür (yerleşim doğru); elle test: Ad Tanımla/Ad Yöneticisi/Git pencerelerinin metin görünümü, Ad Kutusu tamamlayıcısı
+  - §8b-73/74 eklendi (göreli ad dosya semantiği, çoklu seçim)
+- **Kullanıcı sorusu (sekmeli arayüz):** Excel benzeri sekmeli şerit (Giriş/Ekle/Veri/Görünüm) büyük problem yaratmaz (mantık komutlarda, yerleşim `window.py` başlık şeridi + `BicimCubugu`); **Faz 5 bitince ayrı iş** olarak yapılması önerildi (şerit bir kez tasarlansın). Karar kullanıcıda
+- Sıradaki: **5e** Notlar
 
 *(Yeni girişler en alta eklenir.)*
 

@@ -5,16 +5,21 @@ olmadığından hücre sonucu `hucre_sonucu` ile tek değere indirgenir (faz2_ta
 """
 import math
 from dataclasses import dataclass
+from functools import lru_cache
 
 from ..model import deger as D
 from ..model.adres import MAX_COL, MAX_ROW
 from ..model.deger import Hata
 from . import fonksiyonlar
 from .agac import (
-    KESISIM, Ad, Bos, Cagri, DiziSabit, Dugum, Ikili, Ref, Sabit, Tekli, Yuzde,
+    KESISIM, Ad, Bos, Cagri, DiziSabit, Dugum, Ikili, Ref, Sabit, Tekli, Yuzde, agac_kaydir,
+    formul_ayristir,
 )
 from .degerler import BOS_ARG, AralikDeger, Dizi, _boyut, _okuyucu, _yay, skalere
 from .donustur import karsilastir, metne, sayi_sonucu, sayiya
+from .sozcuk import FormulHatasi
+
+AD_DERINLIK = 64                   # iç içe tanımlı ad sınırı (özyineleme koruması)
 
 
 @dataclass
@@ -26,6 +31,7 @@ class Baglam:
     satir: int
     sutun: int
     kitap: object = None
+    ad_yigini: tuple = ()          # değerlendirilmekte olan tanımlı adlar (özyineleme koruması)
 
     def sayfa_bul(self, ref_sayfa):
         if ref_sayfa is None:
@@ -67,8 +73,41 @@ def degerlendir(d: Dugum, b: Baglam):
     if t is Bos:
         return BOS_ARG
     if t is Ad:
-        return D.AD          # tanımlı adlar Faz 5
+        return _ad_degerle(d, b)
     raise TypeError(f"Bilinmeyen düğüm: {d!r}")
+
+
+@lru_cache(maxsize=4096)
+def ad_agaci(formul: str):
+    """Tanımlı adın formül ağacı (çözümlenemezse None). Motor da aynı önbelleği kullanır."""
+    try:
+        return formul_ayristir(formul)
+    except FormulHatasi:
+        return None
+
+
+def ad_coz(ad: str, b: "Baglam"):
+    """Hücreye göre kaydırılmış ad ağacı ve ad kaydı; bulunamazsa (None, None). Göreli başvurular
+    A1'e göre saklanır, bu yüzden (satır−1, sütun−1) kaydırılır."""
+    if b.kitap is None:
+        return None, None
+    tanim = b.kitap.ad_bul(ad, getattr(b.sayfa, "kimlik", None))
+    if tanim is None:
+        return None, None
+    agac = ad_agaci(tanim.formul)
+    if agac is None:
+        return None, tanim
+    return agac_kaydir(agac, b.satir - 1, b.sutun - 1), tanim
+
+
+def _ad_degerle(d: Ad, b: "Baglam"):
+    agac, tanim = ad_coz(d.ad, b)
+    if agac is None:
+        return D.AD
+    anahtar = tanim.anahtar()
+    if anahtar in b.ad_yigini or len(b.ad_yigini) >= AD_DERINLIK:
+        return D.AD                         # döngüsel / çok derin ad (Excel de hata verir)
+    return degerlendir(agac, Baglam(b.sayfa, b.satir, b.sutun, b.kitap, b.ad_yigini + (anahtar,)))
 
 
 def hucre_sonucu(d: Dugum, b: Baglam):

@@ -5,13 +5,16 @@
 - `tasi`: kes-yapıştırda taşınan bölgeye işaret eden başvurular yeni yere gider
 - `yapi_duzeltmeleri`: kitap genelinde `yapi` uygulanacak hücre listesi (komutlar kullanır)
 - `ek_duzeltmeleri`: aynısı doğrulama / koşullu biçim formülleri ve tanımlı adlar için (Faz 5)
+- `adi_degistir`, `ad_yeniden_adlandir`: tanımlı ad yeniden adlandırılınca formüllerdeki ad sözcükleri (Faz 5)
+- `adlari_tasi`: kes-yapıştırda tanımlı adların formülleri (Faz 5)
 Kurallar: faz2_tasarim.md §5.
 """
 from dataclasses import is_dataclass, replace
 from typing import Callable, Optional, Tuple, Union
 
 from ..model.adres import MAX_COL, MAX_ROW
-from .sozcuk import BASVURU, Basvuru, FormulHatasi, sayfa_oneki, sozcukle
+from ..model.harmanla import tr_kucuk
+from .sozcuk import AD, BASVURU, Basvuru, FormulHatasi, sayfa_oneki, sozcukle
 from .yerel import SAKLI
 
 _SIL = object()        # dönüştürücü bu değeri verirse başvuru #REF! olur
@@ -223,3 +226,97 @@ def tasi(formul: str, kendi_eski: int, kendi_yeni: int, kaynak: int,
             return replace(b, sayfa=kendi_eski)
         return b
     return _donustur(formul, f)
+
+
+# ------------------------------------------------------------------ tanımlı ad: yeniden adlandırma
+def adi_degistir(formul: str, eski: str, yeni: str) -> Optional[str]:
+    """Formüldeki `eski` ad sözcüklerini (büyük/küçük harf duyarsız, Türkçe) `yeni` ile değiştirir.
+    Değişiklik yoksa None."""
+    if not formul.startswith("="):
+        return None
+    try:
+        sozcukler = sozcukle(formul[1:], SAKLI)
+    except FormulHatasi:
+        return None
+    k = tr_kucuk(eski)
+    degisti = False
+    parcalar = []
+    for s in sozcukler:
+        if s.tur == AD and tr_kucuk(s.metin) == k:
+            parcalar.append(yeni)
+            degisti = True
+        else:
+            parcalar.append(s.metin)
+    return "=" + "".join(parcalar) if degisti else None
+
+
+def _kural_ad_degistir(kural, eski: str, yeni_ad: str):
+    if not is_dataclass(kural):
+        return kural
+    degisen = {}
+    for alan in _EK_FORMUL_ALANLARI:
+        f = getattr(kural, alan, None)
+        if isinstance(f, str) and f.startswith("="):
+            yeni = adi_degistir(f, eski, yeni_ad)
+            if yeni is not None:
+                degisen[alan] = yeni
+    return replace(kural, **degisen) if degisen else kural
+
+
+def ad_yeniden_adlandir(kitap, hedef, yeni_ad: str):
+    """`hedef` (TanimliAd) `yeni_ad` olarak yeniden adlandırılırken düzeltilecek yerler. Yalnız o adın
+    çözüldüğü yerler etkilenir (aynı adı gölgeleyen sayfa kapsamlı ad olan sayfalara dokunulmaz).
+    Döner: hücre formülleri {Sayfa: {(satır, sütun): (eski, yeni)}} — bunları çağıran yazar.
+    Doğrulama/koşullu biçim kuralları ile diğer adların formülleri YERİNDE düzeltilir (geri almak için
+    çağıran önce `ek_durumu` / `ad_durumu` görüntülerini alır). Ad kaydının kendisini değiştirmez."""
+    eski_ad = hedef.ad
+
+    def etkilenir(kimlik) -> bool:
+        return kitap.ad_bul(eski_ad, kimlik) == hedef
+
+    hucreler = {}
+    for s in kitap.sayfalar:
+        if not etkilenir(s.kimlik):
+            continue
+        degisen = {}
+        for r, c, h in s.dolu_hucreler(sirali=False):
+            if h.formul is None:
+                continue
+            yeni = adi_degistir(h.formul, eski_ad, yeni_ad)
+            if yeni is not None:
+                degisen[(r, c)] = (h.formul, yeni)
+        if degisen:
+            hucreler[s] = degisen
+        for depo in ("dogrulamalar", "kosullu"):
+            liste = getattr(s, depo)
+            yeni_liste = [_kural_ad_degistir(k, eski_ad, yeni_ad) for k in liste]
+            if any(a is not b for a, b in zip(yeni_liste, liste)):
+                setattr(s, depo, yeni_liste)
+                s._bildir("ek", alan="dogrulama" if depo == "dogrulamalar" else "kosullu")
+    for anahtar, tanim in list(kitap.adlar.items()):
+        if anahtar == hedef.anahtar() or not etkilenir(tanim.kapsam):
+            continue
+        yeni = adi_degistir(tanim.formul, eski_ad, yeni_ad)
+        if yeni is not None:
+            kitap.ad_yaz(replace(tanim, formul=yeni), anahtar)
+    return hucreler
+
+
+# ------------------------------------------------------------------ tanımlı ad: kes-yapıştır
+def adlari_tasi(kitap, kaynak: int, kutu, hedef: int, dr: int, dc: int) -> bool:
+    """Kes-yapıştırda tanımlı adların formüllerindeki başvurular `tasi` kuralıyla kayar (Excel).
+    Döner: bir şey değişti mi. Geri almak için çağıran önce `kitap.ad_durumu()` alır."""
+    degisti = False
+    for anahtar, tanim in list(kitap.adlar.items()):
+        kendi = tanim.kapsam if tanim.kapsam is not None else -1
+        yeni = tasi(tanim.formul, kendi, kendi, kaynak, kutu, hedef, dr, dc)
+        if yeni is not None:
+            kitap.ad_yaz(replace(tanim, formul=yeni), anahtar)
+            degisti = True
+    return degisti
+
+
+def sayfaya_bagla(formul: str, kimlik: int) -> str:
+    """Sayfasız (niteliksiz) başvuruları `kimlik` sayfasına bağlar (`=A1` → `=[1]!A1`): tanımlı ad
+    Başvurur'u her sayfada aynı yeri göstersin diye (Excel, etkin sayfaya bağlar)."""
+    return _donustur(formul, lambda b: replace(b, sayfa=kimlik) if b.sayfa is None else b) or formul

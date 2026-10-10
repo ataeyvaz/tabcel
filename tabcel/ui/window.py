@@ -6,26 +6,31 @@ yığını çalışma kitabı genelinde ortaktır.
 """
 from typing import Dict, Optional
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import Qt, QStringListModel, QTimer, Signal
 from PySide6.QtGui import QColor, QKeySequence, QPainter, QShortcut
 from PySide6.QtWidgets import (
-    QColorDialog, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
+    QColorDialog, QDialog, QHBoxLayout, QCompleter, QInputDialog, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
     QSlider, QStackedWidget, QTabBar, QToolButton, QVBoxLayout, QWidget,
 )
 
 from .. import APP_NAME
 from ..model.adres import AdresHatasi, aralik_coz, hucre_yaz
+from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
+from ..formul.ad_yardim import (
+    aralik_basvurusu, basvurur_saklanan, gorunur_adlar, hedef_aralik, secimin_adi,
+)
 from ..formul import isaretleme
 from .renkli import renkli_ciz
 from ..formul.ceviri import hucre_metni
 from ..formul.motor import Hesaplayici
 from ..model.komutlar import (
-    GeriAlYigini, SayfaEkle, SayfaSil, SayfaTasi, SayfaYenidenAdlandir,
+    AdDegis, GeriAlYigini, SayfaEkle, SayfaSil, SayfaTasi, SayfaYenidenAdlandir,
 )
 from ..model.komutlar import ana_sayfa
 from ..model.olay import Olay
 from ..model.sayfa import CalismaKitabi, Sayfa
 from . import theme
+from .ad_penceresi import AdTanimlaPenceresi, AdYoneticisi, GitPenceresi
 from .bicim_cubugu import BicimCubugu
 from .dosya_islemleri import DosyaIslemleri
 from .grid import Izgara, goster
@@ -197,6 +202,11 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.ad_kutusu.setFixedWidth(110)
         self.ad_kutusu.setToolTip("Ad Kutusu: hücre/aralık adresi yazıp Enter'a basın (ör. B7 veya A1:C5)")
         self.ad_kutusu.returnPressed.connect(self._ad_kutusundan_git)
+        self._ad_model = QStringListModel(self)
+        self.ad_tamamlayici = QCompleter(self._ad_model, self)         # tanımlı adlar (Excel'in açılır listesi)
+        self.ad_tamamlayici.setCaseSensitivity(Qt.CaseInsensitive)
+        self.ad_tamamlayici.activated.connect(self._ad_secildi)
+        self.ad_kutusu.setCompleter(self.ad_tamamlayici)
         fx = QLabel("fx")
         self.formul = _FormulCubugu()
         self.formul.onayla.connect(self._formul_onayla)
@@ -278,6 +288,11 @@ class Pencere(DosyaIslemleri, QMainWindow):
                              ("ozel_sirala", self.sirala_ozel)):
             self.veri_eylemleri[eylem].setEnabled(True)
             self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
+        for eylem, islev in (("ad_tanimla", self.ad_tanimla_ac), ("ad_yoneticisi", self.ad_yoneticisi_ac)):
+            self.veri_eylemleri[eylem].setEnabled(True)
+            self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
+        self.veri_eylemleri["ad_yoneticisi"].setText(self.veri_eylemleri["ad_yoneticisi"].text() + "	Ctrl+F3")
+        QShortcut(QKeySequence("Ctrl+F3"), self, activated=self.ad_yoneticisi_ac)
         QShortcut(QKeySequence("Shift+F4"), self, activated=lambda: self.sonrakini_bul(False))
         QShortcut(QKeySequence("Ctrl+Shift+F4"), self, activated=lambda: self.sonrakini_bul(True))
         QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
@@ -421,6 +436,10 @@ class Pencere(DosyaIslemleri, QMainWindow):
                 g._sayfa_adimlari()
                 g.viewport().update()          # başka hücreden tetiklenen yeniden hesaplama
             self._dongu_etiketi_guncelle()
+            return
+        if olay.tur == "ad":
+            self._ad_listesini_yenile()
+            self._arayuzu_guncelle()               # ad kutusu seçimin adını gösterir
             return
         if olay.tur == "sayfa":
             if olay["islem"] == "sil":
@@ -568,7 +587,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
             self.ad_kutusu.setText(f"{sec.son_satir - sec.ilk_satir + 1}S x "
                                    f"{sec.son_sutun - sec.ilk_sutun + 1}Sü")
         else:
-            self.ad_kutusu.setText(hucre_yaz(*g.aktif))
+            ad = secimin_adi(self.kitap, g.sayfa, sec) if self.kitap.adlar else None
+            self.ad_kutusu.setText(ad or hucre_yaz(*g.aktif))
         isaretleniyor = g.dis_duzenleyici is not None and g._isaret is not None
         if (not g.duzenleniyor() and not self.formul.hasFocus() and not isaretleniyor
                 and self._uzak is None):
@@ -718,28 +738,37 @@ class Pencere(DosyaIslemleri, QMainWindow):
         aralik, baslik, sutun = alan
         if sonuc is None:
             pen = SiralaPenceresi(self.izgara().sayfa, aralik, sutun, self, baslik)
-            if pen.exec() != pen.Accepted:
+            if pen.exec() != QDialog.Accepted:
                 return False
             sonuc = (pen.anahtarlar(), pen.baslik(), pen.buyuk_kucuk(), pen.yon())
         anahtarlar, baslik, bk, yon = sonuc
         return self._siralama_uygula(aralik, anahtarlar, baslik, bk, yon)
 
     def git_ac(self):
-        metin, tamam = QInputDialog.getText(self, "Git", "Başvuru:", text="")
-        if tamam and metin.strip():
-            self._adrese_git(metin)
+        pen = GitPenceresi(self, [t.ad for t in gorunur_adlar(self.kitap, self.izgara().sayfa)])
+        if pen.exec() == QDialog.Accepted and pen.metin():
+            self._adrese_git(pen.metin())
 
     def _ad_kutusundan_git(self):
-        self._adrese_git(self.ad_kutusu.text())
+        self._adrese_git(self.ad_kutusu.text(), tanimla=True)
 
-    def _adrese_git(self, metin: str):
+    def _ad_secildi(self, metin: str):
+        self.ad_kutusu.setText(metin)
+        self._adrese_git(metin, tanimla=True)
+
+    def _ad_listesini_yenile(self):
+        kitap = self.kitap
+        self._ad_model.setStringList(sorted({t.ad for t in gorunur_adlar(kitap)}, key=str.casefold))
+
+    def _adrese_git(self, metin: str, tanimla: bool = False):
+        """Adres/aralık ya da tanımlı ad yazılan yere gider. `tanimla` (Ad Kutusu): ad yoksa geçerli bir
+        adsa seçim bu adla tanımlanır (kitap kapsamı, Excel gibi)."""
         g = self.izgara()
+        metin = metin.strip()
         try:
             ar = aralik_coz(metin)
         except AdresHatasi:
-            QMessageBox.warning(self, APP_NAME, "Başvuru geçerli değil.")
-            self._arayuzu_guncelle()
-            g.setFocus()
+            self._ada_git(metin, tanimla)
             return
         tam = ar.son_satir - ar.ilk_satir > 1000 or ar.son_sutun - ar.ilk_sutun > 100
         g.sec((ar.ilk_satir, ar.ilk_sutun), (ar.son_satir, ar.son_sutun), kaydir=not tam)
@@ -747,6 +776,59 @@ class Pencere(DosyaIslemleri, QMainWindow):
             g._gorunur_yap((ar.ilk_satir, ar.ilk_sutun))
         g.setFocus()
         self._arayuzu_guncelle()
+
+    def _ada_git(self, ad: str, tanimla: bool):
+        g = self.izgara()
+        tanim = self.kitap.ad_bul(ad, g.sayfa.kimlik) if ad else None
+        if tanim is not None:
+            hedef = hedef_aralik(self.kitap, tanim, g.sayfa)
+            if hedef is None:
+                QMessageBox.warning(self, APP_NAME, "Bu ad bir hücre aralığına başvurmuyor.")
+            else:
+                sayfa, ar = hedef
+                if sayfa is not g.sayfa and sayfa in self.kitap.sayfalar:
+                    self.sekmeler.setCurrentIndex(self.kitap.sayfalar.index(sayfa))
+                    g = self.izgara()
+                g.sec((ar.ilk_satir, ar.ilk_sutun), (ar.son_satir, ar.son_sutun))
+        elif not tanimla:
+            QMessageBox.warning(self, APP_NAME, "Başvuru geçerli değil.")
+        else:
+            try:
+                ad_dogrula(ad)
+            except AdHatasi as e:
+                QMessageBox.warning(self, APP_NAME, str(e))
+            else:
+                sec = g.secim
+                try:
+                    formul = basvurur_saklanan(self.kitap, aralik_basvurusu(g.sayfa, sec), g.sayfa)
+                except Exception:
+                    formul = None
+                if formul is not None:
+                    self._ad_uygula(None, TanimliAd(ad, formul))
+        self._arayuzu_guncelle()
+        self.izgara().setFocus()
+
+    def ad_tanimla_ac(self, duzenlenen: Optional[TanimliAd] = None) -> bool:
+        """Ad Tanımla / Ad Düzenle penceresi; Tamam'da geri alınabilir `AdDegis` çalışır."""
+        g = self.izgara()
+        pen = AdTanimlaPenceresi(self.kitap, g.sayfa, g.secim, duzenlenen, self)
+        if pen.exec() != QDialog.Accepted or pen.tanim is None:
+            return False
+        return self._ad_uygula(pen.eski_anahtar, pen.tanim)
+
+    def _ad_uygula(self, eski_anahtar, tanim) -> bool:
+        try:
+            self.yigin.calistir(AdDegis(self.kitap, eski_anahtar, tanim))
+        except AdHatasi as e:
+            QMessageBox.warning(self, APP_NAME, str(e))
+            return False
+        return True
+
+    def ad_sil(self, tanim: TanimliAd) -> None:
+        self.yigin.calistir(AdDegis(self.kitap, tanim.anahtar(), None))
+
+    def ad_yoneticisi_ac(self) -> None:
+        AdYoneticisi(self).exec()
 
     def _formul_odak(self):
         """Formül çubuğuna girilince ızgara başvuru işaretlemeyi buraya yönlendirir (K7)."""

@@ -23,11 +23,13 @@ from openpyxl.styles.colors import COLOR_INDEX
 from openpyxl.utils import get_column_letter
 from openpyxl.utils.cell import coordinate_from_string, column_index_from_string
 from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
+from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.utils.datetime import to_excel
 
 from ..formul import ceviri
 from ..formul.sozcuk import FormulHatasi
 from ..model import olcu
+from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
@@ -159,8 +161,6 @@ def tara(yol: str) -> Rapor:
                     for isaret, ne in _SAYFA_ISARETLERI:
                         if isaret in xml and (isaret != b't="array"' or re.search(rb'<f[^>]*t="array"', xml)):
                             bulunan[ne] = True
-            if re.search(rb'<definedName[^>]*name="(?!_xlnm)', z.read("xl/workbook.xml")):
-                bulunan["tanımlı ad"] = True
     except (zipfile.BadZipFile, KeyError, OSError):
         return r
     for ne in bulunan:
@@ -262,6 +262,42 @@ def _formul_oku(metin: str, kitap) -> str:
     for i in range(0, len(parcalar), 2):
         parcalar[i] = _XLFN_OKU.sub("", parcalar[i])
     return ceviri.iceri('"'.join(parcalar), kitap)
+
+
+# --- tanımlı adlar ---------------------------------------------------------------------------------
+def _adlari_yaz(wb, kitap) -> None:
+    """Tanımlı adlar: kitap kapsamlı `wb.defined_names`, sayfa kapsamlı `ws.defined_names`.
+    Göreli başvurular A1'e göre saklanır (dosyadaki gibi)."""
+    for tanim in kitap.adlar.values():
+        d = DefinedName(tanim.ad, attr_text=_formul_yaz(tanim.formul, kitap)[1:],
+                        hidden=True if tanim.gizli else None, comment=tanim.aciklama or None)
+        if tanim.kapsam is None:
+            wb.defined_names[tanim.ad] = d
+            continue
+        sayfa = kitap.sayfa_kimlikle(tanim.kapsam)
+        if sayfa is not None:                        # kapsamı silinmiş sayfa olan ad yazılmaz
+            wb[sayfa.ad].defined_names[tanim.ad] = d
+
+
+def _adlari_oku(wb, kitap, sayfalar, rapor) -> None:
+    """Dosyadaki tanımlı adları kitaba alır; çevrilemeyen (dış kitap başvurusu vb.) ya da geçersiz adlar
+    atlanır ve raporlanır. `_xlnm.*` (yazdırma alanı vb.) sayfa yapısında işlenir."""
+    kaynaklar = [(None, wb.defined_names)] + [(s.kimlik, ws.defined_names) for ws, s in sayfalar]
+    atlanan = []
+    for kapsam, depo in kaynaklar:
+        for ad, d in depo.items():
+            if ad.startswith("_xlnm.") or not d.attr_text:
+                continue
+            try:
+                ad_dogrula(ad)
+                formul = _formul_oku("=" + d.attr_text, kitap)
+            except (AdHatasi, FormulHatasi):
+                atlanan.append(ad)
+                continue
+            kitap.ad_yaz(TanimliAd(ad, formul, kapsam, d.comment or "", bool(d.hidden)))
+    if atlanan:
+        rapor.ekle(f"Çevrilemeyen tanımlı adlar atlandı: {', '.join(atlanan[:5])}"
+                   f"{' …' if len(atlanan) > 5 else ''}; kaydederseniz dosyadan çıkarılır.", True)
 
 
 # --- sayfa yapısı ----------------------------------------------------------------------------------
@@ -473,6 +509,7 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         ws.sheet_view.showGridLines = sayfa.kilavuz
         _yapi_yaz(ws, sayfa.sayfa_yapisi)
 
+    _adlari_yaz(wb, kitap)
     if sayac.get("karakter"):
         rapor.ekle(f"{sayac['karakter']} hücrede dosyada geçersiz olan denetim karakterleri silindi.")
     if sayac.get("uzun"):
@@ -667,6 +704,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         tab = ws.sheet_properties.tabColor
         if tab is not None:
             s.sekme_rengi = _renk_oku(tab, tema)
+    _adlari_oku(wb, kitap, sayfalar, rapor)
     if bozuk_formul:
         rapor.ekle(f"{bozuk_formul} formül çevrilemedi, metin olarak bırakıldı.")
     return kitap, rapor

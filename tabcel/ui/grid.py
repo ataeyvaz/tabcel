@@ -84,6 +84,8 @@ class _Duzenleyici(QLineEdit):
         super().__init__(parent)
         self.yazma_modu = yazma_modu
         self.isaret_denetimi = None      # () -> bool: şu an başvuru işaretlenebilir mi (ızgara verir)
+        self.ad_saglayici = None         # () -> List[str]: öneri listesine eklenecek tanımlı adlar (ızgara verir)
+        self._ad_kumesi = frozenset()    # son öneri listesindeki tanımlı adlar (kabulde "(" eklenmez)
         self._bitti = False
         self.setFrame(False)
         self._oneri_bas = 0              # önerinin değiştireceği metnin başlangıcı
@@ -109,7 +111,9 @@ class _Duzenleyici(QLineEdit):
             return
         imlec = self.cursorPosition()
         ad = isaretleme.ad_oneki(self.text(), imlec)
-        liste = isaretleme.oneriler(ad[1]) if ad else []
+        adlar = self.ad_saglayici() if (ad and self.ad_saglayici is not None) else ()
+        liste = isaretleme.oneriler(ad[1], tanimli_adlar=adlar) if ad else []
+        self._ad_kumesi = frozenset(a for a in liste if a in adlar)
         if ad and liste and not (len(liste) == 1 and liste[0].casefold() == ad[1].casefold()):
             self._oneri_bas = ad[0]
             self._liste.clear()
@@ -134,7 +138,7 @@ class _Duzenleyici(QLineEdit):
             return
         imlec = self.cursorPosition()
         metin = self.text()
-        yeni = oge.text() + "("
+        yeni = oge.text() + ("" if oge.text() in self._ad_kumesi else "(")
         self._liste.hide()
         self.setText(metin[:self._oneri_bas] + yeni + metin[imlec:])
         self.setCursorPosition(self._oneri_bas + len(yeni))
@@ -1908,6 +1912,14 @@ class Izgara(QAbstractScrollArea):
         px = olcu.genislik_sinirla(px)
         self._olcu_uygula(lambda s: s.sutun_genislik.update({c: px for c in sutunlar}))
 
+    def _tanimli_ad_listesi(self):
+        """Formül yazarken öneri listesine girecek tanımlı adlar (bu sayfada görünenler)."""
+        kitap = self.sayfa.kitap
+        if kitap is None or not kitap.adlar:
+            return ()
+        from ..formul.ad_yardim import gorunur_adlar
+        return [t.ad for t in gorunur_adlar(kitap, self.sayfa)]
+
     def sutun_otomatik_sigdir(self, sutunlar=None) -> None:
         sutunlar = list(sutunlar) if sutunlar is not None else list(self.secili_sutunlar())
         if not self._sinirli(len(sutunlar)):
@@ -2080,6 +2092,7 @@ class Izgara(QAbstractScrollArea):
             e.setText(self.aktif_duzenleme_metni())
         e.bitir.connect(self._duzenleme_bitti)
         e.isaret_denetimi = self._isaret_modu
+        e.ad_saglayici = self._tanimli_ad_listesi
         e.okIsaret.connect(self._isaret_ok)
         e.modDegisti.connect(self.modDegisti.emit)
         e.textChanged.connect(self.duzenlemeMetniDegisti.emit)

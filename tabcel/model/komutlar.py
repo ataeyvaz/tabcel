@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Protocol
 
 from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 from .sayfa import Anahtar, Hucre, Sayfa
+from .harmanla import tr_kucuk
 from .stil import StilYama
 
 
@@ -175,7 +176,14 @@ class HucreTasi:
         return [(k, temizle), (h, tasinan)]
 
     def yap(self) -> None:
+        kitap = self.kaynak.kitap
+        self._ad_once = kitap.ad_durumu() if kitap is not None else None
         self._eski = [(s, s.toplu_yaz(yeni)) for s, yeni in self._plan().items()]
+        if kitap is not None and kitap.adlar:
+            from ..formul.kaydir import adlari_tasi           # model → formul yalnız burada
+            r1, c1, _, _ = self.kutu
+            adlari_tasi(kitap, self.kaynak.kimlik, self.kutu, self.hedef.kimlik,
+                        self.hedef_konum[0] - r1, self.hedef_konum[1] - c1)
         self._eski_bicim = [(s, s.bicim_yaz(hucreler=yeni)) for s, yeni in self._bicim_plani()]
         self._birlesimleri_tasi()
 
@@ -207,6 +215,46 @@ class HucreTasi:
             s.bicim_yaz(*eski)
         for s, eski in reversed(self._eski):
             s.toplu_yaz(eski)
+        if getattr(self, "_ad_once", None) is not None:
+            self.kaynak.kitap.ad_durumu_yukle(self._ad_once)
+
+
+class AdDegis:
+    """Tanımlı ad ekler / düzenler / yeniden adlandırır / siler (tek geri al adımı).
+    `eski_anahtar`: düzenlenen/silinen adın anahtarı (yeni ad için None); `yeni`: yeni `TanimliAd`
+    (silmede None). Yeniden adlandırma kitaptaki formüllerdeki (hücre + doğrulama + koşullu biçim +
+    diğer adlar) o ada çözülen ad sözcüklerini de yeni adla yazar; silmede formüller metni korur ve
+    `#AD?` hesaplanır (Excel). Geçersiz ad/yinelenen ad kurulurken `AdHatasi` verir."""
+
+    def __init__(self, kitap, eski_anahtar, yeni):
+        from .ad import ad_kontrol
+        if yeni is not None:
+            ad_kontrol(kitap, yeni, eski_anahtar)
+        self.kitap, self.eski_anahtar, self.yeni = kitap, eski_anahtar, yeni
+        self._ad_once = None
+        self._ek_once = None
+        self._duzeltmeler = {}
+
+    def yap(self) -> None:
+        kitap = self.kitap
+        self._ad_once = kitap.ad_durumu()
+        self._ek_once = [(s, s.ek_durumu()) for s in kitap.sayfalar]
+        hedef = kitap.adlar.get(self.eski_anahtar) if self.eski_anahtar is not None else None
+        self._duzeltmeler = {}
+        if (hedef is not None and self.yeni is not None
+                and tr_kucuk(hedef.ad) != tr_kucuk(self.yeni.ad)):
+            from ..formul.kaydir import ad_yeniden_adlandir   # model → formul yalnız burada
+            self._duzeltmeler = ad_yeniden_adlandir(kitap, hedef, self.yeni.ad)
+            for s, degisen in self._duzeltmeler.items():
+                s.toplu_yaz({k: Hucre(None, yeni) for k, (_, yeni) in degisen.items()})
+        kitap.ad_yaz(self.yeni, self.eski_anahtar)
+
+    def geri_al(self) -> None:
+        for s, degisen in self._duzeltmeler.items():
+            s.toplu_yaz({k: Hucre(None, eski) for k, (eski, _) in degisen.items()})
+        for s, durum in self._ek_once:
+            s.ek_durumu_yukle(durum)
+        self.kitap.ad_durumu_yukle(self._ad_once)
 
 
 class BicimDegis:

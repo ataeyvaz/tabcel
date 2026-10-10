@@ -14,9 +14,9 @@ from typing import Dict, Iterable, List, Optional, Set, Tuple
 from ..model import deger as D
 from ..model.olay import Olay
 from . import fonksiyonlar
-from .agac import Cagri, Dugum, Ref, formul_ayristir
+from .agac import Ad, Cagri, Dugum, Ref, agac_kaydir, formul_ayristir
 from .degerler import BEKLIYOR, ONEK_ONBELLEGI, Bekle
-from .degerlendir import Baglam, hucre_sonucu
+from .degerlendir import AD_DERINLIK, Baglam, ad_agaci, hucre_sonucu
 from .sozcuk import FormulHatasi
 
 Anahtar = Tuple[int, int, int]                  # (sayfa kimliği, satır, sütun)
@@ -34,12 +34,21 @@ class _Kayit:
         self.degisken: bool = degisken
 
 
-def _oncul_topla(agac: Dugum, kendi: int, kitap) -> Tuple[List[Anahtar], List[Tuple[int, Kutu]], bool]:
-    """Ağaçtaki durağan başvurular (tek hücreler, aralıklar) ve değişken fonksiyon var mı."""
+def _oncul_topla(agac: Dugum, kendi: int, kitap, satir: int = 1,
+                 sutun: int = 1) -> Tuple[List[Anahtar], List[Tuple[int, Kutu]], bool]:
+    """Ağaçtaki durağan başvurular (tek hücreler, aralıklar) ve değişken fonksiyon var mı.
+    Tanımlı adlar (`Ad`) açılır: adın ağacı (hücreye göre kaydırılmış) aynı taramaya katılır."""
     hucreler, araliklar, degisken = [], [], False
-    yigin = [agac]
+    yigin = [(agac, ())]
     while yigin:
-        d = yigin.pop()
+        d, adlar = yigin.pop()
+        if isinstance(d, Ad):
+            tanim = kitap.ad_bul(d.ad, kendi) if kitap is not None else None
+            if tanim is not None and tanim.anahtar() not in adlar and len(adlar) < AD_DERINLIK:
+                a = ad_agaci(tanim.formul)
+                if a is not None:
+                    yigin.append((agac_kaydir(a, satir - 1, sutun - 1), adlar + (tanim.anahtar(),)))
+            continue
         if isinstance(d, Ref):
             b = d.basvuru
             if b.sayfa is None:
@@ -60,12 +69,12 @@ def _oncul_topla(agac: Dugum, kendi: int, kitap) -> Tuple[List[Anahtar], List[Tu
             t = fonksiyonlar.bul(d.ad)
             if t is not None and (t.degisken or t.dinamik):
                 degisken = True
-            yigin.extend(d.argumanlar)
+            yigin.extend((x, adlar) for x in d.argumanlar)
             continue
         for alan in getattr(d, "__dataclass_fields__", ()):
             v = getattr(d, alan)
             if isinstance(v, Dugum):
-                yigin.append(v)
+                yigin.append((v, adlar))
     return hucreler, araliklar, degisken
 
 
@@ -154,7 +163,7 @@ class Hesaplayici:
         if agac is None:
             self._kayit[anahtar] = _Kayit(None, [], [], False)
             return
-        hucreler, araliklar, degisken = _oncul_topla(agac, anahtar[0], self.kitap)
+        hucreler, araliklar, degisken = _oncul_topla(agac, anahtar[0], self.kitap, anahtar[1], anahtar[2])
         self._kayit[anahtar] = _Kayit(agac, hucreler, araliklar, degisken)
         for h in hucreler:
             self._hucre_bag[h].add(anahtar)

@@ -100,13 +100,17 @@ def ad_oneki(metin: str, imlec: int) -> Optional[Tuple[int, str]]:
     return i, onek
 
 
-def oneriler(onek: str, en_cok: int = 12) -> List[str]:
-    """Önekle başlayan fonksiyon adları (Türkçe Excel adı; Türkçesi olmayan İngilizce), alfabetik."""
+def oneriler(onek: str, en_cok: int = 12, tanimli_adlar=()) -> List[str]:
+    """Önekle başlayan fonksiyon adları (Türkçe Excel adı; Türkçesi olmayan İngilizce), alfabetik;
+    ardından (en çok 4) tanımlı ad. Aynı adlı tanımlı ad fonksiyonu gölgelemez (listede bir kez)."""
     from . import adlar, fonksiyonlar
     from .yerel import tr_buyuk
     ara = tr_buyuk(onek)
     adlar_ = {adlar.turkcesi(en) for en in fonksiyonlar.KAYIT}
-    return sorted((a for a in adlar_ if tr_buyuk(a).startswith(ara)), key=tr_buyuk)[:en_cok]
+    fon = sorted((a for a in adlar_ if tr_buyuk(a).startswith(ara)), key=tr_buyuk)
+    ek = sorted({a for a in tanimli_adlar if tr_buyuk(a).startswith(ara) and tr_buyuk(a) not in
+                 {tr_buyuk(f) for f in fon}}, key=tr_buyuk)[:4]
+    return fon[:max(en_cok - len(ek), 0)] + ek
 
 
 def ipucu(metin: str, imlec: int) -> Optional[str]:
