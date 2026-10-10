@@ -4,7 +4,8 @@ Okuma/yazma openpyxl ile; biçim eşlemesi `model/stil.py`'ye, formül eşlemesi
 (saklanan formül kanonik İngilizce + sayfa kimliği; dosyada İngilizce + sayfa adı).
 
 Bilinen sınırlar (her açılışta `Rapor`'a yazılır, arayüz bilgi çubuğunda gösterir):
-- openpyxl grafik/resim/pivot/makro/koşullu biçim/veri doğrulama/yorumları korumaz → `Rapor.veri_kaybi`
+- openpyxl grafik/resim/pivot/makro/koşullu biçim/veri doğrulama/dizili açıklamaları korumaz → `Rapor.veri_kaybi`
+  (notlar korunur; kutu boyutu/konumu varsayılana döner)
 - kaydedilen formüllerin önbellek değeri yazılmaz (Excel açınca yeniden hesaplar)
 - tema renkleri varsayılan Office teması varsayımıyla RGB'ye çevrilir (§8b)
 """
@@ -18,6 +19,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.comments import Comment
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.styles.colors import COLOR_INDEX
 from openpyxl.utils import get_column_letter
@@ -32,6 +34,7 @@ from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
+from ..model.notlar import Not
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
 from ..model.sayfa_yapisi import SayfaYapisi
 from ..model.stil import Kenarlik, Stil
@@ -104,6 +107,8 @@ _KAGIT_KODU = {"Letter": 1, "Legal": 5, "A3": 8, "A4": 9, "A5": 11}
 _KAGIT_ADI = {v: k for k, v in _KAGIT_KODU.items()}
 CM_INC = 2.54
 
+_NOT_GENISLIK, _NOT_YUKSEKLIK = 200, 100         # not kutusu boyutu (nokta); Excel varsayılanına yakın
+
 VARSAYILAN_YAZI_TIPI = "Calibri"
 VARSAYILAN_BOYUT = 11.0
 
@@ -127,11 +132,11 @@ class XlsxHatasi(Exception):
 # --- tarama (zip; openpyxl'e güvenmeden) ----------------------------------------------------------
 _TARA = (
     (re.compile(r"^xl/charts/"), "grafik", True),
-    (re.compile(r"^xl/(drawings/|media/)"), "resim/şekil", True),
+    (re.compile(r"^xl/(drawings/(?!.*\.vml$)|media/)"), "resim/şekil", True),   # *.vml = not kutuları
     (re.compile(r"^xl/pivot(Tables|Cache)/"), "pivot tablo", True),
     (re.compile(r"^xl/vbaProject\.bin$"), "makro (VBA)", True),
     (re.compile(r"^xl/externalLinks/"), "dış bağlantı", True),
-    (re.compile(r"^xl/(comments|threadedComments)"), "yorum/not", True),
+    (re.compile(r"^xl/threadedComments"), "dizili açıklama (not olarak okunur, yanıtlar kaybolur)", True),
     (re.compile(r"^xl/slicers/|^xl/timelines/"), "dilimleyici", True),
     (re.compile(r"^xl/tables/"), "Excel tablosu", True),
 )
@@ -473,6 +478,10 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         for (r, c), k in sayfa._stil.items():
             if k:
                 uygula(ws.cell(row=r, column=c), k)
+        for (r, c), n in sayfa.notlar.items():
+            yorum = Comment(ILLEGAL_CHARACTERS_RE.sub("", n.metin), ILLEGAL_CHARACTERS_RE.sub("", n.yazar))
+            yorum.width, yorum.height = _NOT_GENISLIK, _NOT_YUKSEKLIK
+            ws.cell(row=r, column=c).comment = yorum
         for r, k in sayfa.satir_stil.items():
             uygula(ws.row_dimensions[r], k)
         # sütun bilgisi: aynı özellikli ardışık sütunlar tek `<col min max>` olur ("K:XFD gizli" 16 bin kayıt olmaz)
@@ -534,6 +543,20 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
 
 
 # --- okuma ----------------------------------------------------------------------------------------
+def _not_oku(yorum) -> Optional[Not]:
+    """openpyxl yorumunu nota çevirir. Excel notun metnine yazarı `Yazar:\\n` önekiyle (kalın) yazar;
+    önek atılır (yazar ayrı tutulur ve kutuda yeniden üretilir)."""
+    metin = (yorum.text or "").replace("\r\n", "\n").replace("\r", "\n")
+    yazar = (yorum.author or "").strip()
+    for onek in ((f"{yazar}:\n", f"{yazar}:") if yazar else ()):
+        if metin.startswith(onek):
+            metin = metin[len(onek):]
+            break
+    if metin == "" and yazar == "":
+        return None
+    return Not(metin, yazar)
+
+
 def _aralik(hucre_araligi) -> Aralik:
     return Aralik(hucre_araligi.min_row, hucre_araligi.min_col, hucre_araligi.max_row, hucre_araligi.max_col)
 
@@ -616,7 +639,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
     bozuk_formul = 0
     formul_onb = _FormulOnbellek()
     for ws, s in sayfalar:
-        yeni, stiller = {}, {}
+        yeni, stiller, notlar = {}, {}, {}
         for (r, c), hc in ws._cells.items():          # yalnız var olan hücreler (iter_rows seyrek dosyada tüm kutuyu gezer)
             if type(hc).__name__ == "MergedCell":
                 continue
@@ -652,7 +675,13 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
                 k = kimlik_al(hc)
                 if k:
                     stiller[(r, c)] = k
+            if hc.comment is not None:
+                n = _not_oku(hc.comment)
+                if n is not None:
+                    notlar[(r, c)] = n          # dizili açıklama da düz kopyasıyla not olur (uyarı `tara`dan)
         s.toplu_yaz(yeni)
+        if notlar:
+            s.notlari_yaz(notlar)
         satir_st, sutun_st = {}, {}
         for r, rd in ws.row_dimensions.items():
             if rd.has_style and getattr(rd, "customFormat", True):

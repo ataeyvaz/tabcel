@@ -7,12 +7,13 @@ import math
 import uuid
 from typing import Dict, Iterator, List, Optional, Tuple
 
-from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRect, Qt, Signal
+from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import (
-    QColor, QFont, QFontMetrics, QPainter, QPen, QRegion, QStaticText, QTextLayout, QTextOption,
+    QColor, QFont, QFontMetrics, QPainter, QPen, QPolygon, QRegion, QStaticText, QTextLayout, QTextOption,
 )
 from PySide6.QtWidgets import (
-    QAbstractScrollArea, QApplication, QInputDialog, QLineEdit, QListWidget, QMenu, QToolTip,
+    QAbstractScrollArea, QApplication, QInputDialog, QLabel, QLineEdit, QListWidget, QMenu,
+    QPlainTextEdit, QToolTip,
 )
 
 from ..model.adres import (
@@ -28,10 +29,11 @@ from ..model.sayi_bicimi import BicimSonucu
 from ..model import doldur as doldurma
 from ..model.stil import VARSAYILAN, Stil, StilYama
 from ..model.komutlar import (
-    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
+    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, NotlarDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
     SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
+from ..model.notlar import Not, varsayilan_yazar
 from ..model.bicim_islem import boyaci_stilleri
 from ..model.sayfa import Hucre, Sayfa
 from . import theme
@@ -209,6 +211,31 @@ class _Duzenleyici(QLineEdit):
         self._son(True)
 
 
+class _NotDuzenleyici(QPlainTextEdit):
+    """Not düzenleme kutusu (açık sarı, ince siyah çerçeve): odak kaybında kaydeder, Esc vazgeçer."""
+    bitti = Signal(object)          # str (kaydet) | None (vazgeç)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.setStyleSheet("QPlainTextEdit{background:#FFFFE1;color:#000;border:1px solid #000;}")
+        self._bitti = False
+
+    def _bitir(self, metin) -> None:
+        if not self._bitti:
+            self._bitti = True
+            self.bitti.emit(metin)
+
+    def keyPressEvent(self, olay):
+        if olay.key() == Qt.Key_Escape:
+            self._bitir(None)
+            return
+        super().keyPressEvent(olay)
+
+    def focusOutEvent(self, olay):
+        super().focusOutEvent(olay)
+        self._bitir(self.toPlainText())
+
+
 class Izgara(QAbstractScrollArea):
     aktifDegisti = Signal(int, int)       # satır, sütun
     secimDegisti = Signal(object)         # Aralik
@@ -263,6 +290,14 @@ class Izgara(QAbstractScrollArea):
         self._dikey_son = 0                         # artımlı kaydırma için önceki dikey kaydırma değeri
         self._yatay_son = 0                         # ... yatay kaydırma değeri
         self._boyut: Optional[dict] = None     # kenardan boyutlandırma durumu
+        self._not_adayi: Optional[Tuple[int, int]] = None    # fare üstündeki notlu hücre
+        self._not_kutusu: Optional[QLabel] = None            # fare üstü not kutusu (salt okunur)
+        self._not_duzen: Optional[_NotDuzenleyici] = None    # Shift+F2 not düzenleyici
+        self._not_duzen_hucre: Tuple[int, int] = (1, 1)
+        self._not_zamani = QTimer(self)
+        self._not_zamani.setSingleShot(True)
+        self._not_zamani.setInterval(400)
+        self._not_zamani.timeout.connect(self._not_goster)
         self.setFocusPolicy(Qt.StrongFocus)
         self.viewport().setMouseTracking(True)
         self.horizontalScrollBar().setRange(0, MAX_COL - 1)
@@ -1010,6 +1045,8 @@ class Izgara(QAbstractScrollArea):
         self._metinleri_ciz(p, metinler, kirp)
         if self.sayfa.birlesimler:
             self._birlesimleri_ciz(p, kirp, pad)
+        if self.sayfa.notlar:
+            self._not_uclari_ciz(p, sutunlar_k, satirlar)
         p.setFont(self._yazi_tipi())
 
         # seçim
@@ -1089,6 +1126,148 @@ class Izgara(QAbstractScrollArea):
                     continue
                 self._baslik_ciz(p, QRect(0, y, bg, h), str(r),
                                  any(a.ilk_satir <= r <= a.son_satir for a in tum), izgara)
+
+    def _not_uclari_ciz(self, p: QPainter, sutunlar, satirlar) -> None:
+        """Notlu hücrenin sağ üst köşesinde kırmızı üçgen (Excel ~6 px); birleşimde tüm alanın köşesi."""
+        xs = {c: (x, g) for c, x, g in sutunlar}
+        ys = {r: (y, h) for r, y, h in satirlar}
+        z = self._z(6)
+        bir = self.sayfa._birlesim_idx
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor("#C00000"))
+        for (r, c) in self.sayfa.notlar:
+            b = bir.get((r, c)) if bir else None
+            if b is not None:
+                if (b.ilk_satir, b.ilk_sutun) != (r, c):
+                    continue
+                dik = self._birlesim_dikdortgeni(b)
+                if dik is None:
+                    continue
+                sag, ust = dik.x() + dik.width() - 1, dik.y()
+            else:
+                a, d = xs.get(c), ys.get(r)
+                if a is None or d is None or a[1] <= 1 or d[1] <= 1:
+                    continue
+                sag, ust = a[0] + a[1] - 1, d[0]
+            p.drawPolygon(QPolygon([QPoint(sag - z, ust), QPoint(sag, ust), QPoint(sag, ust + z)]))
+        p.setBrush(Qt.NoBrush)
+
+    # --- notlar ---
+    def _not_gizle(self) -> None:
+        self._not_zamani.stop()
+        self._not_adayi = None
+        if self._not_kutusu is not None:
+            self._not_kutusu.hide()
+
+    def _not_ipucu_guncelle(self, p: QPoint) -> None:
+        """Fare notlu hücrede ~400 ms beklerse not kutusu açılır; başka yere gidince kapanır."""
+        hedef = None
+        if self.sayfa.notlar and self._not_duzen is None:
+            satir, sutun = self._noktadan(p)
+            if satir is not None and sutun is not None:
+                b = self.sayfa.birlesim(satir, sutun)
+                if b is not None:
+                    satir, sutun = b.ilk_satir, b.ilk_sutun
+                if (satir, sutun) in self.sayfa.notlar:
+                    hedef = (satir, sutun)
+        if hedef == self._not_adayi:
+            return
+        self._not_gizle()
+        if hedef is not None:
+            self._not_adayi = hedef
+            self._not_zamani.start()
+
+    def _not_goster(self) -> None:
+        hedef = self._not_adayi
+        n = self.sayfa.notlar.get(hedef) if hedef else None
+        ar = self.hucre_dikdortgeni(*hedef) if hedef else None
+        if n is None or ar is None:
+            return
+        if self._not_kutusu is None:
+            k = QLabel(self.viewport())
+            k.setWordWrap(True)
+            k.setTextFormat(Qt.RichText)
+            k.setAttribute(Qt.WA_TransparentForMouseEvents)
+            k.setStyleSheet("QLabel{background:#FFFFE1;color:#000;border:1px solid #000;padding:3px;}")
+            self._not_kutusu = k
+        k = self._not_kutusu
+        from html import escape
+        govde = escape(n.metin).replace("\n", "<br>")
+        k.setText((f"<b>{escape(n.yazar)}:</b><br>" if n.yazar else "") + govde)
+        k.setFixedWidth(self._z(200))
+        k.adjustSize()
+        k.setFixedHeight(k.heightForWidth(k.width()) if k.hasHeightForWidth() else k.sizeHint().height())
+        vp = self.viewport()
+        x = min(ar.right() + self._z(8), max(0, vp.width() - k.width()))
+        y = min(max(0, ar.top() - self._z(4)), max(0, vp.height() - k.height()))
+        k.move(x, y)
+        k.show()
+        k.raise_()
+
+    def leaveEvent(self, olay):
+        self._not_gizle()
+        super().leaveEvent(olay)
+
+    def not_var_mi(self, hucre: Optional[Tuple[int, int]] = None) -> bool:
+        return (hucre or self._aktif) in self.sayfa.notlar
+
+    def not_duzenle(self) -> None:
+        """Shift+F2: etkin hücrenin notunu düzenler (yoksa ekler). Kutu açık sarıdır; dışına tıklayınca
+        kaydedilir, Esc vazgeçer; boş metin notu siler."""
+        if self.duzenleniyor() or self._not_duzen is not None:
+            return
+        self._not_gizle()
+        b = self.sayfa.birlesim(*self._aktif)
+        hucre = (b.ilk_satir, b.ilk_sutun) if b is not None else self._aktif
+        self._gorunur_yap(hucre)
+        ar = self.hucre_dikdortgeni(*hucre)
+        if ar is None:
+            return
+        vp = self.viewport()
+        e = _NotDuzenleyici(vp)
+        mevcut = self.sayfa.notlar.get(hucre)
+        e.setPlainText(mevcut.metin if mevcut else "")
+        e.setFixedSize(self._z(200), self._z(90))
+        e.move(min(ar.right() + self._z(8), max(0, vp.width() - e.width())),
+               min(max(0, ar.top() - self._z(4)), max(0, vp.height() - e.height())))
+        e.bitti.connect(self._not_duzen_bitti)
+        self._not_duzen, self._not_duzen_hucre = e, hucre
+        e.show()
+        e.setFocus()
+        e.moveCursor(e.textCursor().MoveOperation.End)
+
+    def _not_duzen_bitti(self, metin) -> None:
+        e, self._not_duzen = self._not_duzen, None
+        hucre = self._not_duzen_hucre
+        if e is not None:
+            e.hide()
+            e.deleteLater()
+        self.setFocus()
+        if metin is None:
+            return
+        eski = self.sayfa.notlar.get(hucre)
+        if eski is not None and eski.metin == metin:
+            return
+        yeni = Not(metin, eski.yazar if eski else varsayilan_yazar()) if metin != "" else None
+        self.not_yaz({hucre: yeni})
+
+    def not_yaz(self, yeni) -> bool:
+        """Notları ekler/değiştirir/siler (`{hücre: Not | None}`); tek geri al adımı. Değişen yoksa False."""
+        kmt = NotlarDegis(self.sayfa, yeni)
+        if kmt.bos_mu():
+            return False
+        self.yigin.calistir(kmt)
+        self._guncelle()
+        return True
+
+    def notu_sil(self) -> bool:
+        """Seçimdeki hücrelerin notlarını siler (Excel: Notu Sil)."""
+        yeni = {a: None for a in self.sayfa.notlar if any(aralik_icinde(s, *a) for s in self.secimler)}
+        return self.not_yaz(yeni) if yeni else False
+
+    def notlari_temizle(self) -> bool:
+        """Temizle ▸ Notlar: seçimdeki notlar silinir, içerik/biçim kalır."""
+        return self.notu_sil()
 
     def _metinleri_ciz(self, p: QPainter, metinler, kirp: QRect) -> None:
         """`_yerlesim` çıktısındaki metinleri çizer (bölge dışı olanlar atlanır)."""
@@ -1325,6 +1504,7 @@ class Izgara(QAbstractScrollArea):
         p = olay.position().toPoint()
         if not (olay.buttons() & Qt.LeftButton):
             self._imlec_guncelle(p)
+            self._not_ipucu_guncelle(p)
             return
         if self._surukleme == "boyut":
             self._boyut_surukle(p)
@@ -1385,6 +1565,7 @@ class Izgara(QAbstractScrollArea):
         self.yakinlastirmaDegisti.emit(oran)
 
     def wheelEvent(self, olay):
+        self._not_gizle()
         if olay.modifiers() & Qt.ControlModifier:
             yon = 1 if olay.angleDelta().y() > 0 else -1
             self.yakinlastir(round(self.yakinlastirma + 0.1 * yon, 2))
@@ -1419,6 +1600,11 @@ class Izgara(QAbstractScrollArea):
         k, m = olay.key(), olay.modifiers()
         ctrl = bool(m & Qt.ControlModifier)
         shift = bool(m & Qt.ShiftModifier)
+        if self._not_kutusu is not None and self._not_kutusu.isVisible():
+            self._not_gizle()
+        if k == Qt.Key_F2 and shift and not ctrl:
+            self.not_duzenle()
+            return
         yon = {Qt.Key_Up: (-1, 0), Qt.Key_Down: (1, 0),
                Qt.Key_Left: (0, -1), Qt.Key_Right: (0, 1)}.get(k)
         sayfa_adimi = max(1, self.verticalScrollBar().pageStep())
@@ -1752,6 +1938,9 @@ class Izgara(QAbstractScrollArea):
                 # kendi biçimimiz: içerik + biçim (Excel "Tümü"); dışarıdan gelen metin biçime dokunmaz
                 komutlar.append(BicimDegis(s, hucreler=pano.yapistirma_stilleri(
                     veri, sec.ilk_satir, sec.ilk_sutun, sec, s.havuz)))
+            not_plani = pano.yapistirma_notlari(veri, s, sec.ilk_satir, sec.ilk_sutun, sec)
+            if not_plani:
+                komutlar.append(NotlarDegis(s, not_plani))
             self.yigin.calistir(komutlar[0] if len(komutlar) == 1 else Grup(komutlar))
         satirlar = [k[0] for k in plan]
         sutunlar = [k[1] for k in plan]
@@ -1777,6 +1966,12 @@ class Izgara(QAbstractScrollArea):
         m.addAction("İçeriği temizle", self.secimi_temizle)
         m.addAction("Biçimleri temizle", self.bicimleri_temizle)
         m.addAction("Tümünü temizle", self.tumunu_temizle)
+        m.addSeparator()
+        if self.not_var_mi((satir, sutun)):
+            m.addAction("Notu Düzenle", self.not_duzenle)
+            m.addAction("Notu Sil", self.notu_sil)
+        else:
+            m.addAction("Yeni Not", self.not_duzenle)
         pencere = self.window()
         if hasattr(pencere, "sirala_hizli"):
             m.addSeparator()
@@ -2541,14 +2736,17 @@ class Izgara(QAbstractScrollArea):
         return True
 
     def tumunu_temizle(self) -> None:
-        """İçerik + biçim (Temizle ▸ Tümü); tek geri al adımı."""
+        """İçerik + biçim + not (Temizle ▸ Tümü); tek geri al adımı."""
         icerik = {(r, c): None for a in self.secimler for r, c, _ in self.sayfa.aralikta(a)}
         try:
             kmt = bicim_komutu(self.sayfa, self.secimler, sifirla=True)
         except AdresHatasi as h:
             self.uyari.emit(str(h))
             return
+        notlar = {a: None for a in self.sayfa.notlar if any(aralik_icinde(s, *a) for s in self.secimler)}
         komutlar = ([HucrelerDegis(self.sayfa, icerik)] if icerik else []) + ([] if kmt.bos_mu() else [kmt])
+        if notlar:
+            komutlar.append(NotlarDegis(self.sayfa, notlar))
         if komutlar:
             self.yigin.calistir(komutlar[0] if len(komutlar) == 1 else Grup(komutlar))
             self._guncelle()

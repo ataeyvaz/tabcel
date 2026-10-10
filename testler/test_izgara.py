@@ -639,7 +639,7 @@ def test_hucre_menusu(izgara):
     d = izgara.hucre_dikdortgeni(4, 2)
     m = izgara.hucre_menusu(d.center())
     assert [a.text() for a in m.actions() if not a.isSeparator()] == \
-        ["Kes", "Kopyala", "Yapıştır", "İçeriği temizle", "Biçimleri temizle", "Tümünü temizle"]
+        ["Kes", "Kopyala", "Yapıştır", "İçeriği temizle", "Biçimleri temizle", "Tümünü temizle", "Yeni Not"]
     assert izgara.aktif == (4, 2)                           # seçim dışına tıklayınca seçilir
     izgara.sec((1, 1), (5, 1))
     izgara.hucre_menusu(izgara.hucre_dikdortgeni(3, 1).center())

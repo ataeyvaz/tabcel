@@ -10,12 +10,12 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
-| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅ 5b ✅ 5c ✅ (performans ölçütü ❌, aşağıda) 5d ✅; sıradaki **5e** Notlar (Sonnet 5.5; §2 madde 10) |
+| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅ 5b ✅ 5c ✅ (performans ölçütü ❌, aşağıda) 5d ✅ 5e ✅; sıradaki **5f** Filtre + ALTTOPLAM (Sonnet 5.5; §2 madde 10) |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 2265 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 2303 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -42,7 +42,7 @@ Testler: 2265 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
-10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; 5c ✅ Sırala; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d ✅ Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
+10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; 5c ✅ Sırala; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d ✅ Adlandırılmış aralıklar · 5e ✅ Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -680,6 +680,18 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
   - §8b-73/74 eklendi (göreli ad dosya semantiği, çoklu seçim)
 - **Kullanıcı sorusu (sekmeli arayüz):** Excel benzeri sekmeli şerit (Giriş/Ekle/Veri/Görünüm) büyük problem yaratmaz (mantık komutlarda, yerleşim `window.py` başlık şeridi + `BicimCubugu`); **Faz 5 bitince ayrı iş** olarak yapılması önerildi (şerit bir kez tasarlansın). Karar kullanıcıda
 - Sıradaki: **5e** Notlar
+
+## [2026-10-10] — Faz 5 / 5e Notlar (Sonnet 5.5)
+- **Yapıldı:** `model/notlar.py` (`Not(metin, yazar)` değişmez dataclass, `kutu_metni`, `varsayilan_yazar` = Windows kullanıcı adı); `Sayfa.notlari_yaz` (toplu, TEK `ek` olayı `alan="not"`, eskileri döner); `komutlar.NotlarDegis` (+ `ana_sayfa`); `HucreTasi` notu taşır (hedefin eski notu ezilir, geri al ikisini de geri getirir; sayfalar arası dahil); `PanoVerisi.notlar` (+ JSON `"n"`) ve `pano.yapistirma_notlari` (Excel "Tümü": notsuz kaynak hedefin notunu siler; desen seçime yinelenir; dışarıdan gelen metin/HTML notlara dokunmaz); ızgara: sağ üst kırmızı üçgen (`#C00000`, 6 px; birleşimde tüm alanın köşesi), fare üstü ~400 ms sonra açık sarı kutu (`#FFFFE1`, yazar kalın ilk satır, HTML kaçışlı; tuş/tekerlek/fare ayrılınca kapanır), **Shift+F2** düzenleyici (odak kaybında kaydeder, Esc vazgeçer, boş metin siler, metin değişmediyse komut yok, mevcut notun yazarı korunur), sağ tık "Yeni Not / Notu Düzenle / Notu Sil", Tümünü temizle notu da siler (tek adım); `io/xlsx_io.py`: `Comment` okuma/yazma (kutu 200×100 pt), Excel'in `Yazar:\n` metin önekini ayırır, `tara` artık `comments` ve `*.vml` için uyarı vermez
+- **Testler:** `test_notlar.py` (26: model, komut, ekle-sil, sırala, taşı, pano, .xlsx) + `test_notlar_arayuz.py` (12). Toplam **2303** geçiyor. Ekran görüntüsü alındı (üçgen + kutu yerleşimi doğru; ekransız ortamda yazı tipi yok, metin kutucuk görünür)
+- **Mevcut testler değişti (kural 12, bilgi):** (1) `test_izgara.py::test_hucre_menusu` beklenen sağ tık listesine "Yeni Not" eklendi (bilerek eklenen menü öğesi); (2) `test_xlsx_ornekler.py::test_grafikli_uyarilar_ve_veri_korunur`: artık "yorum" uyarısı **çıkmamalı** ve örnekteki not (`İlk ay değeri`, Ata) yüklenmeli (5d'deki ad testi gibi)
+- **Kararlar/notlar:**
+  - **Delete notu silmez** (Excel); doldurma notu taşımaz (§8b-63); sıralama/kes-yapıştır/ekle-sil/kopyala-yapıştır taşır. Boş `Not` = yok
+  - Düzenleyici yalnız metni düzenler; yazar ilk eklemede Windows kullanıcı adı, sonra korunur. Birleşimde not sol üst hücreye bağlıdır (kapsanan hücrenin üstüne gelince kutu açılmaz — Excel birleşimin tamamında gösterir; küçük fark)
+  - Dizili açıklama (threaded): openpyxl düz kopyasını (`[Threaded comment]…`) not olarak verir; not olarak açılır, `tara` uyarısı ("yanıtlar kaybolur") veri kaybı sayılır
+  - Yapılmadı (tasarım §11): "Tüm Notları Göster", kutuyu taşıma/boyutlandırma, ok çizgisi (kutu hücrenin sağında, çizgisiz); Notları Gözden Geçir/Önceki-Sonraki Not yok
+  - **Elle test bekliyor:** gerçek Excel'de not kutusu görünümü/yazar öneki (Excel dosyayı açınca kutu boyutu varsayılan), fare üstü gecikme hissi, Shift+F2 kutusunun odak davranışı
+- Sıradaki: **5f** Filtre + ALTTOPLAM
 
 *(Yeni girişler en alta eklenir.)*
 

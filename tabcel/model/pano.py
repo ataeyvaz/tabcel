@@ -18,6 +18,7 @@ from typing import Dict, List, Optional, Tuple
 from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
 from .girdi import girdi_coz
 from .gosterim import goster
+from .notlar import Not
 from .sayfa import Anahtar, Hucre, Sayfa
 from .stil import Stil, stil_sozluk, stil_sozlukten
 
@@ -43,6 +44,8 @@ class PanoVerisi:
     stiller: Dict[Tuple[int, int], Stil] = field(default_factory=dict, compare=False)
     # birleşik hücreler: (satır farkı, sütun farkı, yükseklik, genişlik) — yalnız tamamı kopyalanan birleşimler
     birlesimler: List[Tuple[int, int, int, int]] = field(default_factory=list, compare=False)
+    # (satır farkı, sütun farkı) → Not (kendi biçimimizde taşınır; dışarıya metin/HTML'de gitmez)
+    notlar: Dict[Tuple[int, int], Not] = field(default_factory=dict, compare=False)
 
     def json_yaz(self) -> str:
         return json.dumps({
@@ -52,6 +55,7 @@ class PanoVerisi:
                   for (dr, dc), h in sorted(self.hucreler.items())],
             "st": [[dr, dc, stil_sozluk(st)] for (dr, dc), st in sorted(self.stiller.items())],
             "b": [list(b) for b in self.birlesimler],
+            "n": [[dr, dc, n.metin, n.yazar] for (dr, dc), n in sorted(self.notlar.items())],
         })
 
     @staticmethod
@@ -66,6 +70,8 @@ class PanoVerisi:
         for dr, dc, sozluk in d.get("st", []):
             v.stiller[(dr, dc)] = stil_sozlukten(sozluk)
         v.birlesimler = [tuple(b) for b in d.get("b", [])]
+        for dr, dc, metin, yazar in d.get("n", []):
+            v.notlar[(dr, dc)] = Not(metin, yazar)
         return v
 
 
@@ -103,7 +109,25 @@ def pano_verisi_al(sayfa: Sayfa, ar: Aralik) -> PanoVerisi:
                 and ar.ilk_sutun <= b.ilk_sutun and b.son_sutun <= ar.son_sutun):
             v.birlesimler.append((b.ilk_satir - ar.ilk_satir, b.ilk_sutun - ar.ilk_sutun,
                                   b.son_satir - b.ilk_satir + 1, b.son_sutun - b.ilk_sutun + 1))
+    for (r, c), n in sayfa.notlar.items():
+        if ar.ilk_satir <= r <= ar.son_satir and ar.ilk_sutun <= c <= ar.son_sutun:
+            v.notlar[(r - ar.ilk_satir, c - ar.ilk_sutun)] = n
     return v
+
+
+def yapistirma_notlari(veri: PanoVerisi, sayfa: Sayfa, satir: int, sutun: int,
+                       secim: Optional[Aralik] = None) -> Dict[Anahtar, Optional[Not]]:
+    """Yapıştırmanın not planı (Excel "Tümü"): kaynaktaki not hedefe yazılır; notsuz kaynak hücre
+    hedefteki notu siler. Yalnız kendi biçimimizde (kaynak konumu bilinen) anlamlıdır; yapılacak
+    değişiklik yoksa boş sözlük."""
+    if veri.kaynak_satir is None or not (veri.notlar or sayfa.notlar):
+        return {}
+    plan: Dict[Anahtar, Optional[Not]] = {}
+    for r, c, dr, dc in _yerlestir(veri, satir, sutun, secim):
+        n = veri.notlar.get((dr, dc))
+        if n is not None or (r, c) in sayfa.notlar:
+            plan[(r, c)] = n
+    return plan
 
 
 def hucre_metni(h: Optional[Hucre], sonuc=None) -> str:

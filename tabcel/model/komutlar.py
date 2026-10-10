@@ -186,6 +186,30 @@ class HucreTasi:
                         self.hedef_konum[0] - r1, self.hedef_konum[1] - c1)
         self._eski_bicim = [(s, s.bicim_yaz(hucreler=yeni)) for s, yeni in self._bicim_plani()]
         self._birlesimleri_tasi()
+        self._notlari_tasi()
+
+    def _notlari_tasi(self) -> None:
+        """Notlar hücreyle birlikte taşınır; hedef bölgedeki eski notlar ezilir (içerik gibi)."""
+        k, h = self.kaynak, self.hedef
+        self._eski_not = []
+        if not k.notlar and not h.notlar:
+            return
+        r1, c1, r2, c2 = self.kutu
+        dr, dc = self.hedef_konum[0] - r1, self.hedef_konum[1] - c1
+        tasinan = {(r, c): n for (r, c), n in k.notlar.items() if r1 <= r <= r2 and c1 <= c <= c2}
+        ezilen = [(r, c) for (r, c) in h.notlar if r1 + dr <= r <= r2 + dr and c1 + dc <= c <= c2 + dc]
+        if not tasinan and not ezilen:
+            return
+        yeni_k = {a: None for a in tasinan}
+        yeni_h = {a: None for a in ezilen}
+        hedefe = {(r + dr, c + dc): n for (r, c), n in tasinan.items()}
+        if h is k:
+            yeni_k.update(yeni_h)
+            yeni_k.update(hedefe)
+            self._eski_not = [(k, k.notlari_yaz(yeni_k))]
+        else:
+            yeni_h.update(hedefe)
+            self._eski_not = [(k, k.notlari_yaz(yeni_k)), (h, h.notlari_yaz(yeni_h))]
 
     def _birlesimleri_tasi(self) -> None:
         """Kutuya tamamen giren birleşimler hedefe taşınır; hedef bölgeyle kesişen eski birleşimler kalkar."""
@@ -208,6 +232,8 @@ class HucreTasi:
             h.birlesimleri_yaz(yeni, ezilen)
 
     def geri_al(self) -> None:
+        for s, eski in reversed(getattr(self, "_eski_not", [])):
+            s.notlari_yaz(eski)
         for s, eski in reversed(self._eski_birlesim):
             s.birlesim_yukle(eski)
         self._eski_birlesim = []
@@ -217,6 +243,27 @@ class HucreTasi:
             s.toplu_yaz(eski)
         if getattr(self, "_ad_once", None) is not None:
             self.kaynak.kitap.ad_durumu_yukle(self._ad_once)
+
+
+class NotlarDegis:
+    """Hücre notlarını değiştirir (ekle / düzenle / sil; tek geri al adımı). `yeni`:
+    {(satır, sütun): Not | None} (None = notu sil). Hücre içeriğine dokunmaz."""
+
+    def __init__(self, sayfa: Sayfa, yeni):
+        self.sayfa = sayfa
+        self.yeni = dict(yeni)
+        self.eski = {}
+
+    def bos_mu(self) -> bool:
+        n = self.sayfa.notlar
+        return all(n.get(a) == (v if v is not None and not v.bos_mu() else None)
+                   for a, v in self.yeni.items())
+
+    def yap(self) -> None:
+        self.eski = self.sayfa.notlari_yaz(self.yeni)
+
+    def geri_al(self) -> None:
+        self.sayfa.notlari_yaz(self.eski)
 
 
 class AdDegis:
@@ -568,7 +615,8 @@ def ana_sayfa(komut, geri_al: bool = False):
                 return s
         return None
     return getattr(komut, "sayfa", None) if isinstance(
-        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala)) else None
+        komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala,
+                NotlarDegis)) else None
 
 
 class GeriAlYigini:

@@ -14,6 +14,7 @@ from tabcel.formul.motor import Hesaplayici
 from tabcel.io import csv_io, xlsx_io
 from tabcel.model.adres import Aralik
 from tabcel.model.deger import BOL0
+from tabcel.model.notlar import Not
 from tabcel.model.sayfa_yapisi import SayfaYapisi
 from tabcel.ui.dosya_islemleri import DosyaIslemleri
 from tabcel.ui.window import Pencere
@@ -137,11 +138,13 @@ def test_grafikli_uyarilar_ve_veri_korunur(tmp_path):
     k, rapor = xlsx_io.ac(ornek("grafikli.xlsx"))
     assert rapor.veri_kaybi
     metin = " ".join(rapor.uyarilar)
-    for ne in ("grafik", "resim", "yorum", "koşullu biçim", "veri doğrulama", "filtre"):
+    for ne in ("grafik", "resim", "koşullu biçim", "veri doğrulama", "filtre"):
         assert ne in metin, ne
     assert "tanımlı ad" not in metin                       # 5d: tanımlı adlar artık korunur
+    assert "yorum" not in metin                            # 5e: notlar artık korunur (uyarı yok)
     assert k.ad_bul("SatisToplam") is not None             # Faz 5 / 5d
     s = k.sayfalar[0]
+    assert s.notlar == {(2, 2): Not("İlk ay değeri", "Ata")}   # Faz 5 / 5e
     assert s.deger(2, 1) == "Ocak" and s.deger(5, 2) == 40.0 and s.deger(2, 4) == "Evet"
     # kaydedilince korunamayan öğeler çıkar (uyarılmıştı), veri kalır
     yol = str(tmp_path / "g.xlsx")

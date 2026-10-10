@@ -484,6 +484,26 @@ class Sayfa:
         if degisti:
             self._bildir("ek", alan="hepsi", anahtarlar=set(eski_notlar) | set(notlar))
 
+    def notlari_yaz(self, yeni: Dict[Anahtar, Any]) -> Dict[Anahtar, Any]:
+        """Notları toplu değiştirir (`None` ya da boş `Not` = sil); değişen varsa TEK `ek` olayı
+        (`alan="not"`, `anahtarlar`). Döner: değişen hücrelerin ESKİ notları (None = yoktu) — geri al
+        için `notlari_yaz(eskiler)`."""
+        eski: Dict[Anahtar, Any] = {}
+        for anahtar, n in yeni.items():
+            if n is not None and n.bos_mu():
+                n = None
+            simdiki = self.notlar.get(anahtar)
+            if simdiki == n:
+                continue
+            eski[anahtar] = simdiki
+            if n is None:
+                del self.notlar[anahtar]
+            else:
+                self.notlar[anahtar] = n
+        if eski:
+            self._bildir("ek", alan="not", anahtarlar=set(eski))
+        return eski
+
     def _ekleri_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
         """Ekle-sil sonrası ek veriler: notlar anahtar kaydırır (silinen bant `silinen_notlar`a düşer),
         doğrulama/koşullu biçim aralıkları `aralik_kaydir` ile (aralıksız kalan kural düşer), filtre
