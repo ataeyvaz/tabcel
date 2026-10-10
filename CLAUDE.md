@@ -26,16 +26,19 @@ Tabcel.bat           .venv ile konsolsuz başlatma
 requirements.txt     bağımlılıklar
 tabcel/__init__.py   APP_NAME, __version__, künye, resource_dir()
 tabcel/model/        sayfa (Hucre/Sayfa/CalismaKitabi), adres, girdi, deger (Hata), gosterim, olay,
-                     komutlar (geri al), pano, olcu — Qt yok
+                     komutlar (geri al), pano, olcu, stil, sayi_bicimi, doldur, sayfa_yapisi, sayfalama;
+                     Faz 5: harmanla, bul, sirala, filtre, dogrulama, kosullu — Qt yok
 tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustur, degerlendir,
                      fonksiyonlar/ (kayıt + gruplar), adlar (tr⇄en), ceviri, motor (bağımlılık +
-                     yeniden hesap), kaydir (başvuru kaydırma) — Qt yok
-tabcel/io/           xlsx_io, csv_io, pdf/yazdırma (Faz 4)
-tabcel/ui/           window, grid, theme (ikonlar/widgets sonra)
+                     yeniden hesap), kaydir (başvuru kaydırma); Faz 5: kosul (koşullu biçim +
+                     doğrulama değerlendirmesi) — Qt yok
+tabcel/io/           xlsx_io, csv_io, kurtarma, son_dosyalar
+tabcel/ui/           window, grid, theme, icons, widgets, pencereler (bicim, csv, sayfa yapısı, yazdır…)
 testler/             pytest
 araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, cizim_dogrula, test_raporu)
 kurulum/             Inno Setup betiği (Faz 7)
-plan.md / surec.md / test.md / faz2_tasarim.md   plan, süreç günlüğü, test sonuçları, formül motoru tasarımı
+plan.md / surec.md / test.md                     plan, süreç günlüğü, test sonuçları
+faz2_tasarim.md / faz3_tasarim.md / faz5_tasarim.md   formül motoru / biçimlendirme / veri araçları tasarımı
 ```
 
 ## Teknoloji ve kısıtlar
@@ -58,5 +61,5 @@ plan.md / surec.md / test.md / faz2_tasarim.md   plan, süreç günlüğü, test
 - Ayrıntı: `plan.md` → "Model kullanımı"
 
 ## Bilinen sınırlar
-- Faz 1 bitti; Faz 2 çekirdeği bitti (formül motoru, çeviri, bağımlılık, başvuru kaydırma). Sürüyor: fonksiyon kütüphanesi, Türkçe adlar, işaretleme modu (K7). Biçimlendirme, dosya G/Ç henüz yok. Ayrıntı: `surec.md`
+- Faz 1–4 bitti (model, formül motoru, biçimlendirme, .xlsx/.csv/PDF/kurtarma). Faz 5 (veri araçları) tasarlandı, uygulama sürüyor. Ayrıntı: `surec.md`
 - Taşma (spill) yok (Faz 8): çok hücreli formül sonucu tek değere indirgenir

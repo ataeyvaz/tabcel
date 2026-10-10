@@ -10,7 +10,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
-| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama | — | ⏳ |
+| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 sıradaki **5a** (Sonnet 5.5; §2 madde 10) |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
@@ -42,6 +42,7 @@ Testler: 2028 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
+10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ortak altyapı (olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -129,6 +130,7 @@ Testler: 2028 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
 - 2026-10-10 (kullanıcı kararı, karar Claude'a bırakıldı):
   - **Faz 3 performans ❌'leri (sıçrama, Shift+Ok, stilli 3 satır, ilk çizim) kabul edildi;** satır/karo piksel önbelleği **Faz 5 sonuna ertelendi** (filtre/sıralama/koşullu biçim çizimi değiştireceği için önbelleği iki kez yazmamak; kullanıcı gözle fark etmiyor: tek seferlik 27–37 ms). Faz 5 sonu ölçümünde hâlâ ❌ ise yapılır
   - **Elle testler** (`test.md` §11.4, §13.4) kullanıcıda; Claude çalışırken paralel yapabilir. Kural: örnek dosyaları (`testler/ornekler/`) **kopyalayıp** başka klasörde dener, proje klasöründeki dosyaları değiştirmez; Claude'un test paketi (RAM 7,9 GB) çalışırken Tabcel'i aynı anda açmaması önerilir. Bulgular `test.md` tablolarındaki ⏳ → ✅/❌ olarak işlenir
+- 2026-10-10 (Faz 5 tasarımı, Opus; ayrıntı ve gerekçe `faz5_tasarim.md` §11): filtre gizliliği tek bit (`gizli_satir`); sıralama formülü kopyala gibi kaydırır, yalnız görünen satırlar; tanımlı ad göreli başvurusu A1'e göre; koşul/doğrulama değerlendirmesi `formul/kosul.py`'de; koşullu biçim/doğrulama pano-boyacıyla taşınmaz; Tablo nesnesi Faz 8
 - 2026-10-09: Faz 1 performans ❌'leri **kabul** (kullanıcı); Faz 3'e. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla)
 
 ## 5. Açık sorular / bekleyenler
@@ -266,6 +268,24 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 52 | CSV'ye Genel biçimli sayı kaç basamakla yazılır (`123456789012345`, `0,1+0,2`)? | 15 anlamlı basamak, bilimsel gösterim `E+` | ⏳ |
 | 53 | Excel 365 dizi formülü dosyada `t="array"` olmadan `=SUM(A1:A3*B1:B3)` açılınca örtük kesişim (`@`) ekler mi? | Dizi anlamı yok sayılır (normal formül) | ⏳ |
 | 54 | 1904 tarih sistemli dosyada biçimsiz sayılar | Yalnız tarih biçimli hücreler çevrilir, uyarı verilir | ⏳ |
+| 55 | `="ç"<"d"`, `="ı"<"i"`, `="Ö"<"P"` Türkçe Excel'de DOĞRU mu? (formül metin karşılaştırması yerel harmanlamayla mı) | Evet — 5c'de `karsilastir` Türkçe harmanlamaya geçer (şu an kod noktası sırası) | ⏳ |
+| 56 | Sıralamada kısa çizgi/kesme işareti yok sayılır mı (`co-op` ile `coop` yan yana)? Noktalama/simge rakamlardan önce mi? | Evet / Evet (Windows "word sort") | ⏳ |
+| 57 | Büyük/küçük harf duyarlı sıralamada artan sırada `a` mı `A` mı önce? | Küçük harf önce | ⏳ |
+| 58 | Bul/Değiştir: bulunamayınca Türkçe ileti tam olarak ne? | "Aradığınız bulunamadı." | ⏳ |
+| 59 | Elle gizlenmiş (filtre dışı) satırlar sıralamada yer değiştirir mi? | Hayır — yalnız görünen satırlar sıralanır | ⏳ |
+| 60 | Başlık satırı tahmini hangi durumda "üst bilgi içeriyor" der? | İlk satır metin + altı metin olmayan sütun ya da ilk satır stili farklı | ⏳ |
+| 61 | Sıralamada formül `=B2*C2` 5. satıra gidince `=B5*C5` mi olur; dışarıdan bu hücrelere başvurular değişmez mi? | Evet / Değişmez | ⏳ |
+| 62 | Geçersiz ad girince Excel'in Türkçe iletisi? | "Girdiğiniz ad geçerli değil." | ⏳ |
+| 63 | Doldurma tutamacı notu da kopyalar mı? | Hayır | ⏳ |
+| 64 | Filtre "İlk 10" diğer sütun filtrelerinden bağımsız mı (tüm veri satırları üzerinden)? | Evet | ⏳ |
+| 65 | Filtre uygulamak/temizlemek Ctrl+Z ile geri alınır mı? | Evet | ⏳ |
+| 66 | Filtre etkinken durum çubuğu özeti (Toplam/Ortalama) gizli satırları sayar mı? | Saymaz | ⏳ |
+| 67 | Liste doğrulaması karşılaştırması büyük/küçük harf duyarlı mı; sayı `5` listede `5,0` görünen hücreyle eşleşir mi? | Duyarsız / değerle eşleşir | ⏳ |
+| 68 | Farklı doğrulama kuralları içeren seçimde Veri Doğrulama açılınca çıkan soru metni | "Seçim, veri doğrulama ayarları olmayan hücreler içeriyor…" | ⏳ |
+| 69 | Türkçe Excel'de liste kaynağı ayırıcısı `;` mü (`Evet;Hayır`)? | Evet; dosyada `"Evet,Hayır"` | ⏳ |
+| 70 | Doğrulama hata iletilerinin Türkçe metinleri (Durdur/Uyarı/Bilgi) | `faz5_tasarim.md` §7.3'teki metinler | ⏳ |
+| 71 | Koşullu biçim "Yinelenen Değerler" büyük/küçük harf duyarlı mı? | Duyarsız | ⏳ |
+| 72 | Koşullu biçim hazır biçim adlarının Türkçe yazımı ("Koyu Kırmızı Metinli Açık Kırmızı Dolgu"…) | `faz5_tasarim.md` §8.4 | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
 *(Hukuki tavsiye değildir; bilinen LGPL gereklerine göre iç not. Faz 7'de yeniden gözden geçirilecek.)*
@@ -596,6 +616,13 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Kararlar: CSV'deki `=` alanları **Excel gibi formül** olarak çözülür (bilerek; "metin olarak al" kutusu kapatır); dosyanın kendi teması (`theme1.xml`) renkleri çözer, yoksa varsayılan Office; çakışan birleşim atlanır; elle yükseklik yalnız `customHeight`li satırdır
 - **Açık (Faz 4 sonrası):** tek örnek/IPC (aynı dosya iki süreçte; yalnız kayıtta mtime denetimi var); seri 60 (29.02.1900) okuma; dizi formülü yazma (Faz 8); zengin metin biçimi uyarısı; bilinmeyen kağıt/`fitToHeight`/çoklu yazdırma alanı; kurtarma kopyası ana iş parçacığında; zip bombası taraması; §8b-51…54 Excel web doğrulamaları; gerçek Excel/yazıcı elle testleri (`test.md` §13.4)
 - **Faz 4 bitti**, kullanıcı onayı bekliyor → sıradaki **Faz 5** (sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlandırılmış aralık, notlar; plan.md). Faz 5 modele girince `xlsx_io` bu öğeleri eşlemeli (şu an uyarılıp atılıyor)
+
+## [2026-10-10] — Faz 5 tasarımı (Opus 5.5)
+- `faz5_tasarim.md` yazıldı: ortak altyapı (olaylar `ek`/`ad`, `aralik_kaydir`/`aralik_cikar`/`bitisik_bolge`, ek depoların ekle-sil kaydırması + anlık durumla geri al, Türkçe harmanlama `model/harmanla.py`, formül ağacı kaydırma `agac_kaydir`), Bul/Değiştir/Git, Sırala, adlandırılmış aralıklar (motor + ad kutusu + Ad Yöneticisi), notlar, filtre + ALTTOPLAM, veri doğrulama, koşullu biçim (çizim entegrasyonu ve performans ölçütleri), .xlsx eşleme tuzakları, 5a–5i alt iş sırası
+- Ana kararlar (gerekçeler belgede §11): filtre gizliliği tek bit (`gizli_satir`, Excel dosya modeli gibi); sıralama formülleri kopyala gibi kaydırır, yalnız görünen satırlar sıralanır, birleşimli aralık reddedilir; tanımlı adların göreli başvuruları A1'e göre saklanır; değerlendirme yalnız `formul/kosul.py`'de (model Qt'siz ve formülsüz kalır); koşullu biçim/doğrulama pano ve boyacıyla taşınmaz (sonraki faz); "Tablo olarak biçimlendir" Faz 8
+- Bulunan mevcut fark: formülde metin karşılaştırması kod noktası sırasıyla (`"ç" > "z"`); 5c'de Türkçe harmanlamaya geçecek → §8b-55; mevcut test değişirse kullanıcıya bildirilecek
+- §8b'ye 55–72 eklendi. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla: `faz5_tasarim.md`, Faz 5 modülleri, mevcut io/ui dosyaları)
+- Sıradaki: **5a** (Sonnet 5.5)
 
 *(Yeni girişler en alta eklenir.)*
 
