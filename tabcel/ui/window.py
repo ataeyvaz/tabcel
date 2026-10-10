@@ -153,6 +153,14 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.kilavuz_eylemi.toggled.connect(lambda v: self.izgara().kilavuz_goster(v))
         gm.aboutToShow.connect(self._gorunum_menusu_hazirla)
         self.gorunum_dugmesi.setMenu(gm)
+        self.duzen_dugmesi, self.duzen_eylemleri = self._menu_iskeleti("Düzen", (
+            ("bul", "Bul…"), ("degistir", "Değiştir…"), ("git", "Git…")))
+        self.veri_dugmesi, self.veri_eylemleri = self._menu_iskeleti("Veri", (
+            ("artan", "Artan Sırala"), ("azalan", "Azalan Sırala"), ("ozel_sirala", "Özel Sıralama…"),
+            None, ("filtre", "Filtre"), ("filtre_temizle", "Filtreyi Temizle"),
+            ("filtre_yeniden", "Yeniden Uygula"),
+            None, ("dogrulama", "Veri Doğrulama…"),
+            None, ("ad_tanimla", "Ad Tanımla…"), ("ad_yoneticisi", "Ad Yöneticisi")))
         self.geri_dugmesi = QToolButton()
         self.geri_dugmesi.setText("Geri Al")
         self.geri_dugmesi.setToolTip("Geri Al (Ctrl+Z)")
@@ -165,6 +173,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.belge_etiketi.setObjectName("docTitle")
         h.addWidget(self.dosya_dugmesi)
         h.addWidget(self.gorunum_dugmesi)
+        h.addWidget(self.duzen_dugmesi)
+        h.addWidget(self.veri_dugmesi)
         h.addWidget(self.geri_dugmesi)
         h.addWidget(self.yinele_dugmesi)
         h.addStretch(1)
@@ -255,6 +265,27 @@ class Pencere(DosyaIslemleri, QMainWindow):
 
         QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
         QShortcut(QKeySequence("Ctrl+PgUp"), self, activated=lambda: self._sekme_git(-1))
+
+    def _menu_iskeleti(self, baslik: str, ogeler):
+        """Başlık şeridine menü düğmesi ekler; `ogeler`: (anahtar, metin) ya da None (ayırıcı). Eylemler
+        başlangıçta kapalıdır: Faz 5'in ilgili alt işi (5b…5g) kendi eylemini bağlayıp açar.
+        Döner: (düğme, {anahtar: eylem})."""
+        dugme = QToolButton()
+        dugme.setObjectName("fileButton")
+        dugme.setText(baslik)
+        dugme.setPopupMode(QToolButton.InstantPopup)
+        menu = QMenu(dugme)
+        eylemler = {}
+        for oge in ogeler:
+            if oge is None:
+                menu.addSeparator()
+                continue
+            anahtar, metin = oge
+            eylem = menu.addAction(metin)
+            eylem.setEnabled(False)
+            eylemler[anahtar] = eylem
+        dugme.setMenu(menu)
+        return dugme, eylemler
 
     def _gorunum_menusu_hazirla(self) -> None:
         """Menü açılırken: kılavuz onayı sayfaya uyar; dondurma açıkken 'Dondurmayı Kaldır' ad değişimi yok."""

@@ -1,4 +1,4 @@
-# Tabcel — süreç ve durum (2026-10-09)
+# Tabcel — süreç ve durum (2026-10-10)
 
 Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosya: nerede kaldık, nasıl çalışıyoruz, sırada ne var. Ayrıntılı tarihli günlük en altta (Sözcük'teki gibi).
 
@@ -10,12 +10,12 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 2 | Formül motoru | **Çekirdek bitti (Opus):** tasarım notu + K7 (`faz2_tasarim.md`), sözcükleyici, ayrıştırıcı, değerlendirici (365 dizi semantiği), tür dönüşümleri, TR⇄kanonik çeviri, bağımlılık grafiği + yeniden hesaplama + döngü, başvuru kaydırma (kopyala/ekle-sil/taşı), arayüze temel bağlantı | ✅ **Faz 2 bitti (6a–6g; Opus gözden geçirmesi düzeltildi)** — sıradaki: Faz 3 (§2 madde 6) |
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
-| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 sıradaki **5a** (Sonnet 5.5; §2 madde 10) |
+| 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | 🔄 5a ✅; sıradaki **5b** (Sonnet 5.5; §2 madde 10) |
 | 6 | Grafikler | — | ⏳ |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 2028 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 2093 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -42,7 +42,7 @@ Testler: 2028 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
    - 6g. ✅ (2026-10-09) Faz 2 sonu: `test.md` Faz 2 bölümü, gerçek iş senaryosu testi (bütçe çizelgesi), Opus gözden geçirmesi
 8. **Faz 3 (Sonnet 5.5, sıra `faz3_tasarim.md` §8; her biri ölçütlü, kural 11/12):** 3a stil modeli + `Sayfa` depoları + `bicim` olayı + `BicimDegis` · 3b pano/HucreTasi biçim, Temizle · 3c **ızgara çizimi yeniden** (performans ❌'leri burada) · 3d ✅ biçim araç çubuğu · 3e Hücreleri Biçimlendir (Ctrl+1) · 3f ✅ birleştirme · 3g ✅ akıllı giriş + METNEÇEVİR · 3h ✅ doldurma/Ctrl+D,R · 3i ✅ dondurma/kılavuz · 3j ✅ metni kaydır + otomatik satır yüksekliği · 3k ✅ biçim boyacısı · 3l ✅ Faz 3 sonu (test.md, senaryo, ölçüm, Opus gözden geçirmesi)
 9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
-10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ortak altyapı (olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
+10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d Adlandırılmış aralıklar · 5e Notlar · 5f Filtre + ALTTOPLAM · 5g Veri doğrulama · 5h Koşullu biçim · 5i Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -623,6 +623,17 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - Bulunan mevcut fark: formülde metin karşılaştırması kod noktası sırasıyla (`"ç" > "z"`); 5c'de Türkçe harmanlamaya geçecek → §8b-55; mevcut test değişirse kullanıcıya bildirilecek
 - §8b'ye 55–72 eklendi. `CLAUDE.md` dosya yapısı ve bilinen sınırlar güncellendi (kullanıcı onayıyla: `faz5_tasarim.md`, Faz 5 modülleri, mevcut io/ui dosyaları)
 - Sıradaki: **5a** (Sonnet 5.5)
+
+## [2026-10-10] — Faz 5 / 5a ortak altyapı (Sonnet 5.5)
+- **Yapıldı:** `adres.aralik_kaydir/aralik_cikar/bitisik_bolge`; birleşimler `aralik_kaydir`'a geçti (mevcut birleşim testleri değişmeden geçti); `model/harmanla.py` (`metin_anahtari`, `deger_anahtari`, `tr_kucuk` — model `formul/`'a bağlanmasın diye kopya); `model/ad.py` (`TanimliAd`, `ad_anahtari`); `Sayfa.notlar/dogrulamalar/kosullu/filtre/silinen_notlar` + `_ekleri_kaydir` (`_kaydir` içinde) + `ek_durumu/ek_durumu_yukle`; `CalismaKitabi.adlar/ad_bul/ad_yaz/ad_durumu/ad_durumu_yukle`; olaylar `ek` (`alan`, `anahtarlar`) ve `ad` (`sayfa=None`, `eski`, `yeni`) — `olay.py` belgesi güncel; `formul/kaydir.basvuru_kaydir` (kopyala ile ortak) + `kaydir.ek_duzeltmeleri` (doğrulama/koşullu biçim `formul`/`formul1`/`formul2` alanları + tüm adların formülü); `_SatirSutun` ek verileri/adları anlık görüntüyle geri alır; `agac.agac_kaydir` (LRU 4096); motor `ad` olayında tümünü yeniden hesaplar, `ek`'i yok sayar; başlık şeridine **Düzen** ve **Veri** menü iskeleti (`Pencere.duzen_eylemleri/veri_eylemleri`, eylemler kapalı; 5b…5g bağlayıp açar, kısayollar o zaman)
+- **Testler:** `testler/test_faz5_altyapi.py` (65). Toplam 2093 geçiyor; regresyon yok. `agac_kaydir` ⇔ `kopyala` eşitliği 200 rastgele formülde (metin yolu `#REF! B2:C3` kesişimini ayrıştıramadığı ~birkaç formülde atlanır — mevcut sözcükleyici sınırı, ağaç yolu etkilenmez); 1000 kaydırma < 50 ms (hedef 10 ms; ölçüm gevşek)
+- **Kararlar/notlar:**
+  - Tür modülleri (`Not`, `Dogrulama`, `KosulluKural`, `Filtre`) 5e–5h'de gelir; depolar şimdilik `Any`. `_ekleri_kaydir` `dataclasses.replace` kullanır → o türler **dataclass** olmalı ve doğrulama/kural `araliklar`, filtre `aralik` + `kosullar` alanını taşımalı
+  - `ek_duzeltmeleri` formülleri **yerinde** düzeltir (sayfa listesini/`ad_yaz`'ı), geri alma çağıranın anlık görüntüsüyledir (`_SatirSutun`); koşullu biçim iç içe alanları (renk ölçeği noktaları vb.) 5h'de genişletilecek
+  - Kitap kapsamlı adın niteliksiz başvurusu satır/sütun ekle-silde düzeltilmez (saklanan adlar kimlikli yazılır; niteliksiz başvuru hangi sayfa olduğu belirsiz)
+  - Tanımlı adın kapsamı kitapta olmayan sayfaysa `ad_bul` bulmaz ama ad silinmez (sayfa geri gelince döner)
+  - Hâlâ yapılacak (ilgili alt iş): kes-yapıştır/sıralamada ek veri taşıma (5c/5e), `kaydir.tasi`'nın adlara uygulanması (5d), ızgara `ek` olayına tepkisi (5e/5f), `adi_degistir` (5d)
+- Sıradaki: **5b** Bul / Değiştir / Git
 
 *(Yeni girişler en alta eklenir.)*
 

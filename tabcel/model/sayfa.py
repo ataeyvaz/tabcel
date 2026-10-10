@@ -3,10 +3,11 @@
 Formül başvurularının satır/sütun ekle-sil sonrası düzeltilmesi Faz 2'dedir;
 burada yalnızca hücreler ve boyutlar kaydırılır.
 """
-from dataclasses import dataclass
-from typing import Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
+from dataclasses import dataclass, replace
+from typing import Any, Callable, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik
+from .ad import TanimliAd, ad_anahtari
+from .adres import MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_kaydir
 from .deger import Deger
 from .olay import Olay
 from .sayfa_yapisi import SayfaYapisi
@@ -72,6 +73,13 @@ class Sayfa:
         self.sayfa_yapisi = SayfaYapisi()           # yazdırma ayarları (Faz 4 / 4d)
         self.birlesimler: List[Aralik] = []        # birleştirilmiş hücre aralıkları (çakışmaz, ≥ 2 hücre)
         self._birlesim_idx: Dict[Anahtar, Aralik] = {}   # birleşimin kapsadığı her hücre → aralığı
+        # Faz 5 ek verileri (faz5_tasarim.md §1.3): değişmez nesneler; tür modülleri 5e–5h'de gelir.
+        # Dogrulama/KosulluKural `araliklar` (Aralik demeti), Filtre `aralik` + `kosullar` {sütun: koşul} taşır
+        self.notlar: Dict[Anahtar, Any] = {}
+        self.dogrulamalar: List[Any] = []
+        self.kosullu: List[Any] = []                # liste sırası = öncelik (0 en yüksek)
+        self.filtre: Optional[Any] = None           # sayfa başına en çok bir otomatik filtre
+        self.silinen_notlar: Dict[Anahtar, Any] = {}   # son satır/sütun silmede düşen notlar (bilgi)
 
     # --- okuma / yazma ---
     def hucre(self, satir: int, sutun: int) -> Optional[Hucre]:
@@ -446,30 +454,71 @@ class Sayfa:
             return
         yeni = []
         for b in self.birlesimler:
-            a, z = (b.ilk_sutun, b.son_sutun) if eksen else (b.ilk_satir, b.son_satir)
-            if fark > 0:
-                if nerede <= a:
-                    a, z = a + fark, z + fark
-                elif nerede <= z:
-                    z += fark
-            else:
-                n = -fark
-                bas, son = nerede, nerede + n - 1
-                once = max(0, min(a - 1, son) - bas + 1) if bas < a else 0
-                icinde = max(0, min(z, son) - max(a, bas) + 1)
-                kalan = z - a + 1 - icinde
-                if kalan <= 0:
-                    continue
-                a = a - once
-                z = a + kalan - 1
-            if a > sinir:
-                continue
-            z = min(z, sinir)
-            ar = Aralik(b.ilk_satir, a, b.son_satir, z) if eksen else Aralik(a, b.ilk_sutun, z, b.son_sutun)
-            if ar.ilk_satir == ar.son_satir and ar.ilk_sutun == ar.son_sutun:
+            ar = aralik_kaydir(b, eksen, nerede, fark, sinir)
+            if ar is None or (ar.ilk_satir == ar.son_satir and ar.ilk_sutun == ar.son_sutun):
                 continue
             yeni.append(ar)
         self._birlesim_kur(yeni)
+
+    # --- Faz 5 ek verileri: notlar, doğrulama, koşullu biçim, filtre ---
+    def ek_durumu(self):
+        """Ek verilerin anlık görüntüsü (geri al için): `(notlar, dogrulamalar, kosullu, filtre)`.
+        Öğeler değişmez nesnelerdir; sığ kopya yeter."""
+        return (dict(self.notlar), list(self.dogrulamalar), list(self.kosullu), self.filtre)
+
+    def ek_durumu_yukle(self, durum) -> None:
+        """`ek_durumu` görüntüsünü aynen yükler; değişen varsa TEK `ek` olayı (`alan="hepsi"`)."""
+        notlar, dogrulamalar, kosullu, filtre = durum
+        degisti = (self.notlar != notlar or self.dogrulamalar != dogrulamalar
+                   or self.kosullu != kosullu or self.filtre != filtre)
+        eski_notlar = self.notlar
+        self.notlar = dict(notlar)
+        self.dogrulamalar = list(dogrulamalar)
+        self.kosullu = list(kosullu)
+        self.filtre = filtre
+        if degisti:
+            self._bildir("ek", alan="hepsi", anahtarlar=set(eski_notlar) | set(notlar))
+
+    def _ekleri_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
+        """Ekle-sil sonrası ek veriler: notlar anahtar kaydırır (silinen bant `silinen_notlar`a düşer),
+        doğrulama/koşullu biçim aralıkları `aralik_kaydir` ile (aralıksız kalan kural düşer), filtre
+        aralığı kayar (başlık satırı silinirse filtre kalkar — Excel). Formül içerikleri (doğrulama,
+        koşullu biçim, adlar) burada değil `formul.kaydir.ek_duzeltmeleri`nde düzelir."""
+        self.silinen_notlar = {}
+        if self.notlar:
+            yeni = {}
+            for anahtar, n in self.notlar.items():
+                k = self._kaydir_indeks(anahtar[eksen], nerede, fark, sinir)
+                if k is None:
+                    self.silinen_notlar[anahtar] = n
+                else:
+                    yeni[(k, anahtar[1]) if eksen == 0 else (anahtar[0], k)] = n
+            self.notlar = yeni
+        for depo in ("dogrulamalar", "kosullu"):
+            liste = getattr(self, depo)
+            if not liste:
+                continue
+            yeni_liste = []
+            for kural in liste:
+                araliklar = tuple(a for a in (aralik_kaydir(x, eksen, nerede, fark, sinir)
+                                              for x in kural.araliklar) if a is not None)
+                if araliklar:
+                    yeni_liste.append(kural if araliklar == tuple(kural.araliklar)
+                                      else replace(kural, araliklar=araliklar))
+            setattr(self, depo, yeni_liste)
+        f = self.filtre
+        if f is not None:
+            ar = aralik_kaydir(f.aralik, eksen, nerede, fark, sinir)
+            bas = f.aralik.ilk_satir
+            baslik_silindi = eksen == 0 and fark < 0 and nerede <= bas < nerede - fark
+            if ar is None or baslik_silindi:
+                self.filtre = None
+            else:
+                kosullar = getattr(f, "kosullar", {})
+                if eksen == 1:
+                    kosullar = {k2: v for k, v in kosullar.items()
+                                if (k2 := self._kaydir_indeks(k, nerede, fark, sinir)) is not None}
+                self.filtre = replace(f, aralik=ar, kosullar=kosullar)
 
     def boyut_degisti(self) -> None:
         """Boyut sözlükleri doğrudan değiştirildiyse (örn. `OlcuDegis`) olay yayar."""
@@ -521,6 +570,7 @@ class Sayfa:
         self._sonuc = yeni_sonuc
         self._stilleri_kaydir(eksen, nerede, fark, sinir)
         self._birlesimleri_kaydir(eksen, nerede, fark, sinir)
+        self._ekleri_kaydir(eksen, nerede, fark, sinir)
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():
@@ -606,6 +656,7 @@ class CalismaKitabi:
         self.stil_havuzu = StilHavuzu()
         self._dinleyiciler: List[Callable[[Olay], None]] = []
         self._sonraki_kimlik = 1
+        self.adlar: Dict[Tuple[Optional[int], str], TanimliAd] = {}   # tanımlı adlar (faz5_tasarim.md §4)
         self._baglan(Sayfa("Sayfa1"))
 
     # --- olaylar ---
@@ -621,6 +672,47 @@ class CalismaKitabi:
     def _olay_yay(self, olay: Olay) -> None:
         for d in list(self._dinleyiciler):
             d(olay)
+
+    # --- tanımlı adlar (doğrulama/komutlar/arayüz 5d'de; burada depo, arama ve olay) ---
+    def ad_bul(self, ad: str, sayfa_kimligi: Optional[int] = None) -> Optional[TanimliAd]:
+        """Önce `sayfa_kimligi` kapsamındaki, sonra kitap kapsamındaki ad. Kapsamı kitapta olmayan
+        (silinmiş) sayfa olan ad hiçbir sayfa kimliğiyle bulunamaz ama silinmez: sayfa geri gelince döner."""
+        if sayfa_kimligi is not None:
+            t = self.adlar.get(ad_anahtari(sayfa_kimligi, ad))
+            if t is not None:
+                return t
+        return self.adlar.get(ad_anahtari(None, ad))
+
+    def ad_yaz(self, tanim: Optional[TanimliAd],
+               eski_anahtar: Optional[Tuple[Optional[int], str]] = None) -> None:
+        """Adı ekler ya da değiştirir (`tanim`); `tanim` None ise `eski_anahtar`daki adı siler.
+        Yeniden adlandırma/kapsam değişiminde `eski_anahtar` verilir. Değişen ad için bir `ad` olayı."""
+        if tanim is None:
+            if eski_anahtar is None:
+                return
+            eski = self.adlar.pop(eski_anahtar, None)
+            if eski is not None:
+                self._olay_yay(Olay("ad", None, {"eski": eski, "yeni": None}))
+            return
+        anahtar = tanim.anahtar()
+        eski = self.adlar.get(eski_anahtar if eski_anahtar is not None else anahtar)
+        if eski_anahtar is not None and eski_anahtar != anahtar:
+            self.adlar.pop(eski_anahtar, None)
+        self.adlar[anahtar] = tanim
+        if eski != tanim:
+            self._olay_yay(Olay("ad", None, {"eski": eski, "yeni": tanim}))
+
+    def ad_durumu(self) -> Dict[Tuple[Optional[int], str], TanimliAd]:
+        """Adların anlık görüntüsü (geri al için; `TanimliAd` değişmez → sığ kopya)."""
+        return dict(self.adlar)
+
+    def ad_durumu_yukle(self, durum) -> None:
+        """Görüntüyü aynen yükler; değişen her ad için (eski, yeni) bir `ad` olayı yayılır."""
+        eski_depo, self.adlar = self.adlar, dict(durum)
+        for anahtar in list(eski_depo) + [k for k in durum if k not in eski_depo]:
+            eski, yeni = eski_depo.get(anahtar), self.adlar.get(anahtar)
+            if eski != yeni:
+                self._olay_yay(Olay("ad", None, {"eski": eski, "yeni": yeni}))
 
     # --- sayfalar ---
     def _baglan(self, sayfa: Sayfa, indeks: Optional[int] = None) -> None:

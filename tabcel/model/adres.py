@@ -3,7 +3,7 @@
 Qt içe aktarmaz (CLAUDE.md kural 2).
 """
 import re
-from typing import NamedTuple, Optional
+from typing import List, NamedTuple, Optional
 
 MAX_ROW = 1_048_576   # Excel sınırı
 MAX_COL = 16_384      # XFD
@@ -117,3 +117,74 @@ def aralik_yaz(ar: Aralik) -> str:
 def aralik_icinde(ar: Aralik, satir: int, sutun: int) -> bool:
     return (ar.ilk_satir <= satir <= ar.son_satir
             and ar.ilk_sutun <= sutun <= ar.son_sutun)
+
+
+def aralik_kaydir(ar: Aralik, eksen: int, nerede: int, fark: int, sinir: int) -> Optional[Aralik]:
+    """Satır (`eksen`=0) / sütun (1) ekle-sil sonrası aralığın yeni hali. İçine ekleme büyütür,
+    silme küçültür, tamamen silinen (ya da sayfa dışına itilen) aralık için None döner.
+    `nerede`den itibaren `fark` > 0 ekleme, < 0 silme; `sinir` eksenin son indeksi."""
+    a, z = (ar.ilk_sutun, ar.son_sutun) if eksen else (ar.ilk_satir, ar.son_satir)
+    if fark > 0:
+        if nerede <= a:
+            a, z = a + fark, z + fark
+        elif nerede <= z:
+            z += fark
+    else:
+        bas, son = nerede, nerede - fark - 1
+        once = max(0, min(a - 1, son) - bas + 1) if bas < a else 0
+        icinde = max(0, min(z, son) - max(a, bas) + 1)
+        kalan = z - a + 1 - icinde
+        if kalan <= 0:
+            return None
+        a = a - once
+        z = a + kalan - 1
+    if a > sinir:
+        return None
+    z = min(z, sinir)
+    if eksen:
+        return Aralik(ar.ilk_satir, a, ar.son_satir, z)
+    return Aralik(a, ar.ilk_sutun, z, ar.son_sutun)
+
+
+def aralik_cikar(a: Aralik, b: Aralik) -> List[Aralik]:
+    """`a − b`: a'nın b'nin dışında kalan kısmı, en çok 4 çakışmayan dikdörtgen (üst, alt, sol, sağ).
+    Kesişim yoksa [a]; b a'yı tamamen örtüyorsa []."""
+    r1, c1 = max(a.ilk_satir, b.ilk_satir), max(a.ilk_sutun, b.ilk_sutun)
+    r2, c2 = min(a.son_satir, b.son_satir), min(a.son_sutun, b.son_sutun)
+    if r1 > r2 or c1 > c2:
+        return [a]
+    sonuc = []
+    if a.ilk_satir < r1:
+        sonuc.append(Aralik(a.ilk_satir, a.ilk_sutun, r1 - 1, a.son_sutun))
+    if r2 < a.son_satir:
+        sonuc.append(Aralik(r2 + 1, a.ilk_sutun, a.son_satir, a.son_sutun))
+    if a.ilk_sutun < c1:
+        sonuc.append(Aralik(r1, a.ilk_sutun, r2, c1 - 1))
+    if c2 < a.son_sutun:
+        sonuc.append(Aralik(r1, c2 + 1, r2, a.son_sutun))
+    return sonuc
+
+
+def bitisik_bolge(sayfa, satir: int, sutun: int) -> Aralik:
+    """Excel "geçerli bölge" (Ctrl+Shift+*): (satir, sutun) hücresinden başlayıp dolu hücrelerin
+    8-komşulukla bitişik olduğu en küçük dikdörtgen. Hiç dolu komşu yoksa yalnız o hücre.
+    `sayfa`: `hucre(satır, sütun)` yöntemi olan nesne (Sayfa)."""
+    hucre = sayfa.hucre
+    r1 = r2 = satir
+    c1 = c2 = sutun
+    while True:
+        # her kenarın bir dışındaki çizgi (köşeler dahil) doluysa o yöne genişle
+        ust = r1 > 1 and any(hucre(r1 - 1, c) is not None
+                             for c in range(max(1, c1 - 1), min(MAX_COL, c2 + 1) + 1))
+        alt = r2 < MAX_ROW and any(hucre(r2 + 1, c) is not None
+                                   for c in range(max(1, c1 - 1), min(MAX_COL, c2 + 1) + 1))
+        sol = c1 > 1 and any(hucre(r, c1 - 1) is not None
+                             for r in range(max(1, r1 - 1), min(MAX_ROW, r2 + 1) + 1))
+        sag = c2 < MAX_COL and any(hucre(r, c2 + 1) is not None
+                                   for r in range(max(1, r1 - 1), min(MAX_ROW, r2 + 1) + 1))
+        if not (ust or alt or sol or sag):
+            return Aralik(r1, c1, r2, c2)
+        r1 -= ust
+        r2 += alt
+        c1 -= sol
+        c2 += sag

@@ -15,6 +15,11 @@ Türler ve `ayrinti` anahtarları:
   toplu işlem TEK olay; birleşim değişince ayrıca `birlesim` (eklenen, kaldırılan) aralık listeleri; dondurma/kılavuz değişince `gorunum` {'dondur': (satır, sütun)|None, 'kilavuz': bool} (yalnız değişenler; geri al yığınına girmez). Kimlikler `Sayfa.havuz`daki stillerin numaralarıdır (None = kayıt yok). Formül
   motoru yok sayar; ızgara ilgili satırları yeniden çizer
 - ``boyut``  : sütun genişliği / satır yüksekliği / gizleme değişti
+- ``ek``     : sayfaya bağlı ek veriler değişti (Faz 5): `alan` ('not'|'dogrulama'|'kosullu'|'filtre'|
+  'hepsi' — geri al/yinele anlık görüntüyü yüklediğinde), isteğe bağlı `anahtarlar` (değişen hücreler;
+  'not' için). Formül motoru yok sayar; ızgara 'not' için ilgili hücreleri, diğerleri için tam yeniden çizer
+- ``ad``     : kitap düzeyi tanımlı ad değişti. `sayfa` None'dır (ad kitaba aittir); `eski`, `yeni`
+  (`TanimliAd` | None). Dinleyiciler `olay.sayfa`ya erişmeden önce None denetlemelidir
 - ``sayfa``  : `islem` ('ekle'|'sil'|'ad'|'tasi'), `indeks`; 'ad' için `eski_ad`, 'tasi' için `eski_indeks`
   (bu tür olaylarda `sayfa` ilgili sayfadır; kitap düzeyinde olduğundan tüm dinleyicilere gider)
 """

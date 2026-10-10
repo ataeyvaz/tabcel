@@ -43,6 +43,7 @@ class _SatirSutun:
         self._olcu_once = None
         self._bicim_silinen = None       # silinen bandın ham stil kayıtları (silmeyi geri almak için)
         self._duzeltmeler = {}           # {Sayfa: {anahtar: (eski formül, yeni formül)}}
+        self._ek_once = None             # Faz 5: ([(Sayfa, ek_durumu)], kitap.ad_durumu) — geri almak için
 
     def _formulleri_duzelt(self) -> None:
         from ..formul.kaydir import yapi_duzeltmeleri    # model → formul yalnız burada
@@ -51,6 +52,9 @@ class _SatirSutun:
             self.adet if self.ekle else -self.adet)
         for s, degisen in self._duzeltmeler.items():
             s.toplu_yaz({k: Hucre(None, yeni) for k, (_, yeni) in degisen.items()})
+        from ..formul.kaydir import ek_duzeltmeleri
+        ek_duzeltmeleri(self.sayfa.kitap, self.sayfa, "sutun" if self.eksen else "satir",
+                        self.nerede, self.adet if self.ekle else -self.adet)
 
     def _formulleri_geri_yukle(self) -> None:
         for s, degisen in self._duzeltmeler.items():
@@ -66,6 +70,9 @@ class _SatirSutun:
     def yap(self) -> None:
         self._olcu_once = self.sayfa.boyut_durumu()
         self._birlesim_once = self.sayfa.birlesim_durumu()
+        kitap = self.sayfa.kitap
+        self._ek_once = ([(s, s.ek_durumu()) for s in (kitap.sayfalar if kitap else [self.sayfa])],
+                         kitap.ad_durumu() if kitap else None)
         if self.ekle:
             self._ekle()
         else:
@@ -84,6 +91,11 @@ class _SatirSutun:
             self.sayfa.bicim_geri_koy(self.eksen, self.nerede, self.adet, self._bicim_silinen)
         self.sayfa.boyut_durumu_yukle(self._olcu_once)
         self.sayfa.birlesim_yukle(self._birlesim_once)
+        sayfa_durumlari, ad_durumu = self._ek_once
+        for s, durum in sayfa_durumlari:
+            s.ek_durumu_yukle(durum)
+        if ad_durumu is not None:
+            self.sayfa.kitap.ad_durumu_yukle(ad_durumu)
 
 
 class SatirEkleSil(_SatirSutun):

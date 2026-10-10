@@ -203,6 +203,8 @@ class Hesaplayici:
             self._yeniden_hesapla(degisen)
         elif t == "yapi":
             self.tumunu_hesapla()
+        elif t == "ad":                    # tanımlı ad değişti (olay.sayfa None): seyrek, basit ve doğru
+            self.tumunu_hesapla()
         elif t == "sayfa":
             if olay["islem"] in ("ekle", "sil"):
                 self.tumunu_hesapla()
