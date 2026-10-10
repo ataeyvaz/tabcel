@@ -52,7 +52,7 @@ faz2_tasarim.md / faz3_tasarim.md / faz5_tasarim.md   formül motoru / biçimlen
 - Izgara kendi çizimimiz (`QAbstractScrollArea` + `QPainter`), QTableView değil — gerekçe `plan.md`
 - Tema: Excel yeşili `#217346` başlık şeridi; Sözcük'ün `theme.py`, `icons.py`, `widgets.py` dosyaları örnek alınır (kopyalanıp uyarlanır, Sözcük klasöründe **değişiklik yapılmaz**)
 - Bilgisayar: RAM 7,9 GB — ağır testlerde başka uygulamaların kapalı olduğunu kontrol et
-- Bu bilgisayarda Excel kurulu değil: Excel uyumu belgelerdeki örneklerle ve .xlsx dosyalarını openpyxl ile okuyup karşılaştırarak test edilir; gerçek Excel'de açma testi kullanıcıya bırakılır ve `surec.md`'ye "elle test bekliyor" diye yazılır
+- **Bu bilgisayarda Excel kurulu** (`C:\Program Files\Microsoft Officeoot\Office16\EXCEL.EXE`, Office 16; 2026-10-11'de kullanıcı bildirdi). Excel uyumu **COM ile gerçek Excel'de** denenir: `araclar\excel_dogrula.ps1 <dosya.xlsx> <çıktı_klasörü>` (görünmez açar, grafik türlerini/sayılarını yazar, grafikleri PNG'ye döker, Excel'in kendi kaydını üretir). Excel'de görsel/davranış doğrulaması gereken işlerde önce bunu kullan; yalnız Excel'in arayüzünde elle denenmesi gerekenler (kısayol hissi, iletişim kutuları) `surec.md`'ye "elle test bekliyor" diye yazılır. Excel'i çalıştırırken kullanıcının açık çalışma kitaplarına dokunma (yeni örnek, `DisplayAlerts=false`, işin sonunda `Quit`)
 
 ## Test ve çalıştırma
 - Çalıştır: `Tabcel.bat` ya da `.venv\Scripts\python main.py [dosya.xlsx]`

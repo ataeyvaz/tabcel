@@ -4,8 +4,9 @@ Okuma/yazma openpyxl ile; biçim eşlemesi `model/stil.py`'ye, formül eşlemesi
 (saklanan formül kanonik İngilizce + sayfa kimliği; dosyada İngilizce + sayfa adı).
 
 Bilinen sınırlar (her açılışta `Rapor`'a yazılır, arayüz bilgi çubuğunda gösterir):
-- openpyxl grafik/resim/pivot/makro/koşullu biçim/veri doğrulama/dizili açıklamaları korumaz → `Rapor.veri_kaybi`
-  (notlar korunur; kutu boyutu/konumu varsayılana döner)
+- openpyxl pivot/makro/şekil/dizili açıklamaları korumaz → `Rapor.veri_kaybi` (notlar korunur; kutu
+  boyutu/konumu varsayılana döner). Grafik ve resimler `xlsx_grafik.py` ile okunur/yazılır (Faz 6 / 6h): Tabcel
+  imi (`TabcelSurum`) olmayan dosyada "uyarlandı" bilgisi + kaydederken onay, desteklenmeyen grafik türü atlanır
 - kaydedilen formüllerin önbellek değeri yazılmaz (Excel açınca yeniden hesaplar)
 - tema renkleri varsayılan Office teması varsayımıyla RGB'ye çevrilir (§8b)
 """
@@ -36,7 +37,9 @@ from openpyxl.cell.cell import ILLEGAL_CHARACTERS_RE
 from openpyxl.workbook.defined_name import DefinedName
 from openpyxl.utils.datetime import to_excel
 
+from .. import APP_NAME
 from ..formul import ceviri
+from . import xlsx_grafik
 from ..formul.sozcuk import FormulHatasi
 from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
@@ -142,8 +145,6 @@ class XlsxHatasi(Exception):
 
 # --- tarama (zip; openpyxl'e güvenmeden) ----------------------------------------------------------
 _TARA = (
-    (re.compile(r"^xl/charts/"), "grafik", True),
-    (re.compile(r"^xl/(drawings/(?!.*\.vml$)|media/)"), "resim/şekil", True),   # *.vml = not kutuları
     (re.compile(r"^xl/pivot(Tables|Cache)/"), "pivot tablo", True),
     (re.compile(r"^xl/vbaProject\.bin$"), "makro (VBA)", True),
     (re.compile(r"^xl/externalLinks/"), "dış bağlantı", True),
@@ -159,6 +160,25 @@ _SAYFA_ISARETLERI = (
 )
 
 
+_SEKIL_RE = re.compile(rb"<(?:xdr:)?(?:sp|grpSp|cxnSp)[ >]")
+
+
+def _nesne_sayilari(yol: str):
+    """Zip'te (grafik parçası, medya dosyası, Tabcel imi var mı); dosya açılamazsa (0, 0, False)."""
+    try:
+        with zipfile.ZipFile(yol) as z:
+            adlar = z.namelist()
+            medya = set()                                  # yalnız çizimlerin başvurduğu resimler (artık parça sayılmaz)
+            for a in adlar:
+                if re.match(r"^xl/drawings/_rels/drawing\d+\.xml\.rels$", a):
+                    for hedef in re.findall(rb'Target="([^"]*media/[^"]+)"', z.read(a)):
+                        medya.add(hedef.decode().rsplit("/", 1)[-1])
+            return (sum(1 for a in adlar if re.match(r"^xl/charts/chart\d+\.xml$", a)), len(medya),
+                    xlsx_grafik.im_var_mi(z))
+    except (zipfile.BadZipFile, OSError):
+        return 0, 0, False
+
+
 def tara(yol: str) -> Rapor:
     """Dosyada bu sürümün korumadığı öğe var mı (zip içindeki yollara ve sayfa XML'ine bakar)."""
     r = Rapor()
@@ -171,6 +191,8 @@ def tara(yol: str) -> Rapor:
                     if rx.search(ad):
                         bulunan[ne] = kayip
             for ad in adlar:
+                if re.match(r"^xl/drawings/drawing\d+\.xml$", ad) and _SEKIL_RE.search(z.read(ad)):
+                    bulunan["şekil/SmartArt"] = True      # grafik ve resim artık korunur; şekiller korunmaz
                 if re.match(r"^xl/worksheets/sheet\d+\.xml$", ad):
                     xml = z.read(ad)
                     for isaret, ne in _SAYFA_ISARETLERI:
@@ -533,7 +555,10 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
             _dogrulamalari_yaz(ws, sayfa, kitap, rapor)
         if sayfa.kosullu:
             _kosullulari_yaz(ws, sayfa, kitap, rapor)
+        if sayfa.nesneler:
+            xlsx_grafik.nesneleri_yaz(ws, sayfa, kitap)
 
+    xlsx_grafik.im_yaz(wb)
     _adlari_yaz(wb, kitap)
     if sayac.get("karakter"):
         rapor.ekle(f"{sayac['karakter']} hücrede dosyada geçersiz olan denetim karakterleri silindi.")
@@ -998,6 +1023,24 @@ def _ozel_yukseklikler(yol: str) -> Optional[Dict[str, set]]:
         return None
 
 
+def _nesne_uyarilari(yol: str, rapor: Rapor, grafik: int, resim: int, atlanan_seri: int) -> None:
+    """Grafik/resim uyarı mantığı (`faz6_tasarim.md` §8.3): Tabcel imi varsa ve hepsi okunduysa uyarı yok;
+    im yoksa (Excel/başka program) "uyarlandı" bilgisi + kaydederken onay; okunamayan her şey kaybolur uyarısıyla."""
+    zip_grafik, zip_medya, im = _nesne_sayilari(yol)
+    if zip_grafik > grafik:
+        rapor.ekle(f"Bu dosyadaki {zip_grafik - grafik} grafik desteklenmiyor (3B, radar, borsa, kabarcık gibi); "
+                   "kaydederseniz dosyadan çıkarılır.", True)
+    if zip_medya > resim:
+        rapor.ekle(f"Bu dosyadaki {zip_medya - resim} resim okunamadı; kaydederseniz dosyadan çıkarılır.", True)
+    if atlanan_seri:
+        rapor.ekle(f"{atlanan_seri} grafik serisi okunamadı (çok aralıklı ya da ad tabanlı başvuru); "
+                   "kaydederseniz kaybolur.", True)
+    if (grafik or resim) and not im:
+        ne = "grafikler ve resimler" if grafik and resim else ("grafikler" if grafik else "resimler")
+        rapor.ekle(f"Bu dosyadaki {ne} {APP_NAME}'e uyarlandı; 3B, eğilim çizgisi, ikincil eksen, gradyan gibi "
+                   "Excel'e özgü biçimler kaydedince kaybolabilir.", True)
+
+
 def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
     """`yol`daki .xlsx dosyasını yeni bir kitaba okur. Dönen rapor desteklenmeyen öğeleri listeler.
     Formül sonuçları dosyadan alınmaz; motor yeniden hesaplar."""
@@ -1045,6 +1088,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
 
     bozuk_formul = 0
     formul_onb = _FormulOnbellek()
+    nesne_toplam = [0, 0, 0]                         # okunan grafik, okunan resim, okunamayan seri
     for ws, s in sayfalar:
         yeni, stiller, notlar = {}, {}, {}
         for (r, c), hc in ws._cells.items():          # yalnız var olan hücreler (iter_rows seyrek dosyada tüm kutuyu gezer)
@@ -1143,7 +1187,10 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         tab = ws.sheet_properties.tabColor
         if tab is not None:
             s.sekme_rengi = _renk_oku(tab, tema)
+        for i, n in enumerate(xlsx_grafik.nesneleri_oku(ws, s, kitap)):
+            nesne_toplam[i] += n
     _adlari_oku(wb, kitap, sayfalar, rapor)
+    _nesne_uyarilari(yol, rapor, *nesne_toplam)
     if bozuk_formul:
         rapor.ekle(f"{bozuk_formul} formül çevrilemedi, metin olarak bırakıldı.")
     return kitap, rapor

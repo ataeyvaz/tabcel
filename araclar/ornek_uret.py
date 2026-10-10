@@ -2,7 +2,7 @@
 üretmek içindir:  .venv\\Scripts\\python araclar\\ornek_uret.py
 
 - butce.xlsx   : başka bir programın (openpyxl) yazdığı biçimli çok sayfalı çizelge
-- grafikli.xlsx: grafik + resim + yorum + koşullu biçim + veri doğrulama + tanımlı ad (korunamayan öğeler)
+- grafikli.xlsx: grafik + gerçek resim + yorum + koşullu biçim + veri doğrulama + tanımlı ad (korunamayan öğeler)
 - stok.xlsx    : Faz 5 öğelerinin hepsi (filtre koşullu, doğrulama, koşullu biçim, tanımlı ad, not, ALTTOPLAM)
 - satis_tr.csv : Türkçe Excel'in `;` ayraçlı, Windows-1254 CSV'si
 - satis_utf8.csv: virgül ayraçlı UTF-8 (BOM'suz)
@@ -121,14 +121,13 @@ def grafikli(yol):
     dv.add("D2:D10")
     ws.auto_filter.ref = "A1:B5"
     wb.defined_names["SatisToplam"] = DefinedName("SatisToplam", attr_text="Satış!$B$2:$B$5")
+    import io
+    from openpyxl.drawing.image import Image
+    from PIL import Image as PilImage
+    png = io.BytesIO()
+    PilImage.new("RGB", (120, 60), (68, 114, 196)).save(png, "PNG")            # gerçek resim (6h: artık okunur/yazılır)
+    ws.add_image(Image(png), "F20")
     wb.save(yol)
-    # resim parçası: openpyxl Pillow olmadan yazamaz, pakete elle eklenir (yalnız tarama/uyarı için yeterli)
-    gecici = yol + ".z"
-    with zipfile.ZipFile(yol) as z, zipfile.ZipFile(gecici, "w", zipfile.ZIP_DEFLATED) as o:
-        for ad in z.namelist():
-            o.writestr(ad, z.read(ad))
-        o.writestr("xl/media/image1.png", _PNG)
-    os.replace(gecici, yol)
 
 
 def stok(yol):

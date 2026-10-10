@@ -136,10 +136,9 @@ def test_butce_openpyxl_ile_de_ayni(tmp_path):
 # ---------------------------------------------------------------- grafikli.xlsx
 def test_grafikli_uyarilar_ve_veri_korunur(tmp_path):
     k, rapor = xlsx_io.ac(ornek("grafikli.xlsx"))
-    assert rapor.veri_kaybi
+    assert rapor.veri_kaybi                                  # Tabcel imi yok → "uyarlandı" bilgisi + kaydederken onay
     metin = " ".join(rapor.uyarilar)
-    for ne in ("grafik", "resim"):
-        assert ne in metin, ne
+    assert "grafikler ve resimler" in metin and "uyarlandı" in metin     # 6h: grafik ve resim artık yüklenir
     assert "koşullu biçim" not in metin                     # 5h: koşullu biçim artık korunur
     assert k.sayfalar[0].kosullu                             # Faz 5 / 5h
     assert "veri doğrulama" not in metin                   # 5g: veri doğrulama artık korunur
@@ -152,14 +151,19 @@ def test_grafikli_uyarilar_ve_veri_korunur(tmp_path):
     s = k.sayfalar[0]
     assert s.notlar == {(2, 2): Not("İlk ay değeri", "Ata")}   # Faz 5 / 5e
     assert s.deger(2, 1) == "Ocak" and s.deger(5, 2) == 40.0 and s.deger(2, 4) == "Evet"
-    # kaydedilince korunamayan öğeler çıkar (uyarılmıştı), veri kalır
+    grafik, resim = s.nesneler                              # Faz 6 / 6h: grafik + resim yüklendi
+    assert grafik.baslik == "Aylık satış" and grafik.tur == "sutun" and len(grafik.seriler) == 1
+    assert grafik.seriler[0].deger.aralik == Aralik(2, 2, 5, 2)
+    assert resim.veri[1:4] == b"PNG" and resim.boyut == (120, 60)
+    # kaydedilince grafik ve resim KORUNUR (Tabcel imi eklenir; ikinci açılışta uyarı yok)
     yol = str(tmp_path / "g.xlsx")
     xlsx_io.kaydet(k, yol)
     with zipfile.ZipFile(yol) as z:
         adlar = " ".join(z.namelist())
-    assert "charts" not in adlar and "media" not in adlar
+    assert "charts" in adlar and "media" in adlar
     k2, r2 = xlsx_io.ac(yol)
-    assert not r2.veri_kaybi and kitap_farklari(k, k2) == []
+    assert not r2.veri_kaybi and r2.uyarilar == [] and kitap_farklari(k, k2) == []
+    assert [n.degistir(kimlik=0) for n in k2.sayfalar[0].nesneler] == [n.degistir(kimlik=0) for n in s.nesneler]
 
 
 def test_ozgun_dosya_degismez(tmp_path):

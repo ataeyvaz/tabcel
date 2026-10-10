@@ -37,6 +37,7 @@ En yenisi en üstte.
 ## 10 Ekim 2026
 
 - **Resim ekleme:** **Ekle → Resim…** ile PNG, JPEG, GIF ya da BMP dosyası ekleyin; taşıyıp boyutlandırabilirsiniz. Bkz. [Grafikler ve Resimler](konu:grafikler).
+- **Dosyada grafik ve resim:** grafikler ve resimler artık .xlsx'e kaydedilir, Excel'den gelen grafikli dosyalar açılır.
 - **Grafikler:** **Ekle** sekmesinden sütun, çubuk, çizgi, pasta, halka, alan ve dağılım grafiği ekleyin. Grafik sayfanın üzerinde yüzer; taşıyıp boyutlandırabilir, verisi değişince canlı güncellendiğini görebilirsiniz. Bkz. [Grafikler](konu:grafikler).
 - **Sekmeli şerit:** menüler yerini Excel'deki gibi sekmeli şeride bıraktı.
 - **Yardım:** bu pencere (`F1`).
@@ -192,7 +193,8 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - `Ctrl+N` yeni, `Ctrl+O` aç, `Ctrl+S` kaydet, `Ctrl+Shift+S` ya da `F12` farklı kaydet. Dosyayı komut satırından ya da Dosya Gezgini'nden de açabilirsiniz.
 - Biçimler: **.xlsx** (asıl biçim) ve **.csv**. CSV açarken kodlama (UTF-8 / Windows-1254) ve ayırıcı otomatik tanınır, bir **önizleme** penceresi görürsünüz; "metin olarak aç" seçeneği vardır.
 - Kayıt güvenlidir: önce geçici dosyaya yazılır, sonra yerine konur; kayıt yarıda kesilirse özgün dosya bozulmaz.
-- Açılan dosyada {APP_NAME}'in henüz korumadığı bir öğe varsa (ör. bazı grafik türleri, pivot tablo) pencerenin üstünde **uyarı çubuğu** çıkar ve kaydederken ayrıca sorulur; böylece sessizce veri kaybetmezsiniz.
+- **Grafikler ve resimler** .xlsx dosyasına kaydedilir ve Excel'de açıldığında grafik/resim olarak görünür. Excel'de hazırlanmış dosyalarda sütun, çubuk, çizgi, pasta, halka, alan ve dağılım grafikleri okunur; **3B, radar, borsa, kabarcık** gibi türler, ikincil eksenler ve birleşik grafikler desteklenmez.
+- Açılan dosyada {APP_NAME}'in korumadığı bir öğe varsa (ör. pivot tablo, şekil, makro, desteklenmeyen grafik türü) pencerenin üstünde **uyarı çubuğu** çıkar ve kaydederken ayrıca sorulur; böylece sessizce veri kaybetmezsiniz. Excel'de hazırlanmış grafikli dosyalarda "grafikler uyarlandı" bilgisi görürsünüz: grafik açılır, ancak Excel'e özgü süslemeler (gradyan, eğilim çizgisi vb.) kaydedince kaybolabilir.
 
 ## Otomatik kayıt ve kurtarma
 
@@ -254,6 +256,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 - **Dizi taşması yok:** çok hücreli bir formül sonucu tek değere indirilir (Excel 365 komşu hücrelere taşırır). Dinamik dizi fonksiyonları sonraki sürümdedir.
 - **Pivot tablo, Tablo nesnesi, makro (VBA), Solver, .xls ve .ods** henüz desteklenmez.
+- **Grafikler:** yalnız 7 temel tür vardır; ikincil eksen, eğilim çizgisi, hata çubukları ve 3B yoktur. Grafikler ve resimler dosyada ayrı katmanlarda saklandığından, karışık üst üste sıralama (bir resmin grafiğin üstünde olması gibi) kaydedip açınca grafikler altta, resimler üstte olacak biçimde yeniden dizilebilir.
 - **Bölmeleri Dondur** sayfanın başından dondurur (Excel kaydırılmış pencerenin üstünden dondurur).
 - Var olmayan sayfaya başvuran formül reddedilir ve düzenleme açık kalır.
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
