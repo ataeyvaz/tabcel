@@ -11,11 +11,11 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 3 | Biçimlendirme, sayı biçimleri, doldurma, dondurma | **Çekirdek bitti (Opus):** `faz3_tasarim.md`, `model/sayi_bicimi.py` (+`tarihseri.py`) | 🔄 3a–3k ✅, 3l ✅ (senaryo + ölçüm + Opus bulguları düzeltildi); **kullanıcı onayı ve Faz 3 kapanışı bekliyor** |
 | 4 | .xlsx / .csv / PDF / yazdır / otomatik kayıt | 4a ✅ `io/xlsx_io.py`; 4b ✅ Dosya menüsü; 4c ✅ .csv; 4d ✅ PDF/yazdır; 4e ✅ kurtarma; 4f ✅ büyük dosya; 4g ✅ Faz 4 sonu | ✅ **Faz 4 bitti** (kullanıcı onayı bekliyor) (§2 madde 9) |
 | 5 | Sırala, filtre, bul-değiştir, koşullu biçim, veri doğrulama, adlar, notlar | **Tasarım bitti (Opus):** `faz5_tasarim.md` | ✅ **Faz 5 kapandı** (2026-10-10, kullanıcı; performans ❌'leri kabul, Opus gözden geçirmesi atlandı). ✅ **5j sekmeli şerit bitti** (5j-1…6; tasarım `faz5j_tasarim.md`, test.md §16); **elle test (test.md §16.4) bekliyor** — sıradaki: Faz 6 grafikler |
-| 6 | Grafikler + resim + Ekle sekmesi | **Tasarım bitti:** `faz6_tasarim.md` (yazan Sonnet 5.5; **Opus gözden geçirmesi önerilir**) | 🔄 6a ✅ · 6b–6j sırada (§2 madde 11); D2 Pillow ✅ eklendi |
+| 6 | Grafikler + resim + Ekle sekmesi | **Tasarım bitti:** `faz6_tasarim.md` (yazan Sonnet 5.5; **Opus gözden geçirmesi önerilir**) | 🔄 6a ✅ 6b ✅ · 6c–6j sırada (§2 madde 11); D2 Pillow ✅ eklendi |
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | — | ⏳ |
 | 8 | .xls/.ods, pivot, dinamik diziler… | — | ⏳ (sonra) |
 
-Testler: 2668 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: 2705 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -44,7 +44,7 @@ Testler: 2668 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuç
 9. **Faz 4 (Sonnet 5.5; sıra):** 4a ✅ `io/xlsx_io.py` gidiş-dönüş · 4b ✅ Dosya menüsü (Yeni/Aç/Kaydet/Farklı Kaydet, değişti işareti, çıkışta sorma, bilgi çubuğunda veri kaybı uyarısı + kaydederken onay, komut satırından açma, son dosyalar) · 4c ✅ .csv (kodlama/ayraç tanıma, önizlemeli içe aktarma) · 4d ✅ PDF/yazdır (sayfa yapısı, önizleme) · 4e ✅ otomatik kayıt + kurtarma kopyası · 4f ✅ büyük dosya (arka plan iş parçacığı, 100.000×20 < 10 sn) + paylaşılan formül önbelleği · 4g ✅ Faz 4 sonu (test.md, örnek dosyalar `testler/ornekler/`, senaryo, Opus gözden geçirmesi)
 10. **Faz 5 (Sonnet 5.5; sıra ve ölçütler `faz5_tasarim.md` §10):** 5a ✅ ortak altyapı (5b ✅ Bul/Değiştir/Git; 5c ✅ Sırala; olaylar `ek`/`ad`, aralık yardımcıları, ek depolar + ekle-sil, Türkçe harmanlama, `agac_kaydir`, menü iskeleti) · 5b Bul/Değiştir/Git · 5c Sırala (+ `karsilastir` Türkçe harmanlamaya geçer — mevcut test değişirse önce kullanıcıya bildir, kural 12) · 5d ✅ Adlandırılmış aralıklar · 5e ✅ Notlar · 5f ✅ Filtre + ALTTOPLAM · 5g ✅ Veri doğrulama · 5h ✅ Koşullu biçim · 5i ✅ Faz 5 sonu (ertelenen piksel önbelleği kararı dahil). Her alt iş kendi .xlsx eşlemesini yapar
 10b. **5j Sekmeli şerit (Faz 6'dan önce):** ✅ tasarım notu `faz5j_tasarim.md` (Opus, 2026-10-10). **Uygulama Sonnet 5.5 ile, sıra `faz5j_tasarim.md` §8:** 5j-1 ✅ `ui/serit.py` + daralma planı · 5j-2 ✅ ikonlar (32 px ızgara) · 5j-3 ✅ eylem kataloğu · 5j-4 ✅ başlıktan menüler kalktı, Giriş sekmesi · 5j-5 ✅ diğer sekmeler (+ `sayfa_yapisi_degistir`) · 5j-6 ✅ Ctrl+F1, tema, ekran görüntüleri, test.md. **Bekleyen kullanıcı onayı (kural 12):** `test_faz5_altyapi.py:582` (Düzen/Veri menü düğmesi metni) şerit denetimine çevrilecek (§5 tasarım notu)
-11. **Faz 6 grafikler:** ✅ tasarım notu `faz6_tasarim.md` (2026-10-10; Sonnet 5.5 yazdı, Opus gözden geçirmesi önerilir). **Uygulama sırası (`faz6_tasarim.md` §12):** 6a ✅ model+komutlar+ekle-sil · 6b veri çözümleme+seri tahmini · 6c Qt'siz çizim listesi · 6d ızgara katmanı (pixmap önbelleği, canlı güncelleme) · 6e etkileşim · 6f Ekle sekmesi+Grafik bağlamsal sekmesi+pencereler+ikonlar · 6g resim · 6h .xlsx yaz/oku+uyarı mantığı · 6i yazdırma/PDF · 6j Faz 6 sonu. D2 (Pillow) **kullanıcı kararıyla eklendi**. **Kural 12 bildirimleri (beklenen):** `test_xlsx_ornekler`/`test_xlsx_io` grafik uyarı testleri (grafik artık yüklenir), `test_serit_*` sekme listesi ("Ekle" eklenir)
+11. **Faz 6 grafikler:** ✅ tasarım notu `faz6_tasarim.md` (2026-10-10; Sonnet 5.5 yazdı, Opus gözden geçirmesi önerilir). **Uygulama sırası (`faz6_tasarim.md` §12):** 6a ✅ model+komutlar+ekle-sil · 6b ✅ veri çözümleme+seri tahmini · 6c Qt'siz çizim listesi · 6d ızgara katmanı (pixmap önbelleği, canlı güncelleme) · 6e etkileşim · 6f Ekle sekmesi+Grafik bağlamsal sekmesi+pencereler+ikonlar · 6g resim · 6h .xlsx yaz/oku+uyarı mantığı · 6i yazdırma/PDF · 6j Faz 6 sonu. D2 (Pillow) **kullanıcı kararıyla eklendi**. **Kural 12 bildirimleri (beklenen):** `test_xlsx_ornekler`/`test_xlsx_io` grafik uyarı testleri (grafik artık yüklenir), `test_serit_*` sekme listesi ("Ekle" eklenir)
 7. Faz 2 giriş koşulları ✅ kullanıldı; `HucreTasi` model komutu yazıldı (arayüze bağlanması 6c)
 
 ## 3. Çalışma sistemi (her adımda)
@@ -294,6 +294,11 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 | 73 | .xlsx `definedName` içindeki **göreli** başvurular A1'e göre mi saklanır (Excel dosyasında)? | Evet (tasarım §4.1): ad hücreye göre `(satır−1, sütun−1)` kaydırılarak çözülür (`=[1]!A1`'li ad C5'te C5'in kendisi olur) | ⏳ |
 | 74 | Ad Kutusu'ndan yeni ad tanımlarken seçim çoklu aralıksa ne olur? Kapsamı sayfa mı kitap mı? | Kitap kapsamı, yalnız seçimin sınır aralığı | ⏳ |
 | 75 | Sayfa Düzeni ▸ Kenar Boşlukları hazır değerleri (`model/sayfa_yapisi.KENAR_HAZIR`) (cm, üst/alt/sol/sağ) | Normal 1,91/1,91/1,78/1,78 · Geniş 2,54 hepsi · Dar 1,91/1,91/0,64/0,64 (`faz5j_tasarim.md` §4) | ⏳ |
+| 76 | Grafikte **metin ve mantıksal** hücre 0 mı çizilir (TRUE = 1 mi)? Boş hücre sütunda 0 yükseklik, çizgide boşluk mu? Hata değeri (#YOK vb.) boşluk mu? | Metin/mantıksal 0, boş ve hata boşluk (`model/grafik_verisi._sayiya`) | ⏳ |
+| 77 | Gizli/filtreyle gizlenmiş satırların verisi grafikte çizilmez mi (varsayılan "Gizli ve boş hücreleri göster" kapalı)? | Çizilmez | ⏳ |
+| 78 | Seri tahmini: kare/yatay seçimde seri yönü, sol üst boşken başlık/kategori, yıl sütununun seri sayılması | `grafik_verisi.seriler_tahmin` kuralları (boyutu küçük eksen seri; yıllar seri; tarih biçimli sütun kategori) | ⏳ |
+| 79 | Çubuk/sütun boşluk genişliği varsayılanı (%150 mi %219 mu) ve çakışma | ilk uygulama %150 / %0 | ⏳ |
+| 80 | Çizgi/dağılım değer ekseni alt sınırı (sıfıra zorlanır mı, veri aralığına göre mi) | veri aralığına göre (sütun/alan sıfırdan) | ⏳ |
 | 72 | Koşullu biçim hazır biçim adlarının Türkçe yazımı ("Koyu Kırmızı Metinli Açık Kırmızı Dolgu"…) | `faz5_tasarim.md` §8.4 | ⏳ |
 
 ## 9. Lisans uyum notu (PySide6 / LGPLv3)
@@ -808,6 +813,14 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Testler:** `test_grafik_model.py` 47 — toplam **2668** geçiyor (doğrulama, olaylar [yalnız değişince], kimlik asla yeniden kullanılmaz, komutlar geri al/yinele, çapa tablosu, ekle-sil + başvuru kaydırma aynı/başka sayfa, geri al, sayfa silme/geri, tek `hepsi` olayı, `ek_durumu` 4'lü kaldı, motor `nesne` olayını yok sayar)
 - **Mevcut test değişmedi.** Karar: `_ek_once` iç demeti 2'liden 3'lüye çıktı (yalnız `komutlar.py` içinde kullanılıyordu; testlerde yok)
 - Sıradaki: **6b** `model/grafik_verisi.py` (`grafik_verisi`, `seriler_tahmin`)
+
+## [2026-10-10] — Faz 6 / 6b grafik verisi + seri tahmini (Sonnet 5.5)
+- **Commit:** `84ed7cb` (6a)
+- **Yapıldı:** `model/grafik_verisi.py` (Qt yok): `hucre_listesi` (çizim sırası; tam sütun/satır kullanılan alana kırpılır; gizli satır/sütun atlanır), `grafik_verisi(kitap, grafik) -> GrafikVerisi` (`SeriVerisi`: ad, değerler, kategoriler, x, renk; `sayi_bicimi` = ilk biçimli hücre), `EtiketDizisi` (**tembel** etiketler: 100.000 noktada yalnız çizimde gerekenler biçimlenir), `seriler_tahmin(sayfa, aralik, tur, satirda_seri)` (tek hücre → `bitisik_bolge`; boyutu küçük eksen seri; kategori sütunu: sol üst boş / ilk sütunda metin / tarih biçimli / dağılımda sayısal X; başlık satırı: sol üst boş ya da dolu hücreler metin ve altta sayı var; sayısal değeri olmayan sütun seri olmaz; pasta/halka tek seri; sayısal veri yoksa `ValueError`). Değer kuralları: sayı → float, boş/hata → None, metin/mantıksal → 0; gizli satır/sütun çizilmez; seri adı `ad_ref` > `ad` > `Seri{n}`; silinmiş sayfaya bakan/değersiz seri atlanır; dağılımda X sayısal değilse nokta çizilmez, hiç X yoksa 1, 2, 3…
+- **Testler:** `test_grafik_verisi.py` 37 (kural 11: normal/boş/hata/metin-sayı; gizli satır ve sütun; ad kuralları; başka sayfa; biçimli etiket; tembel etiket; dağılım X; 100.000 nokta [≈ 0,3 sn yük altında, test eşiği 1 sn]; tahmin tablosu: başlıklı/başlıksız, sol üst boş, tek sütun, yıllar, satırda seri, yön zorlama, tek hücre, tam sütun, metin sütunu, tarih kategorisi, dağılım X, pasta, hata). Toplam **2705**. Mevcut test değişmedi
+- **Doğrulanacaklar** §8b-76…80 (metin/mantıksal/boş/hata kuralı, gizli satır, tahmin sezgisi, boşluk genişliği, eksen alt sınırı)
+- **Not:** ölçüm 100.000 noktada ≈ 0,3 sn (6d'de önbellek + 30 ms erteleme; değerler yalnız ilgili seri değişince yeniden okunur). Mantıksal değer kuralı (0 mı 1 mi) belirsiz → §8b-76
+- Sıradaki: **6c** `model/grafik_cizim.py` (çizim listesi: `guzel_olcek`, düzen, 7 tür, palet, boşaltma)
 
 *(Yeni girişler en alta eklenir.)*
 
