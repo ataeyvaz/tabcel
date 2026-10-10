@@ -6,8 +6,8 @@ yığını çalışma kitabı genelinde ortaktır.
 """
 from typing import Dict, Optional
 
-from PySide6.QtCore import Qt, QStringListModel, QTimer, Signal
-from PySide6.QtGui import QColor, QKeySequence, QPainter, QShortcut
+from PySide6.QtCore import QSize, Qt, QStringListModel, QTimer, Signal
+from PySide6.QtGui import QAction, QColor, QKeySequence, QPainter, QShortcut
 from PySide6.QtWidgets import (
     QColorDialog, QDialog, QHBoxLayout, QCompleter, QInputDialog, QLabel, QLineEdit, QMainWindow, QMenu, QMessageBox,
     QSlider, QStackedWidget, QTabBar, QToolButton, QVBoxLayout, QWidget,
@@ -29,10 +29,11 @@ from ..model.komutlar import (
 from ..model.komutlar import ana_sayfa
 from ..model.olay import Olay
 from ..model.sayfa import CalismaKitabi, Sayfa
-from . import theme
+from . import icons, theme
 from .ad_penceresi import AdTanimlaPenceresi, AdYoneticisi, GitPenceresi
 from .bicim_cubugu import BicimCubugu
 from .dosya_islemleri import DosyaIslemleri
+from .serit import Serit, SeritGrubu
 from .grid import Izgara, goster
 
 
@@ -122,6 +123,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
 
     # ------------------------------------------------------------------ kurulum
     def _kur(self):
+        self._eylemleri_kur()
         merkez = QWidget()
         merkez.setObjectName("central")
         dikey = QVBoxLayout(merkez)
@@ -129,75 +131,56 @@ class Pencere(DosyaIslemleri, QMainWindow):
         dikey.setSpacing(0)
         self.setCentralWidget(merkez)
 
-        # başlık şeridi
+        self.izgara_yigini = QStackedWidget()          # şerit/Giriş sayfası ızgarayı bu yığından okur (erken kurulur)
+
+        # başlık şeridi: hızlı erişim (Kaydet, Geri Al, Yinele) + belge adı
         baslik = QWidget()
         baslik.setObjectName("header")
         h = QHBoxLayout(baslik)
         h.setContentsMargins(8, 6, 8, 6)
-        self.dosya_dugmesi = QToolButton()
-        self.dosya_dugmesi.setObjectName("fileButton")
-        self.dosya_dugmesi.setText("Dosya")
-        self.dosya_dugmesi.setPopupMode(QToolButton.InstantPopup)
-        menu = QMenu(self.dosya_dugmesi)
-        self._dosya_menusu_doldur(menu)
-        self.dosya_dugmesi.setMenu(menu)
-        self.gorunum_dugmesi = QToolButton()
-        self.gorunum_dugmesi.setObjectName("fileButton")
-        self.gorunum_dugmesi.setText("Görünüm")
-        self.gorunum_dugmesi.setPopupMode(QToolButton.InstantPopup)
-        gm = QMenu(self.gorunum_dugmesi)
-        self.gorunum_eylemleri = {}
-        for anahtar, metin in (("bolme", "Bölmeleri Dondur"), ("ust_satir", "Üst Satırı Dondur"),
-                               ("ilk_sutun", "İlk Sütunu Dondur"), ("coz", "Bölmelerin Dondurmasını Kaldır")):
-            self.gorunum_eylemleri[anahtar] = gm.addAction(
-                metin, lambda t=anahtar: self.izgara().dondur_ayarla(t))
-        gm.addSeparator()
-        self.kilavuz_eylemi = gm.addAction("Kılavuz Çizgileri")
-        self.kilavuz_eylemi.setCheckable(True)
-        self.kilavuz_eylemi.setChecked(True)
-        self.kilavuz_eylemi.toggled.connect(lambda v: self.izgara().kilavuz_goster(v))
-        gm.aboutToShow.connect(self._gorunum_menusu_hazirla)
-        self.gorunum_dugmesi.setMenu(gm)
-        self.duzen_dugmesi, self.duzen_eylemleri = self._menu_iskeleti("Düzen", (
-            ("bul", "Bul…"), ("degistir", "Değiştir…"), ("git", "Git…")))
-        self.veri_dugmesi, self.veri_eylemleri = self._menu_iskeleti("Veri", (
-            ("artan", "Artan Sırala"), ("azalan", "Azalan Sırala"), ("ozel_sirala", "Özel Sıralama…"),
-            None, ("filtre", "Filtre"), ("filtre_temizle", "Filtreyi Temizle"),
-            ("filtre_yeniden", "Yeniden Uygula"),
-            None, ("dogrulama", "Veri Doğrulama…"),
-            None, ("ad_tanimla", "Ad Tanımla…"), ("ad_yoneticisi", "Ad Yöneticisi")))
-        self.kosullu_dugmesi = QToolButton()
-        self.kosullu_dugmesi.setObjectName("fileButton")
-        self.kosullu_dugmesi.setText("Koşullu Biçim")
-        self.kosullu_dugmesi.setPopupMode(QToolButton.InstantPopup)
-        self.kosullu_dugmesi.setMenu(self._kosullu_menusu(self.kosullu_dugmesi))
+        self.kaydet_dugmesi = QToolButton()
+        self.kaydet_dugmesi.setIcon(icons.icon("save", "#ffffff"))
+        self.kaydet_dugmesi.setToolTip("Kaydet (Ctrl+S)")
+        self.kaydet_dugmesi.clicked.connect(lambda _=False: self.kaydet())
         self.geri_dugmesi = QToolButton()
-        self.geri_dugmesi.setText("Geri Al")
-        self.geri_dugmesi.setToolTip("Geri Al (Ctrl+Z)")
-        self.geri_dugmesi.clicked.connect(lambda: self.izgara().geri_al())
+        self.geri_dugmesi.setDefaultAction(self.eylemler["geri_al"])
+        self.geri_dugmesi.setIcon(icons.icon("undo", "#ffffff"))
         self.yinele_dugmesi = QToolButton()
-        self.yinele_dugmesi.setText("Yinele")
-        self.yinele_dugmesi.setToolTip("Yinele (Ctrl+Y)")
-        self.yinele_dugmesi.clicked.connect(lambda: self.izgara().yinele())
+        self.yinele_dugmesi.setDefaultAction(self.eylemler["yinele"])
+        self.yinele_dugmesi.setIcon(icons.icon("redo", "#ffffff"))
+        for d in (self.kaydet_dugmesi, self.geri_dugmesi, self.yinele_dugmesi):
+            d.setIconSize(QSize(20, 20))
+            d.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            d.setFocusPolicy(Qt.NoFocus)
         self.belge_etiketi = QLabel()
         self.belge_etiketi.setObjectName("docTitle")
-        h.addWidget(self.dosya_dugmesi)
-        h.addWidget(self.gorunum_dugmesi)
-        h.addWidget(self.duzen_dugmesi)
-        h.addWidget(self.veri_dugmesi)
-        h.addWidget(self.kosullu_dugmesi)
+        h.addWidget(self.kaydet_dugmesi)
         h.addWidget(self.geri_dugmesi)
         h.addWidget(self.yinele_dugmesi)
         h.addStretch(1)
         h.addWidget(self.belge_etiketi)
         h.addStretch(1)
         dikey.addWidget(baslik)
+
+        # eski menü sözlükleri: katalogla aynı nesneler (testler ve kodun geri kalanı bunlara dayanır)
+        self.gorunum_eylemleri = {k: self.eylemler[k] for k in ("bolme", "ust_satir", "ilk_sutun", "coz")}
+        self.kilavuz_eylemi = self.eylemler["kilavuz"]
+        self.duzen_eylemleri = {k: self.eylemler[k] for k in ("bul", "degistir", "git")}
+        self.veri_eylemleri = {k: self.eylemler[k] for k in (
+            "artan", "azalan", "ozel_sirala", "filtre", "filtre_temizle", "filtre_yeniden", "dogrulama",
+            "ad_tanimla", "ad_yoneticisi")}
+
+        # sekmeli şerit (5j): Dosya (açılır menü) + Giriş (biçim çubuğu sayfası) …
+        self.serit = Serit()
+        self.bicim_cubugu = BicimCubugu(self.izgara)
+        self._giris_gruplari_ekle()
+        self.dosya_menusu = QMenu(self)
+        self._dosya_menusu_doldur(self.dosya_menusu)
+        self.serit.sekme_ekle("Giriş", self.bicim_cubugu)
+        self.serit.dosya_sekmesi_ekle(self.dosya_menusu)
+        dikey.addWidget(self.serit)
         self.bilgi_cubugu = self._bilgi_cubugu_olustur()      # açılan dosyada korunamayan öğe uyarısı
         dikey.addWidget(self.bilgi_cubugu)
-
-        # biçim araç çubuğu (3d)
-        self.bicim_cubugu = BicimCubugu(self.izgara)
-        dikey.addWidget(self.bicim_cubugu)
 
         # ad kutusu + formül çubuğu
         cubuk = QWidget()
@@ -226,7 +209,6 @@ class Pencere(DosyaIslemleri, QMainWindow):
         dikey.addWidget(cubuk)
 
         # ızgaralar
-        self.izgara_yigini = QStackedWidget()
         dikey.addWidget(self.izgara_yigini, 1)
 
         # sayfa sekmeleri
@@ -280,42 +262,19 @@ class Pencere(DosyaIslemleri, QMainWindow):
         sb.addPermanentWidget(self.yakin_etiketi)
 
         self.bul_penceresi = None
-        for eylem, kisayol, islev in (
-                ("bul", "Ctrl+F", lambda: self.bul_ac(False)),
-                ("degistir", "Ctrl+H", lambda: self.bul_ac(True)),
-                ("git", "Ctrl+G", self.git_ac)):
-            self.duzen_eylemleri[eylem].setEnabled(True)
-            self.duzen_eylemleri[eylem].setText(self.duzen_eylemleri[eylem].text() + "	" + kisayol)   # yalnız gösterim; kısayol QShortcut'ta (çift tanım belirsizlik yaratır)
-            self.duzen_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
-            QShortcut(QKeySequence(kisayol), self, activated=islev)
-        QShortcut(QKeySequence("F5"), self, activated=self.git_ac)
-        for eylem, islev in (("artan", lambda: self.sirala_hizli(True)),
-                             ("azalan", lambda: self.sirala_hizli(False)),
-                             ("ozel_sirala", self.sirala_ozel)):
-            self.veri_eylemleri[eylem].setEnabled(True)
-            self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
-        for eylem, kisayol, islev in (("filtre", "Ctrl+Shift+L", self.filtre_ac_kapat),
-                                      ("filtre_temizle", "", self.filtre_temizle),
-                                      ("filtre_yeniden", "Ctrl+Alt+L", self.filtre_yeniden_uygula)):
-            self.veri_eylemleri[eylem].setEnabled(True)
-            self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
-            if kisayol:
-                self.veri_eylemleri[eylem].setText(self.veri_eylemleri[eylem].text() + "	" + kisayol)
-                QShortcut(QKeySequence(kisayol), self, activated=islev)
-        self.veri_eylemleri["dogrulama"].setEnabled(True)
-        self.veri_eylemleri["dogrulama"].triggered.connect(lambda _=False: self.dogrulama_ac())
-        for eylem, islev in (("ad_tanimla", self.ad_tanimla_ac), ("ad_yoneticisi", self.ad_yoneticisi_ac)):
-            self.veri_eylemleri[eylem].setEnabled(True)
-            self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
-        self.veri_eylemleri["ad_yoneticisi"].setText(self.veri_eylemleri["ad_yoneticisi"].text() + "	Ctrl+F3")
-        QShortcut(QKeySequence("Ctrl+F3"), self, activated=self.ad_yoneticisi_ac)
-        QShortcut(QKeySequence("Shift+F4"), self, activated=lambda: self.sonrakini_bul(False))
-        QShortcut(QKeySequence("Ctrl+Shift+F4"), self, activated=lambda: self.sonrakini_bul(True))
-        QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
-        QShortcut(QKeySequence("Ctrl+PgUp"), self, activated=lambda: self._sekme_git(-1))
+        for tus, islev in (("Ctrl+F", lambda: self.bul_ac(False)), ("Ctrl+H", lambda: self.bul_ac(True)),
+                           ("Ctrl+G", self.git_ac), ("F5", self.git_ac),
+                           ("Ctrl+Shift+L", self.filtre_ac_kapat), ("Ctrl+Alt+L", self.filtre_yeniden_uygula),
+                           ("Ctrl+F3", self.ad_yoneticisi_ac),
+                           ("Shift+F4", lambda: self.sonrakini_bul(False)),
+                           ("Ctrl+Shift+F4", lambda: self.sonrakini_bul(True)),
+                           ("Ctrl+PgDown", lambda: self._sekme_git(1)), ("Ctrl+PgUp", lambda: self._sekme_git(-1))):
+            QShortcut(QKeySequence(tus), self, activated=islev)      # kısayol eyleme konmaz (belirsiz kısayol); ipucunda gösterilir
+        for k, a in self.kosullu_eylemleri.items():
+            self.eylemler["kosullu." + k] = a
 
     def _kosullu_menusu(self, dugme) -> QMenu:
-        """Koşullu Biçimlendirme menüsü (faz5_tasarim.md §8.4); şerit (5j) gelince şeride taşınır."""
+        """Koşullu Biçimlendirme menüsü (faz5_tasarim.md §8.4); Giriş ▸ Stiller grubunda açılır."""
         def pen(ad, *a, **kw):
             return lambda: getattr(self, ad)(*a, **kw)
         m = QMenu(dugme)
@@ -355,34 +314,150 @@ class Pencere(DosyaIslemleri, QMainWindow):
         ekle(m, "yonet", "Kuralları Yönet…", pen("kosullu_yonet"))
         return m
 
-    def _menu_iskeleti(self, baslik: str, ogeler):
-        """Başlık şeridine menü düğmesi ekler; `ogeler`: (anahtar, metin) ya da None (ayırıcı). Eylemler
-        başlangıçta kapalıdır: Faz 5'in ilgili alt işi (5b…5g) kendi eylemini bağlayıp açar.
-        Döner: (düğme, {anahtar: eylem})."""
-        dugme = QToolButton()
-        dugme.setObjectName("fileButton")
-        dugme.setText(baslik)
-        dugme.setPopupMode(QToolButton.InstantPopup)
-        menu = QMenu(dugme)
-        eylemler = {}
-        for oge in ogeler:
-            if oge is None:
-                menu.addSeparator()
-                continue
-            anahtar, metin = oge
-            eylem = menu.addAction(metin)
-            eylem.setEnabled(False)
-            eylemler[anahtar] = eylem
-        dugme.setMenu(menu)
-        return dugme, eylemler
+    def _menu(self, ogeler) -> QMenu:
+        """Katalog anahtarlarından açılır menü; `None` ayırıcı, `(ad, [alt öğeler])` alt menü."""
+        m = QMenu(self)
+        for o in ogeler:
+            if o is None:
+                m.addSeparator()
+            elif isinstance(o, tuple):
+                alt = self._menu(o[1])
+                alt.setTitle(o[0])
+                m.addMenu(alt)
+            else:
+                m.addAction(self.eylemler[o])
+        return m
+
+    def _giris_gruplari_ekle(self) -> None:
+        """Giriş sekmesinin Pano / Stiller / Hücreler / Düzenleme grupları (Yazı Tipi, Hizalama, Sayı
+        `BicimCubugu`da kurulur). Sıra Excel gibi: Pano, Yazı Tipi, Hizalama, Sayı, Stiller, Hücreler,
+        Düzenleme."""
+        e = self.eylemler
+        pano = SeritGrubu("Pano", 3, "paste32")
+        pano.buyuk(e["yapistir"])
+        pano.kucukler([e["kes"], e["kopyala"], self.bicim_cubugu.boyaci])
+        stiller = SeritGrubu("Stiller", 5, "cond_format32")
+        stiller.buyuk(menu=self._kosullu_menusu(self), ikon="cond_format32", metin="Koşullu\nBiçimlendirme")
+        hucreler = SeritGrubu("Hücreler", 4, "insert32")
+        hucreler.buyuk(menu=self._menu(("satir_ekle", "sutun_ekle", "sayfa_ekle")), ikon="insert32", metin="Ekle")
+        hucreler.buyuk(menu=self._menu(("satir_sil", "sutun_sil", "sayfa_sil")), ikon="delete32", metin="Sil")
+        hucreler.buyuk(menu=self._menu((
+            "satir_yukseklik", "satir_sigdir", "sutun_genislik", "sutun_sigdir", None,
+            ("Gizle ve Göster", ("satir_gizle", "satir_goster", "sutun_gizle", "sutun_goster")), None,
+            "sayfa_adlandir", "sekme_rengi", None, "hucre_bicimi")), ikon="format32", metin="Biçim")
+        duzenleme = SeritGrubu("Düzenleme", 2, "autosum")
+        duzenleme.kucukler([
+            e["otomatik_toplam"],
+            (e["doldur"], self._menu(("doldur_asagi", "doldur_saga"))),
+            (e["temizle"], self._menu(("temizle_hepsi", "temizle_bicim", "temizle_icerik", "temizle_not")))])
+        duzenleme.buyuk(menu=self._menu((
+            "artan", "azalan", "ozel_sirala", None, "filtre", "filtre_temizle", "filtre_yeniden")),
+            ikon="sort_filter32", metin="Sırala ve\nFiltre")
+        duzenleme.buyuk(menu=self._menu(("bul", "degistir", "git")), ikon="find32", metin="Bul ve\nSeç")
+        for g, konum in ((pano, 0), (stiller, 4), (hucreler, 5), (duzenleme, 6)):
+            self.bicim_cubugu.grup_ekle(g, konum)
+        for d in self.bicim_cubugu.findChildren(QToolButton):
+            d.setFocusPolicy(Qt.NoFocus)             # şerit düğmeleri düzenleme/formül çubuğu odağını çalmaz
+
+    def _eylemleri_kur(self) -> None:
+        """Eylem kataloğu (5j-3): her komut TEK `QAction`; menüler ve şerit aynı nesneyi kullanır.
+        Kısayollar eyleme konmaz (aynı tuş iki yerde tanımlanınca Qt 'belirsiz kısayol' verir):
+        `QShortcut`lar ayrı kurulur, burada yalnız ipucunda gösterilir. Eylemler çağrıldığında etkin
+        sayfanın ızgarasına bakar (`self.izgara()`)."""
+        self.eylemler: Dict[str, QAction] = {}
+
+        def e(anahtar, metin, islev, kisayol="", ikon=None, isaretli=False):
+            a = QAction(metin, self)
+            if ikon:
+                a.setIcon(icons.icon(ikon))
+            a.setToolTip(metin.rstrip("…") + (f" ({kisayol})" if kisayol else ""))
+            if isaretli:
+                a.setCheckable(True)
+            if islev is not None:
+                a.triggered.connect(lambda _=False, f=islev: f())
+            self.eylemler[anahtar] = a
+            return a
+        g = self.izgara
+        sayfa_i = lambda: self.sekmeler.currentIndex()
+        # geri al / yinele
+        e("geri_al", "Geri Al", lambda: g().geri_al(), "Ctrl+Z", "undo")
+        e("yinele", "Yinele", lambda: g().yinele(), "Ctrl+Y", "redo")
+        # pano
+        e("yapistir", "Yapıştır", lambda: g().yapistir(), "Ctrl+V", "paste32")
+        e("kes", "Kes", lambda: g().kes(), "Ctrl+X", "cut")
+        e("kopyala", "Kopyala", lambda: g().kopyala(), "Ctrl+C", "copy")
+        # düzenleme
+        e("otomatik_toplam", "Otomatik Toplam", lambda: g().otomatik_toplam(), "Alt+=", "autosum")
+        e("doldur", "Doldur", lambda: None, "", "fill")                 # yalnız menü düğmesinin başlığı
+        e("doldur_asagi", "Aşağı", lambda: g().asagi_doldur(), "Ctrl+D")
+        e("doldur_saga", "Sağa", lambda: g().saga_doldur(), "Ctrl+R")
+        e("temizle", "Temizle", lambda: None, "", "clear")              # yalnız menü düğmesinin başlığı
+        e("temizle_hepsi", "Tümünü Temizle", lambda: g().tumunu_temizle())
+        e("temizle_bicim", "Biçimleri Temizle", lambda: g().bicimleri_temizle())
+        e("temizle_icerik", "İçeriği Temizle", lambda: g().secimi_temizle(), "Delete")
+        e("temizle_not", "Notları Temizle", lambda: g().notlari_temizle())
+        e("bul", "Bul…", lambda: self.bul_ac(False), "Ctrl+F", "find32")
+        e("degistir", "Değiştir…", lambda: self.bul_ac(True), "Ctrl+H")
+        e("git", "Git…", lambda: self.git_ac(), "Ctrl+G")
+        # hücreler
+        e("satir_ekle", "Sayfa Satırları Ekle", lambda: g().satirlari_ekle(), "", "insert32")
+        e("sutun_ekle", "Sayfa Sütunları Ekle", lambda: g().sutunlari_ekle())
+        e("sayfa_ekle", "Sayfa Ekle", lambda: self.sayfa_ekle())
+        e("satir_sil", "Sayfa Satırlarını Sil", lambda: g().satirlari_sil(), "", "delete32")
+        e("sutun_sil", "Sayfa Sütunlarını Sil", lambda: g().sutunlari_sil())
+        e("sayfa_sil", "Sayfayı Sil", lambda: self.sayfa_sil(sayfa_i()))
+        e("satir_yukseklik", "Satır Yüksekliği…", lambda: g()._satir_yuksekligi_sor(), "", "format32")
+        e("satir_sigdir", "Satır Yüksekliğini Otomatik Sığdır", lambda: g().satir_otomatik_sigdir())
+        e("sutun_genislik", "Sütun Genişliği…", lambda: g()._sutun_genisligi_sor())
+        e("sutun_sigdir", "Sütun Genişliğini Otomatik Sığdır", lambda: g().sutun_otomatik_sigdir())
+        e("satir_gizle", "Satırları Gizle", lambda: g().satirlari_gizle(), "Ctrl+9")
+        e("satir_goster", "Satırları Göster", lambda: g().satirlari_goster(), "Ctrl+Shift+9")
+        e("sutun_gizle", "Sütunları Gizle", lambda: g().sutunlari_gizle(), "Ctrl+0")
+        e("sutun_goster", "Sütunları Göster", lambda: g().sutunlari_goster(), "Ctrl+Shift+0")
+        e("sayfa_adlandir", "Sayfayı Yeniden Adlandır…", lambda: self.sayfa_yeniden_adlandir(sayfa_i()))
+        e("sekme_rengi", "Sekme Rengi…", lambda: self._sekme_rengi_sor(sayfa_i()))
+        e("hucre_bicimi", "Hücreleri Biçimlendir…", lambda: self.bicim_cubugu.penceresi_ac(), "Ctrl+1")
+        # veri
+        e("artan", "Artan Sırala", lambda: self.sirala_hizli(True), "", "sort_az")
+        e("azalan", "Azalan Sırala", lambda: self.sirala_hizli(False), "", "sort_za")
+        e("ozel_sirala", "Özel Sıralama…", lambda: self.sirala_ozel(), "", "sort32")
+        e("filtre", "Filtre", lambda: self.filtre_ac_kapat(), "Ctrl+Shift+L", "filter32", isaretli=True)
+        e("filtre_temizle", "Filtreyi Temizle", lambda: self.filtre_temizle(), "", "filter_clear")
+        e("filtre_yeniden", "Yeniden Uygula", lambda: self.filtre_yeniden_uygula(), "Ctrl+Alt+L", "reapply")
+        e("dogrulama", "Veri Doğrulama…", lambda: self.dogrulama_ac(), "", "validation32")
+        e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
+        e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
+        # notlar
+        e("yeni_not", "Yeni Not", lambda: g().not_duzenle(), "Shift+F2", "note32")
+        e("notu_sil", "Notu Sil", lambda: g().notu_sil(), "", "note_delete")
+        # görünüm
+        for k, metin in (("bolme", "Bölmeleri Dondur"), ("ust_satir", "Üst Satırı Dondur"),
+                         ("ilk_sutun", "İlk Sütunu Dondur"), ("coz", "Bölmelerin Dondurmasını Kaldır")):
+            e(k, metin, lambda t=k: g().dondur_ayarla(t), "", "freeze32" if k == "bolme" else None)
+        kl = e("kilavuz", "Kılavuz Çizgileri", None, isaretli=True)
+        kl.setChecked(True)
+        kl.toggled.connect(lambda v: g().kilavuz_goster(v))
+        e("yakin_100", "%100", lambda: g().yakinlastir(1.0), "", "zoom100_32")
 
     def _gorunum_menusu_hazirla(self) -> None:
-        """Menü açılırken: kılavuz onayı sayfaya uyar; dondurma açıkken 'Dondurmayı Kaldır' ad değişimi yok."""
+        self._eylem_durumlari()
+
+    def _eylem_durumlari(self) -> None:
+        """Etkin sayfaya bağlı eylem durumları (işaret/etkinlik/metin); `_arayuzu_guncelle` her seçim
+        değişiminde çağırır, bu yüzden ucuz tutulur."""
         g = self.izgara()
-        self.kilavuz_eylemi.blockSignals(True)
-        self.kilavuz_eylemi.setChecked(g.sayfa.kilavuz)
-        self.kilavuz_eylemi.blockSignals(False)
-        self.gorunum_eylemleri["coz"].setEnabled(g.sayfa.dondur is not None)
+        if g is None:
+            return
+        e = self.eylemler
+        for anahtar, deger in (("kilavuz", g.sayfa.kilavuz), ("filtre", g.sayfa.filtre is not None)):
+            a = e[anahtar]
+            a.blockSignals(True)
+            a.setChecked(bool(deger))
+            a.blockSignals(False)
+        e["coz"].setEnabled(g.sayfa.dondur is not None)
+        var = g.not_var_mi()
+        e["notu_sil"].setEnabled(var)
+        e["yeni_not"].setText("Notu Düzenle" if var else "Yeni Not")
 
     def closeEvent(self, olay):
         olay.ignore()                                        # yalnız başarıyla kapanabilirse kabul edilir
@@ -666,7 +741,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
             self.formul.setText(g.aktif_duzenleme_metni())
         self._ozet_planla()
         self._dongu_etiketi_guncelle()
-        self.bicim_cubugu.guncelle()
+        self.serit.guncelle()
+        self._eylem_durumlari()
 
     def _uyari(self, metin: str):
         self.statusBar().showMessage(metin, 6000)
@@ -949,6 +1025,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         kmt = FiltreDegis(g.sayfa, yeni)
         self.yigin.calistir(kmt)
         g._guncelle(pano_iptal=False)
+        self._eylem_durumlari()
         if bildir and yeni is not None and yeni.kosullar:
             n = len(veri_satirlari(yeni))
             self.statusBar().showMessage(f"{n} kayıttan {n - kmt.gizlenen} kayıt bulundu", 6000)

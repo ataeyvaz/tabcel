@@ -42,7 +42,7 @@ QToolTip {{ background: {SURFACE}; color: {TEXT}; border: 1px solid {BORDER};
 #header #fileButton {{ font-weight: 600; }}
 #header #fileButton::menu-indicator {{ image: none; }}
 
-#formatBar {{ background: {SURFACE}; border-bottom: 1px solid {BORDER}; }}
+#formatBar {{ background: {SURFACE}; }}
 #formatBar QToolButton {{ border: 1px solid transparent; border-radius: 4px; padding: 2px; }}
 #formatBar QToolButton:hover {{ background: {HOVER}; }}
 #formatBar QToolButton:pressed {{ background: {PRESSED}; }}

@@ -10,7 +10,7 @@ from typing import Callable
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QFont, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QApplication, QComboBox, QDialog, QFontComboBox, QFrame, QHBoxLayout, QMenu, QToolButton, QWidget,
+    QApplication, QComboBox, QDialog, QFontComboBox, QMenu, QToolButton,
 )
 
 from ..model import bicim_islem as bi
@@ -18,6 +18,7 @@ from ..model.sayi_bicimi import HAZIR
 from ..model.stil import StilYama
 from . import icons
 from .bicim_penceresi import BicimPenceresi
+from .serit import SeritGrubu, SeritSayfasi
 from .widgets import RenkDugmesi
 
 KENAR_METINLERI = (
@@ -30,14 +31,6 @@ KENAR_METINLERI = (
 )
 
 
-class _Ayirac(QFrame):
-    def __init__(self):
-        super().__init__()
-        self.setFrameShape(QFrame.VLine)
-        self.setStyleSheet("color: #d0d0d0;")
-        self.setFixedHeight(20)
-
-
 class _BoyaciDugmesi(QToolButton):
     """Tek tık: bir kez boya; çift tık: Esc'e dek kalıcı (Excel gibi)."""
     ciftTik = Signal()
@@ -46,26 +39,29 @@ class _BoyaciDugmesi(QToolButton):
         self.ciftTik.emit()
 
 
-class BicimCubugu(QWidget):
+class BicimCubugu(SeritSayfasi):
+    """Giriş sekmesinin sayfası (5j-4). Yazı Tipi / Hizalama / Sayı grupları burada kurulur; Pano, Stiller,
+    Hücreler, Düzenleme gruplarını `Pencere` `grup_ekle` ile ekler (bu sınıf pencereyi tanımaz, yalnız
+    `izgara_al` alır). Öznitelik adları 5j öncesiyle aynıdır (testler ve pencere bunlara dayanır)."""
+
     def __init__(self, izgara_al: Callable, parent=None):
-        super().__init__(parent)
+        super().__init__()
+        if parent is not None:
+            self.setParent(parent)
         self.setObjectName("formatBar")
         self._izgara_al = izgara_al
         self._guncelleniyor = False
-        h = QHBoxLayout(self)
-        h.setContentsMargins(6, 3, 6, 3)
-        h.setSpacing(2)
 
-        # biçim boyacısı
+        # biçim boyacısı (Pano grubuna Pencere koyar)
         self.boyaci = _BoyaciDugmesi()
         self.boyaci.setIcon(icons.icon("format_painter"))
         self.boyaci.setIconSize(QSize(20, 20))
+        self.boyaci.setText("Biçim Boyacısı")
         self.boyaci.setToolTip("Biçim Boyacısı (çift tık: kalıcı, Esc: bitir)")
         self.boyaci.setFocusPolicy(Qt.NoFocus)
         self.boyaci.setCheckable(True)
         self.boyaci.clicked.connect(lambda _=False: self._boyaci_tikla())
         self.boyaci.ciftTik.connect(lambda: self._boyaci_tikla(True))
-        h.addWidget(self.boyaci)
 
         # yazı tipi + boyut
         self.yazi_tipi = QFontComboBox()
@@ -82,9 +78,6 @@ class BicimCubugu(QWidget):
         self.boyut.lineEdit().editingFinished.connect(self._boyut_girildi)
         self.buyut = self._dugme("grow_font", "Yazı Tipini Büyüt", lambda: self._boyut_adim(+1))
         self.kucult = self._dugme("shrink_font", "Yazı Tipini Küçült", lambda: self._boyut_adim(-1))
-        for w in (self.yazi_tipi, self.boyut, self.buyut, self.kucult):
-            h.addWidget(w)
-        h.addWidget(_Ayirac())
 
         # karakter biçimi
         self.kalin = self._dugme("bold", "Kalın (Ctrl+B)", lambda: self._degistir(bi.kalin_yamasi), True)
@@ -108,9 +101,6 @@ class BicimCubugu(QWidget):
                 self.kenar_eylemleri[anahtar] = menu.addAction(
                     metin, lambda a=anahtar: self.kenarlik_uygula(a))
         self.kenarlik.setMenu(menu)
-        for w in (self.kalin, self.italik, self.altcizili, self.yazi_rengi, self.dolgu, self.kenarlik):
-            h.addWidget(w)
-        h.addWidget(_Ayirac())
 
         # hizalama
         self.dikey = {
@@ -141,10 +131,6 @@ class BicimCubugu(QWidget):
         self.kaydir = self._dugme("wrap", "Metni Kaydır", lambda: self._degistir(bi.kaydir_yamasi), True)
         self.girinti_azalt = self._dugme("outdent", "Girintiyi Azalt", lambda: self._girinti(-1))
         self.girinti_artir = self._dugme("indent", "Girintiyi Artır", lambda: self._girinti(+1))
-        for w in (*self.dikey.values(), *self.yatay.values(), self.kaydir, self.birlestir,
-                  self.girinti_azalt, self.girinti_artir):
-            h.addWidget(w)
-        h.addWidget(_Ayirac())
 
         # sayı
         self.sayi_bicimi = QComboBox()
@@ -160,13 +146,25 @@ class BicimCubugu(QWidget):
                                   lambda: self._sayi_kodu(bi.BINLIK))
         self.ondalik_artir = self._dugme("decimal_more", "Ondalık Basamak Artır", lambda: self._ondalik(+1))
         self.ondalik_azalt = self._dugme("decimal_less", "Ondalık Basamak Azalt", lambda: self._ondalik(-1))
-        for w in (self.sayi_bicimi, self.para, self.yuzde, self.binlik, self.ondalik_artir,
-                  self.ondalik_azalt):
-            h.addWidget(w)
-        self.pencere_dugmesi = self._dugme("dialog_launcher", "Hücreleri Biçimlendir (Ctrl+1)",
-                                           lambda: self.penceresi_ac())
-        h.addStretch(1)
-        h.addWidget(self.pencere_dugmesi)
+
+        # gruplar (5j-4): düğmeler serbest satırlarla dizilir; Hücreleri Biçimlendir ↘ başlatıcıları
+        yg = SeritGrubu("Yazı Tipi", 9, "bold")
+        yg.satirlar([[self.yazi_tipi, self.boyut, self.buyut, self.kucult],
+                     [self.kalin, self.italik, self.altcizili, self.kenarlik, self.dolgu, self.yazi_rengi]])
+        self.pencere_dugmesi = yg.baslatici_ekle(lambda: self.penceresi_ac(2),
+                                                 "Hücreleri Biçimlendir (Ctrl+1)")
+        hg = SeritGrubu("Hizalama", 8, "align_left")
+        hg.satirlar([[*self.dikey.values(), self.kaydir],
+                     [*self.yatay.values(), self.birlestir],
+                     [self.girinti_azalt, self.girinti_artir]])
+        hg.baslatici_ekle(lambda: self.penceresi_ac(1), "Hücreleri Biçimlendir (Ctrl+1)")
+        sg = SeritGrubu("Sayı", 7, "percent")
+        sg.satirlar([[self.sayi_bicimi],
+                     [self.para, self.yuzde, self.binlik, self.ondalik_artir, self.ondalik_azalt]])
+        sg.baslatici_ekle(lambda: self.penceresi_ac(0), "Hücreleri Biçimlendir (Ctrl+1)")
+        self.yazi_tipi_grubu, self.hizalama_grubu, self.sayi_grubu = yg, hg, sg
+        for g in (yg, hg, sg):
+            self.grup_ekle(g)
 
         # klavye kısayolları. Türkçe Excel'deki karşılıkları doğrulanana dek Sözcük'teki kararla aynı
         # (Ctrl+B/I/U; §8b-44). Gizlenen/kısa pencerede de çalışsın diye pencereye bağlı

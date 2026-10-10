@@ -48,6 +48,48 @@ ICONS = {
     # biçim boyacısı: fırça (sap + tüy bloğu)
     "format_painter": {"svg": "M4.5 3.5H14.5V7.5H4.5Z M14.5 5.5H16.5V10.5H9.5V13 M8 13H11V16.5H8Z"},
     "chevron_down": {"svg": "M6 8L10 12L14 8"},
+    # --- şerit (5j-2): 20 px küçük ikonlar ---
+    "cut": {"svg": "M6.5 13L13 3.5 M13.5 13L7 3.5 M3 15.5A2.5 2.5 0 1 0 8 15.5A2.5 2.5 0 1 0 3 15.5"
+                   " M12 15.5A2.5 2.5 0 1 0 17 15.5A2.5 2.5 0 1 0 12 15.5"},
+    "copy": {"svg": "M7.5 7.5H15.5V16.5H7.5Z M5.5 12.5H4.5V3.5H12.5V6.5"},
+    "autosum": {"svg": "M14.5 4.5H5.5L10.5 10L5.5 15.5H14.5"},
+    "fill": {"svg": "M10.5 3.5V13.5 M6.5 9.5L10.5 13.5L14.5 9.5 M4.5 16.5H16.5"},
+    "clear": {"svg": "M3.5 11.5L10.5 4.5L16.5 10.5L12.5 14.5H7.5Z M7 8L13 14 M10.5 16.5H16.5"},
+    "sort_az": {"svg": "M16.5 3.5V15.5 M14 13L16.5 15.5L19 13",
+                "text": [("A", 8, True, False, (1, 2, 11, 8)), ("Z", 8, True, False, (1, 10, 11, 8))]},
+    "sort_za": {"svg": "M16.5 3.5V15.5 M14 13L16.5 15.5L19 13",
+                "text": [("Z", 8, True, False, (1, 2, 11, 8)), ("A", 8, True, False, (1, 10, 11, 8))]},
+    "filter_clear": {"svg": "M3.5 4.5H15.5L10.5 10.5V16.5L8.5 15V10.5Z M13 12.5L17.5 17 M17.5 12.5L13 17"},
+    "reapply": {"svg": "M3.5 4.5H15.5L10.5 10.5V15.5L8.5 14V10.5Z M17.5 13.5A3 3 0 1 1 15 11 M17.5 11V13.5H15"},
+    "define_name": {"svg": "M3.5 3.5H10L16.5 10L10 16.5L3.5 10Z M6.5 6.5H7.5V7.5H6.5Z"},
+    "note_delete": {"svg": "M3.5 3.5H13.5V12.5H8.5L5.5 15.5V12.5H3.5Z M14 14L18 18 M18 14L14 18"},
+    "save": {"svg": "M3.5 3.5H14.5L16.5 5.5V16.5H3.5Z M6.5 3.5V7.5H13.5V3.5 M6.5 16.5V11.5H13.5V16.5"},
+    # --- şerit (5j-2): 32 px büyük ikonlar (kendi 32'lik ızgarasında, 1 px çizgi) ---
+    "paste32": {"grid": 32, "svg": "M5.5 6.5H11.5V4.5H17.5V6.5H23.5V12.5 M5.5 6.5V27.5H15.5"
+                                   " M13.5 12.5H26.5V27.5H13.5Z M16.5 17.5H23.5 M16.5 21.5H23.5"},
+    "cond_format32": {"grid": 32, "svg": "M4.5 5.5H27.5V26.5H4.5Z M4.5 12.5H27.5 M4.5 19.5H27.5 M15.5 5.5V26.5"
+                                         " M7.5 9H12.5 M7.5 16H10.5 M7.5 23H12.5 M18.5 9H24.5 M18.5 16H22.5"},
+    "insert32": {"grid": 32, "svg": "M4.5 5.5H20.5V21.5H4.5Z M4.5 11.5H20.5 M12.5 5.5V21.5 M24.5 18.5V28.5 M19.5 23.5H29.5"},
+    "delete32": {"grid": 32, "svg": "M4.5 5.5H20.5V21.5H4.5Z M4.5 11.5H20.5 M12.5 5.5V21.5 M20.5 20.5L28.5 28.5 M28.5 20.5L20.5 28.5"},
+    "format32": {"grid": 32, "svg": "M4.5 5.5H22.5V23.5H4.5Z M4.5 11.5H22.5 M13.5 5.5V23.5"
+                                    " M18.5 27.5L26.5 19.5L28.5 21.5L20.5 29.5H18.5Z"},
+    "sort_filter32": {"grid": 32, "svg": "M17.5 6.5H28.5L24 14V21.5L22 20V14Z M7.5 5.5V25.5 M4.5 22.5L7.5 25.5L10.5 22.5"
+                                         " M12.5 8.5H14.5 M12.5 13.5H14.5"},
+    "find32": {"grid": 32, "svg": "M5.5 13.5A8 8 0 1 0 21.5 13.5A8 8 0 1 0 5.5 13.5 M19.5 19.5L27.5 27.5"},
+    "sort32": {"grid": 32, "svg": "M9.5 4.5V26.5 M5.5 22.5L9.5 26.5L13.5 22.5 M18.5 7.5H27.5 M18.5 13.5H25.5 M18.5 19.5H23.5"},
+    "filter32": {"grid": 32, "svg": "M4.5 5.5H27.5L18.5 16.5V27.5L13.5 24.5V16.5Z"},
+    "validation32": {"grid": 32, "svg": "M4.5 4.5H27.5V19.5H4.5Z M9.5 11.5L13 15L20.5 8 M4.5 24.5H27.5 M4.5 28.5H18.5"},
+    "name_manager32": {"grid": 32, "svg": "M4.5 5.5H16L26.5 16L16 26.5L4.5 15Z M9.5 10.5H11.5V12.5H9.5Z"},
+    "margins32": {"grid": 32, "svg": "M7.5 3.5H25.5V28.5H7.5Z M11.5 7.5H21.5V24.5H11.5Z M3.5 12.5H7.5 M25.5 12.5H29.5"},
+    "orientation32": {"grid": 32, "svg": "M5.5 4.5H17.5V22.5H5.5Z M19.5 17.5H29.5V27.5H19.5Z"},
+    "paper32": {"grid": 32, "svg": "M7.5 3.5H19.5L25.5 9.5V28.5H7.5Z M19.5 3.5V9.5H25.5 M11.5 15.5H21.5 M11.5 20.5H21.5"},
+    "print_area32": {"grid": 32, "svg": "M5.5 5.5H26.5V26.5H5.5Z M10.5 10.5H21.5V21.5H10.5Z"},
+    "print_titles32": {"grid": 32, "svg": "M6.5 4.5H25.5V27.5H6.5Z M6.5 11.5H25.5 M13.5 11.5V27.5 M6.5 17.5H25.5 M6.5 22.5H25.5"},
+    "note32": {"grid": 32, "svg": "M4.5 5.5H27.5V21.5H15.5L9.5 27.5V21.5H4.5Z M9.5 11.5H22.5 M9.5 16.5H18.5"},
+    "freeze32": {"grid": 32, "svg": "M4.5 5.5H27.5V26.5H4.5Z M4.5 12.5H27.5 M12.5 5.5V26.5 M4.5 13.5H27.5 M13.5 5.5V26.5"},
+    "zoom100_32": {"grid": 32, "svg": "M5.5 13.5A8 8 0 1 0 21.5 13.5A8 8 0 1 0 5.5 13.5 M19.5 19.5L27.5 27.5",
+                   "text": [("100", 8, True, False, (5.5, 9, 16, 9))]},
+    "autosum32": {"grid": 32, "svg": "M24.5 6.5H8.5L16.5 16L8.5 25.5H24.5"},
 }
 
 _LIVE_ENGINES = []  # PySide sarmalayıcıları C++ tarafı kullanırken çöp toplanmasın
@@ -58,9 +100,9 @@ def _renderer(svg_text):
     return QSvgRenderer(QByteArray(svg_text.encode()))
 
 
-def _svg(path, color):
+def _svg(path, color, grid=GRID):
     return (
-        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {GRID} {GRID}" width="{GRID}" height="{GRID}">'
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {grid} {grid}" width="{grid}" height="{grid}">'
         f'<path d="{path}" fill="none" stroke="{color}" stroke-width="1" '
         'stroke-linecap="square" stroke-linejoin="round"/></svg>'
     )
@@ -69,17 +111,18 @@ def _svg(path, color):
 def draw(painter, rect, name, color=INK, bar=None):
     """`name` ikonunu `rect` içine çizer. Ölçek 1 iken çizgiler tam piksele oturur."""
     spec = ICONS[name]
-    scale = min(rect.width(), rect.height()) / GRID
+    grid = spec.get("grid", GRID)          # büyük (32 px) şerit ikonları kendi ızgarasında 1 px çizgiyle çizilir
+    scale = min(rect.width(), rect.height()) / grid
     painter.save()
     painter.setRenderHint(QPainter.Antialiasing)
     painter.setRenderHint(QPainter.TextAntialiasing)
-    ox = round(rect.x() + (rect.width() - GRID * scale) / 2)
-    oy = round(rect.y() + (rect.height() - GRID * scale) / 2)
+    ox = round(rect.x() + (rect.width() - grid * scale) / 2)
+    oy = round(rect.y() + (rect.height() - grid * scale) / 2)
     painter.translate(ox, oy)
     ink = QColor(color)
 
     if "svg" in spec:
-        _renderer(_svg(spec["svg"], ink.name())).render(painter, QRectF(0, 0, GRID * scale, GRID * scale))
+        _renderer(_svg(spec["svg"], ink.name(), grid)).render(painter, QRectF(0, 0, grid * scale, grid * scale))
 
     for text, px, bold, italic, (x, y, w, h) in spec.get("text", []):
         font = QFont(spec.get("font", "Segoe UI"))

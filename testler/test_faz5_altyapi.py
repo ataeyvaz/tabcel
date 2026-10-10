@@ -579,7 +579,9 @@ def test_duzen_ve_veri_menu_iskeleti_ve_olaylar_pencereyi_bozmaz():
     k = CalismaKitabi()
     p = Pencere(k)
     try:
-        assert p.duzen_dugmesi.text() == "Düzen" and p.veri_dugmesi.text() == "Veri"
+        assert "Giriş" in p.serit.sekme_adlari()        # menü düğmeleri şeride taşındı (5j-4; kullanıcı onayıyla)
+        sr = p.serit.eylemler()
+        assert all(p.duzen_eylemleri[k] in sr for k in ("bul", "degistir", "git"))
         assert set(p.duzen_eylemleri) == {"bul", "degistir", "git"}
         assert {"artan", "azalan", "ozel_sirala", "filtre", "filtre_temizle", "filtre_yeniden",
                 "dogrulama", "ad_tanimla", "ad_yoneticisi"} <= set(p.veri_eylemleri)

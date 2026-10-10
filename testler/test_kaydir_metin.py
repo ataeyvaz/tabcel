@@ -23,7 +23,7 @@ def app():
 @pytest.fixture
 def pencere(app):
     p = Pencere(CalismaKitabi())
-    p.resize(1000, 600)
+    p.resize(1000, 800)          # şerit (5j-4) ızgara alanını ~100 px daralttı: yükseklik buna göre artırıldı
     p.show()
     return p
 
