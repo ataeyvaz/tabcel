@@ -318,6 +318,28 @@ class DogrulamaDegis:
         self.sayfa.dogrulamalari_yaz(self._eski)
 
 
+class KosulluDegis:
+    """Koşullu biçim kural listesini değiştirir (kural ekle/düzenle/sil/sırala/temizle; tek geri al adımı).
+    `yeni`: yeni TAM liste (sıra = öncelik) ya da `yeni(eski_liste) -> liste` işlevi."""
+
+    def __init__(self, sayfa: Sayfa, yeni):
+        self.sayfa, self._yeni = sayfa, yeni
+        self._eski = None
+
+    def _hesapla(self, eski):
+        return list(self._yeni(list(eski)) if callable(self._yeni) else self._yeni)
+
+    def bos_mu(self) -> bool:
+        return self._hesapla(self.sayfa.kosullu) == self.sayfa.kosullu
+
+    def yap(self) -> None:
+        self._eski = list(self.sayfa.kosullu)
+        self.sayfa.kosullulari_yaz(self._hesapla(self._eski))
+
+    def geri_al(self) -> None:
+        self.sayfa.kosullulari_yaz(self._eski)
+
+
 class AdDegis:
     """Tanımlı ad ekler / düzenler / yeniden adlandırır / siler (tek geri al adımı).
     `eski_anahtar`: düzenlenen/silinen adın anahtarı (yeni ad için None); `yeni`: yeni `TanimliAd`
@@ -668,7 +690,7 @@ def ana_sayfa(komut, geri_al: bool = False):
         return None
     return getattr(komut, "sayfa", None) if isinstance(
         komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala,
-                NotlarDegis, FiltreDegis, DogrulamaDegis)) else None
+                NotlarDegis, FiltreDegis, DogrulamaDegis, KosulluDegis)) else None
 
 
 class GeriAlYigini:

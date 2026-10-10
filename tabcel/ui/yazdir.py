@@ -12,6 +12,7 @@ from PySide6.QtCore import QMarginsF, QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPageLayout, QPageSize, QPainter, QPen
 from PySide6.QtPrintSupport import QPrinter
 
+from ..formul.kosul import KosulluHesap
 from ..io.csv_io import hucre_metni
 from ..model.adres import Aralik
 from ..model.deger import Hata
@@ -43,6 +44,16 @@ class SayfaCizici:
         self.taban = taban_yazi_tipi
         self.yapi = sayfa.sayfa_yapisi
         self._yazi_onb = {}
+        self._kosullu = KosulluHesap(sayfa) if sayfa.kosullu else None   # koşullu biçim çıktıda da görünür (Excel)
+
+    def _stil(self, r: int, c: int):
+        """Hücrenin çıktıdaki stili: hücre stili + koşullu biçim yaması."""
+        st = self.sayfa.stil(r, c)
+        if self._kosullu is not None:
+            yama = self._kosullu.hucre(r, c)[0]
+            if yama is not None:
+                st = yama.uygula(st)
+        return st
 
     def genislik(self, c: int) -> float:
         return float(self.sayfa.genislik(c))
@@ -99,9 +110,13 @@ class SayfaCizici:
             for c in sutunlar:
                 if (r, c) in kapsanan:
                     continue
-                st = s.stil(r, c)
+                st = self._stil(r, c)
                 if st.dolgu:
                     p.fillRect(hucre_dikdortgeni(r, c), QColor(st.dolgu))
+                if self._kosullu is not None:
+                    cubuk = self._kosullu.hucre(r, c)[1]
+                    if cubuk is not None:
+                        self._cubuk(p, cubuk, hucre_dikdortgeni(r, c))
         if self.yapi.kilavuz:
             p.setPen(QPen(QColor("#BFBFBF"), 0.75))
             for r in satirlar:
@@ -117,7 +132,7 @@ class SayfaCizici:
             for c in sutunlar:
                 if (r, c) in kapsanan:
                     continue
-                self._kenarlik(p, s.stil(r, c), hucre_dikdortgeni(r, c))
+                self._kenarlik(p, self._stil(r, c), hucre_dikdortgeni(r, c))
         p.restore()
 
     # ------------------------------------------------------------------ hücre
@@ -143,7 +158,11 @@ class SayfaCizici:
         metin = hucre_metni(s, r, c)
         if metin == "":
             return
-        st = s.stil(r, c)
+        if self._kosullu is not None:
+            cb = self._kosullu.hucre(r, c)[1]
+            if cb is not None and cb[2]:
+                return
+        st = self._stil(r, c)
         v = s.sonuc(r, c) if h.formul is not None else h.deger
         yatay = st.yatay
         if yatay == "genel":
@@ -175,6 +194,22 @@ class SayfaCizici:
         p.setPen(QColor(st.yazi_rengi or "#000000"))
         p.drawText(alan.adjusted(0, 1, 0, -1), int(bayrak), metin)
         p.restore()
+
+    def _cubuk(self, p, cubuk, kutu: QRectF) -> None:
+        """Veri çubuğu (hücre içinde 2 px iç boşlukla; gradyan renkten beyaza)."""
+        from PySide6.QtGui import QLinearGradient
+        oran, renk, _yalniz, gradyan = cubuk
+        k = QRectF(kutu.x() + 2, kutu.y() + 2, max(0.0, (kutu.width() - 4) * oran), max(0.0, kutu.height() - 4))
+        if k.width() <= 0 or k.height() <= 0:
+            return
+        c1 = QColor(renk)
+        if gradyan:
+            gr = QLinearGradient(k.left(), 0, k.right(), 0)
+            gr.setColorAt(0.0, c1)
+            gr.setColorAt(1.0, QColor((c1.red() + 765) // 4, (c1.green() + 765) // 4, (c1.blue() + 765) // 4))
+            p.fillRect(k, gr)
+        else:
+            p.fillRect(k, c1)
 
     def _tasma_sagi(self, r, c, kutu, sutunlar, xs, toplam_g) -> float:
         """Sola hizalı metnin sağa taşabileceği son x: bitişik hücreler boş ve birleşik değilse sayfa kenarına

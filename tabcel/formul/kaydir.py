@@ -155,18 +155,39 @@ def yapi_duzeltmeleri(kitap, sayfa, eksen: str, nerede: int, fark: int):
 _EK_FORMUL_ALANLARI = ("formul", "formul1", "formul2")      # doğrulama / koşullu biçim kuralı alanları
 
 
-def _kural_duzelt(kural, kendi: int, hedef: int, eksen: str, nerede: int, fark: int):
-    """Kuralın formül alanlarını `yapi` ile düzeltir; değişen yoksa aynı nesne."""
+def _kural_formulleri(kural, donustur):
+    """Kuralın TÜM formül alanlarına `donustur(formul) -> yeni | None` uygular (`formul`/`formul1`/`formul2`,
+    renk ölçeği noktaları, min/max noktası); değişen yoksa aynı nesne."""
     if not is_dataclass(kural):
         return kural
     degisen = {}
     for alan in _EK_FORMUL_ALANLARI:
         f = getattr(kural, alan, None)
         if isinstance(f, str) and f.startswith("="):
-            yeni = yapi(f, kendi, hedef, eksen, nerede, fark)
+            yeni = donustur(f)
             if yeni is not None:
                 degisen[alan] = yeni
+    noktalar = getattr(kural, "noktalar", ())
+    if noktalar:
+        yeni_n, ok = [], False
+        for n in noktalar:
+            y = donustur(n[1]) if isinstance(n[1], str) and n[1].startswith("=") else None
+            ok = ok or y is not None
+            yeni_n.append((n[0], y if y is not None else n[1]) + tuple(n[2:]))
+        if ok:
+            degisen["noktalar"] = tuple(yeni_n)
+    for alan in ("min_nokta", "max_nokta"):
+        n = getattr(kural, alan, None)
+        if n and isinstance(n[1], str) and n[1].startswith("="):
+            y = donustur(n[1])
+            if y is not None:
+                degisen[alan] = (n[0], y)
     return replace(kural, **degisen) if degisen else kural
+
+
+def _kural_duzelt(kural, kendi: int, hedef: int, eksen: str, nerede: int, fark: int):
+    """Kuralın formül alanlarını `yapi` ile düzeltir; değişen yoksa aynı nesne."""
+    return _kural_formulleri(kural, lambda f: yapi(f, kendi, hedef, eksen, nerede, fark))
 
 
 def ek_duzeltmeleri(kitap, sayfa, eksen: str, nerede: int, fark: int) -> bool:
@@ -251,16 +272,7 @@ def adi_degistir(formul: str, eski: str, yeni: str) -> Optional[str]:
 
 
 def _kural_ad_degistir(kural, eski: str, yeni_ad: str):
-    if not is_dataclass(kural):
-        return kural
-    degisen = {}
-    for alan in _EK_FORMUL_ALANLARI:
-        f = getattr(kural, alan, None)
-        if isinstance(f, str) and f.startswith("="):
-            yeni = adi_degistir(f, eski, yeni_ad)
-            if yeni is not None:
-                degisen[alan] = yeni
-    return replace(kural, **degisen) if degisen else kural
+    return _kural_formulleri(kural, lambda f: adi_degistir(f, eski, yeni_ad))
 
 
 def ad_yeniden_adlandir(kitap, hedef, yeni_ad: str):

@@ -484,6 +484,13 @@ class Sayfa:
         if degisti:
             self._bildir("ek", alan="hepsi", anahtarlar=set(eski_notlar) | set(notlar))
 
+    def kosullulari_yaz(self, liste) -> None:
+        """Koşullu biçim kural listesini aynen yazar (sıra = öncelik); değişirse `ek` olayı (`alan="kosullu"`)."""
+        if list(liste) == self.kosullu:
+            return
+        self.kosullu = list(liste)
+        self._bildir("ek", alan="kosullu")
+
     def dogrulama(self, satir: int, sutun: int):
         """Hücrenin veri doğrulama kuralı (yoksa None). Kural sayısı küçüktür: doğrusal tarama."""
         if not self.dogrulamalar:

@@ -24,6 +24,9 @@ from openpyxl.worksheet.filters import (
     CustomFilter, CustomFilters, DynamicFilter, FilterColumn, Filters, Top10,
 )
 from openpyxl.worksheet.cell_range import CellRange
+from openpyxl.formatting.rule import ColorScale, DataBar, FormatObject, Rule
+from openpyxl.styles.differential import DifferentialStyle
+from openpyxl.styles.colors import Color
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.styles.colors import COLOR_INDEX
@@ -40,11 +43,12 @@ from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
 from ..model.dogrulama import Dogrulama
+from ..model.kosullu import KosulluKural
 from ..model.filtre import DegerKosulu, Filtre, IlkKosul, OrtalamaKosulu, OzelKosul, RenkKosulu
 from ..model.notlar import Not
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
 from ..model.sayfa_yapisi import SayfaYapisi
-from ..model.stil import Kenarlik, Stil
+from ..model.stil import Kenarlik, Stil, StilYama
 
 # --- eşleme tabloları -------------------------------------------------------------------------
 _CIZGI_YAZ = {"ince": "thin", "orta": "medium", "kalin": "thick", "kesikli": "dashed", "noktali": "dotted",
@@ -149,7 +153,6 @@ _TARA = (
 )
 # sayfa XML'inde aranan, openpyxl ile korunamayan/bozulan öğeler
 _SAYFA_ISARETLERI = (
-    (b"<conditionalFormatting", "koşullu biçim"),
     (b"<hyperlinks", "köprü"), (b"outlineLevel=", "satır/sütun gruplama"),
     (b"<headerFooter", "üst/alt bilgi"), (b"<sheetProtection", "sayfa koruması"),
     (b't="array"', "dizi formülü (normal formüle dönüştürülür)"),
@@ -528,6 +531,8 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
             _filtre_yaz(ws, sayfa.filtre, rapor)
         if sayfa.dogrulamalar:
             _dogrulamalari_yaz(ws, sayfa, kitap, rapor)
+        if sayfa.kosullu:
+            _kosullulari_yaz(ws, sayfa, kitap, rapor)
 
     _adlari_yaz(wb, kitap)
     if sayac.get("karakter"):
@@ -733,6 +738,232 @@ def _filtre_oku(ws, s: Sayfa, rapor: Rapor) -> None:
     s.filtre_yaz(Filtre(a, kosullar))
 
 
+_KB_ISLEC_YAZ = {"arasinda": "between", "arasinda_degil": "notBetween", "esit": "equal", "esit_degil": "notEqual",
+                 "buyuk": "greaterThan", "kucuk": "lessThan", "buyuk_esit": "greaterThanOrEqual",
+                 "kucuk_esit": "lessThanOrEqual"}
+_KB_ISLEC_OKU = {v: k for k, v in _KB_ISLEC_YAZ.items()}
+_KB_NOKTA_YAZ = {"min": "min", "max": "max", "sayi": "num", "yuzde": "percent", "yuzdebirlik": "percentile",
+                 "formul": "formula"}
+_KB_NOKTA_OKU = {v: k for k, v in _KB_NOKTA_YAZ.items()}
+_KB_METIN_TUR = {"icerir": "containsText", "icermez": "notContainsText", "baslar": "beginsWith", "biter": "endsWith"}
+_KB_METIN_OKU = {v: k for k, v in _KB_METIN_TUR.items()}
+_KB_METIN_OPERATOR = {"icerir": "containsText", "icermez": "notContains", "baslar": "beginsWith", "biter": "endsWith"}
+
+
+def _kb_formul_yaz(f, kitap) -> str:
+    return f if not f.startswith("=") else ceviri.disa(f, kitap)[1:]
+
+
+def _kb_formul_oku(f, kitap) -> str:
+    return ceviri.iceri("=" + str(f), kitap)
+
+
+def _kb_dxf_yaz(yama):
+    """`StilYama` → openpyxl `DifferentialStyle` (yazı rengi/kalın/italik/çizgiler, dolgu `bgColor`, kenarlık)."""
+    if yama is None or yama.bos_mu():
+        return None
+    a = yama._alanlar
+    font = fill = border = None
+    if any(k in a for k in ("yazi_rengi", "kalin", "italik", "ustu_cizili", "alti_cizili")):
+        font = Font(color=a["yazi_rengi"][1:] if a.get("yazi_rengi") else None, b=a.get("kalin") or None,
+                    i=a.get("italik") or None, strike=a.get("ustu_cizili") or None,
+                    u=_ALTI_YAZ.get(a.get("alti_cizili", "yok")))
+    if a.get("dolgu"):
+        fill = PatternFill(bgColor=a["dolgu"][1:], fill_type="solid")       # dxf: düz dolgu rengi bgColor'dadır
+    kenar = a.get("kenar")
+    if kenar is not None:
+        d = kenar if isinstance(kenar, dict) else {y: getattr(kenar, y) for y in ("ust", "alt", "sol", "sag")}
+
+        def yan(c):
+            return Side(style=_CIZGI_YAZ[c[0]], color=c[1][1:]) if c else None
+        border = Border(top=yan(d.get("ust")), bottom=yan(d.get("alt")), left=yan(d.get("sol")), right=yan(d.get("sag")))
+    return DifferentialStyle(font=font, fill=fill, border=border)
+
+
+def _kb_dxf_oku(dxf, tema):
+    """`DifferentialStyle` → `StilYama` (yok sayılan: sayı biçimi, yazı tipi adı/boyutu)."""
+    if dxf is None:
+        return None
+    a = {}
+    f = dxf.font
+    if f is not None:
+        renk = _renk_oku(f.color, tema)
+        if renk:
+            a["yazi_rengi"] = renk
+        if f.b:
+            a["kalin"] = True
+        if f.i:
+            a["italik"] = True
+        if f.strike:
+            a["ustu_cizili"] = True
+        if f.u in _ALTI_OKU:
+            a["alti_cizili"] = _ALTI_OKU[f.u]
+        elif f.u:
+            a["alti_cizili"] = "tek"
+    fi = dxf.fill
+    if fi is not None:
+        renk = _renk_oku(fi.bgColor, tema) or _renk_oku(fi.fgColor, tema)
+        if renk and renk != "#000000":
+            a["dolgu"] = renk
+    b = dxf.border
+    if b is not None:
+        d = {}
+        for yon, taraf in (("ust", b.top), ("alt", b.bottom), ("sol", b.left), ("sag", b.right)):
+            if taraf is not None and taraf.style:
+                d[yon] = (_CIZGI_OKU.get(taraf.style, "ince"), _renk_oku(taraf.color, tema) or "#000000")
+        if d:
+            a["kenar"] = d
+    return StilYama(**a) if a else None
+
+
+def _kb_kural_yaz(k, ust_sol: str, kitap):
+    """`KosulluKural` → openpyxl `Rule` (öncelik/`stopIfTrue` çağıranda); yazılamayan türde None."""
+    dxf = _kb_dxf_yaz(k.bicim)
+    f = lambda x: _kb_formul_yaz(x, kitap)
+    t = k.tur
+    if t == "hucre_degeri":
+        formul = [f(k.formul1)] + ([f(k.formul2)] if k.islec in ("arasinda", "arasinda_degil") else [])
+        return Rule(type="cellIs", operator=_KB_ISLEC_YAZ[k.islec], formula=formul, dxf=dxf)
+    if t == "metin":
+        tirnak = '"' + k.metin.replace('"', '""') + '"'
+        govde = {"icerir": f"NOT(ISERROR(SEARCH({tirnak},{ust_sol})))", "icermez": f"ISERROR(SEARCH({tirnak},{ust_sol}))",
+                 "baslar": f"LEFT({ust_sol},LEN({tirnak}))={tirnak}", "biter": f"RIGHT({ust_sol},LEN({tirnak}))={tirnak}"}
+        return Rule(type=_KB_METIN_TUR[k.islec], operator=_KB_METIN_OPERATOR[k.islec], text=k.metin,
+                    formula=[govde[k.islec]], dxf=dxf)
+    if t == "bos":
+        return Rule(type="containsBlanks", formula=[f"LEN(TRIM({ust_sol}))=0"], dxf=dxf)
+    if t == "bos_degil":
+        return Rule(type="notContainsBlanks", formula=[f"LEN(TRIM({ust_sol}))>0"], dxf=dxf)
+    if t == "hata":
+        return Rule(type="containsErrors", formula=[f"ISERROR({ust_sol})"], dxf=dxf)
+    if t == "hata_degil":
+        return Rule(type="notContainsErrors", formula=[f"NOT(ISERROR({ust_sol}))"], dxf=dxf)
+    if t == "yinelenen":
+        return Rule(type="uniqueValues" if k.benzersiz else "duplicateValues", dxf=dxf)
+    if t == "ilk_son":
+        return Rule(type="top10", rank=k.n, percent=True if k.yuzde else None, bottom=True if k.alt else None, dxf=dxf)
+    if t == "ortalama":
+        return Rule(type="aboveAverage", aboveAverage=None if k.ustu else False, equalAverage=True if k.esit else None,
+                    stdDev=k.std or None, dxf=dxf)
+    if t == "formul":
+        return Rule(type="expression", formula=[f(k.formul1)], dxf=dxf)
+    if t == "renk_olcegi":
+        cfvo = [FormatObject(type=_KB_NOKTA_YAZ[n[0]], val=None if n[1] is None else f(n[1])) for n in k.noktalar]
+        renkler = [Color(rgb="FF" + n[2][1:]) for n in k.noktalar]
+        return Rule(type="colorScale", colorScale=ColorScale(cfvo=cfvo, color=renkler))
+    if t == "veri_cubugu":
+        cfvo = [FormatObject(type=_KB_NOKTA_YAZ[n[0]], val=None if n[1] is None else f(n[1]))
+                for n in (k.min_nokta, k.max_nokta)]
+        return Rule(type="dataBar", dataBar=DataBar(cfvo=cfvo, color=Color(rgb="FF" + k.renk[1:]),
+                                                    showValue=None if not k.yalniz_cubuk else False))
+    return None
+
+
+def _kosullulari_yaz(ws, sayfa, kitap, rapor: Rapor) -> None:
+    for i, k in enumerate(sayfa.kosullu):
+        a0 = k.araliklar[0]
+        ust_sol = f"{get_column_letter(a0.ilk_sutun)}{a0.ilk_satir}"
+        try:
+            kural = _kb_kural_yaz(k, ust_sol, kitap)
+        except (FormulHatasi, KeyError, ValueError):
+            kural = None
+        if kural is None:
+            rapor.ekle(f"'{sayfa.ad}' sayfasındaki bir koşullu biçim kuralı yazılamadı.")
+            continue
+        kural.priority = i + 1
+        if k.dur:
+            kural.stopIfTrue = True
+        sqref = " ".join(f"{get_column_letter(a.ilk_sutun)}{a.ilk_satir}:{get_column_letter(a.son_sutun)}{a.son_satir}"
+                         for a in k.araliklar)
+        ws.conditional_formatting.add(sqref, kural)
+
+
+def _nokta_oku(cfvo, renk, kitap, tema):
+    tur = _KB_NOKTA_OKU.get(cfvo.type)
+    if tur is None:
+        raise ValueError("nokta türü")
+    val = cfvo.val
+    if isinstance(val, (int, float)) and not isinstance(val, bool):
+        val = format(float(val), ".15g")                    # openpyxl sayısal değeri float okur
+    deger = None if val is None or tur in ("min", "max") else _kb_formul_oku(val, kitap)
+    return (tur, deger) if renk is None else (tur, deger, _renk_oku(renk, tema) or "#000000")
+
+
+def _kb_kural_oku(r, araliklar, kitap, tema) -> Optional[KosulluKural]:
+    """openpyxl `Rule` → `KosulluKural`; desteklenmeyen tür None, bozuk içerik ValueError/FormulHatasi."""
+    t = r.type
+    bicim = _kb_dxf_oku(r.dxf, tema)
+    dur = bool(r.stopIfTrue)
+    kw = dict(bicim=bicim, dur=dur)
+    f = lambda i: _kb_formul_oku(r.formula[i], kitap)
+    if t == "cellIs":
+        islec = _KB_ISLEC_OKU.get(r.operator or "equal")
+        if islec is None or not r.formula:
+            raise ValueError("işleç")
+        iki = islec in ("arasinda", "arasinda_degil")
+        return KosulluKural(araliklar, tur="hucre_degeri", islec=islec, formul1=f(0),
+                            formul2=f(1) if iki else None, **kw)
+    if t in _KB_METIN_OKU:
+        if r.text is None:
+            raise ValueError("metin")
+        return KosulluKural(araliklar, tur="metin", islec=_KB_METIN_OKU[t], metin=r.text, **kw)
+    if t in ("containsBlanks", "notContainsBlanks", "containsErrors", "notContainsErrors"):
+        return KosulluKural(araliklar, tur={"containsBlanks": "bos", "notContainsBlanks": "bos_degil",
+                                            "containsErrors": "hata", "notContainsErrors": "hata_degil"}[t], **kw)
+    if t in ("duplicateValues", "uniqueValues"):
+        return KosulluKural(araliklar, tur="yinelenen", benzersiz=t == "uniqueValues", **kw)
+    if t == "top10":
+        return KosulluKural(araliklar, tur="ilk_son", n=int(r.rank or 10), alt=bool(r.bottom),
+                            yuzde=bool(r.percent), **kw)
+    if t == "aboveAverage":
+        return KosulluKural(araliklar, tur="ortalama", ustu=r.aboveAverage is not False,
+                            esit=bool(r.equalAverage), std=int(r.stdDev or 0), **kw)
+    if t == "expression":
+        if not r.formula:
+            raise ValueError("formül")
+        return KosulluKural(araliklar, tur="formul", formul1=f(0), **kw)
+    if t == "colorScale":
+        cs = r.colorScale
+        if cs is None or len(cs.cfvo) not in (2, 3) or len(cs.color) != len(cs.cfvo):
+            raise ValueError("renk ölçeği")
+        return KosulluKural(araliklar, tur="renk_olcegi", bicim=None, dur=dur,
+                            noktalar=tuple(_nokta_oku(c, k, kitap, tema) for c, k in zip(cs.cfvo, cs.color)))
+    if t == "dataBar":
+        db = r.dataBar
+        if db is None or len(db.cfvo) != 2:
+            raise ValueError("veri çubuğu")
+        mn, mx = (_nokta_oku(c, None, kitap, tema) for c in db.cfvo)
+        return KosulluKural(araliklar, tur="veri_cubugu", bicim=None, dur=dur,
+                            renk=_renk_oku(db.color, tema) or "#638EC6", min_nokta=mn, max_nokta=mx,
+                            yalniz_cubuk=db.showValue is False)
+    return None
+
+
+def _kosullulari_oku(ws, s, kitap, tema, rapor: Rapor) -> None:
+    kurallar = []
+    atlanan = 0
+    for cf in ws.conditional_formatting:
+        try:
+            araliklar = tuple(_aralik(x) for x in cf.sqref.ranges)
+        except Exception:
+            atlanan += len(cf.rules)
+            continue
+        for r in cf.rules:
+            try:
+                k = _kb_kural_oku(r, araliklar, kitap, tema) if araliklar else None
+            except (FormulHatasi, ValueError, KeyError, TypeError):
+                k = None
+            if k is None:
+                atlanan += 1
+            else:
+                kurallar.append((r.priority or 1_000_000, len(kurallar), k))
+    if atlanan:
+        rapor.ekle(f"'{ws.title}' sayfasında {atlanan} koşullu biçim kuralı (simge kümesi, tarih oluşumu vb.) "
+                   "desteklenmiyor; atlandı.")
+    if kurallar:
+        s.kosullulari_yaz([k for _, _, k in sorted(kurallar, key=lambda x: (x[0], x[1]))])
+
+
 def _aralik(hucre_araligi) -> Aralik:
     return Aralik(hucre_araligi.min_row, hucre_araligi.min_col, hucre_araligi.max_row, hucre_araligi.max_col)
 
@@ -908,6 +1139,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         s.sayfa_yapisi = _yapi_oku(ws)
         _filtre_oku(ws, s, rapor)
         _dogrulamalari_oku(ws, s, kitap, rapor)
+        _kosullulari_oku(ws, s, kitap, tema, rapor)
         tab = ws.sheet_properties.tabColor
         if tab is not None:
             s.sekme_rengi = _renk_oku(tab, tema)

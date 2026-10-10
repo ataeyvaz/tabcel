@@ -138,8 +138,10 @@ def test_grafikli_uyarilar_ve_veri_korunur(tmp_path):
     k, rapor = xlsx_io.ac(ornek("grafikli.xlsx"))
     assert rapor.veri_kaybi
     metin = " ".join(rapor.uyarilar)
-    for ne in ("grafik", "resim", "koşullu biçim"):
+    for ne in ("grafik", "resim"):
         assert ne in metin, ne
+    assert "koşullu biçim" not in metin                     # 5h: koşullu biçim artık korunur
+    assert k.sayfalar[0].kosullu                             # Faz 5 / 5h
     assert "veri doğrulama" not in metin                   # 5g: veri doğrulama artık korunur
     assert k.sayfalar[0].dogrulamalar                        # Faz 5 / 5g
     assert "filtre" not in metin                           # 5f: otomatik filtre artık korunur

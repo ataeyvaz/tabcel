@@ -166,6 +166,11 @@ class Pencere(DosyaIslemleri, QMainWindow):
             ("filtre_yeniden", "Yeniden Uygula"),
             None, ("dogrulama", "Veri Doğrulama…"),
             None, ("ad_tanimla", "Ad Tanımla…"), ("ad_yoneticisi", "Ad Yöneticisi")))
+        self.kosullu_dugmesi = QToolButton()
+        self.kosullu_dugmesi.setObjectName("fileButton")
+        self.kosullu_dugmesi.setText("Koşullu Biçim")
+        self.kosullu_dugmesi.setPopupMode(QToolButton.InstantPopup)
+        self.kosullu_dugmesi.setMenu(self._kosullu_menusu(self.kosullu_dugmesi))
         self.geri_dugmesi = QToolButton()
         self.geri_dugmesi.setText("Geri Al")
         self.geri_dugmesi.setToolTip("Geri Al (Ctrl+Z)")
@@ -180,6 +185,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         h.addWidget(self.gorunum_dugmesi)
         h.addWidget(self.duzen_dugmesi)
         h.addWidget(self.veri_dugmesi)
+        h.addWidget(self.kosullu_dugmesi)
         h.addWidget(self.geri_dugmesi)
         h.addWidget(self.yinele_dugmesi)
         h.addStretch(1)
@@ -307,6 +313,47 @@ class Pencere(DosyaIslemleri, QMainWindow):
         QShortcut(QKeySequence("Ctrl+Shift+F4"), self, activated=lambda: self.sonrakini_bul(True))
         QShortcut(QKeySequence("Ctrl+PgDown"), self, activated=lambda: self._sekme_git(1))
         QShortcut(QKeySequence("Ctrl+PgUp"), self, activated=lambda: self._sekme_git(-1))
+
+    def _kosullu_menusu(self, dugme) -> QMenu:
+        """Koşullu Biçimlendirme menüsü (faz5_tasarim.md §8.4); şerit (5j) gelince şeride taşınır."""
+        def pen(ad, *a, **kw):
+            return lambda: getattr(self, ad)(*a, **kw)
+        m = QMenu(dugme)
+        self.kosullu_eylemleri = {}
+
+        def ekle(menu, anahtar, metin, islev):
+            self.kosullu_eylemleri[anahtar] = menu.addAction(metin, islev)
+        hm = m.addMenu("Hücre Kurallarını Vurgula")
+        for anahtar, metin, tur, islec in (
+                ("buyuk", "Büyüktür…", "hucre_degeri", "buyuk"), ("kucuk", "Küçüktür…", "hucre_degeri", "kucuk"),
+                ("arasinda", "Arasında…", "hucre_degeri", "arasinda"), ("esit", "Eşittir…", "hucre_degeri", "esit"),
+                ("metin", "Metin İçerir…", "metin", "icerir"), ("yinelenen", "Yinelenen Değerler…", "yinelenen", None)):
+            ekle(hm, anahtar, metin, pen("kosullu_kural_ac", tur, islec))
+        im = m.addMenu("İlk/Son Kuralları")
+        for anahtar, metin, tur, yuzde in (
+                ("ilk10", "İlk 10 Öğe…", "ilk", False), ("ilk10y", "İlk %10…", "ilk", True),
+                ("son10", "Son 10 Öğe…", "son", False), ("son10y", "Son %10…", "son", True),
+                ("ort_ustu", "Ortalamanın Üstünde…", "ortalama_ustu", False),
+                ("ort_alti", "Ortalamanın Altında…", "ortalama_alti", False)):
+            ekle(im, anahtar, metin, pen("kosullu_kural_ac", tur, None, yuzde))
+        vm = m.addMenu("Veri Çubukları")
+        for baslik, onek in (("Gradyan Dolgu", ""), ("Düz Dolgu", "duz_")):
+            vm.addSection(baslik)
+            for k, ad in (("mavi", "Mavi"), ("yesil", "Yeşil"), ("kirmizi", "Kırmızı"), ("turuncu", "Turuncu"),
+                          ("acik_mavi", "Açık Mavi"), ("mor", "Mor")):
+                ekle(vm, f"cubuk_{onek}{k}", f"{ad} Veri Çubuğu", pen("kosullu_hazir", "veri_cubugu", onek + k))
+        rm = m.addMenu("Renk Ölçekleri")
+        for k, ad in (("yesil_sari_kirmizi", "Yeşil - Sarı - Kırmızı Renk Ölçeği"),
+                      ("kirmizi_sari_yesil", "Kırmızı - Sarı - Yeşil Renk Ölçeği"),
+                      ("yesil_beyaz", "Yeşil - Beyaz Renk Ölçeği"), ("beyaz_kirmizi", "Beyaz - Kırmızı Renk Ölçeği")):
+            ekle(rm, f"olcek_{k}", ad, pen("kosullu_hazir", "renk_olcegi", k))
+        m.addSeparator()
+        ekle(m, "yeni", "Yeni Kural…", pen("kosullu_kural_ac", "hucre_degeri", None, False, False))
+        tm = m.addMenu("Kuralları Temizle")
+        ekle(tm, "temizle_secim", "Seçili Hücrelerden Kuralları Temizle", pen("kosullu_temizle", False))
+        ekle(tm, "temizle_sayfa", "Tüm Sayfadan Kuralları Temizle", pen("kosullu_temizle", True))
+        ekle(m, "yonet", "Kuralları Yönet…", pen("kosullu_yonet"))
+        return m
 
     def _menu_iskeleti(self, baslik: str, ogeler):
         """Başlık şeridine menü düğmesi ekler; `ogeler`: (anahtar, metin) ya da None (ayırıcı). Eylemler
@@ -440,6 +487,18 @@ class Pencere(DosyaIslemleri, QMainWindow):
 
     def _kitap_olayi(self, olay: Olay):
         """Modeldeki değişikliklere arayüz tepkisi (doğrudan yazım, geri al ve yinele aynı yoldan gelir)."""
+        if olay.tur in ("hucre", "sonuc", "yapi", "ek", "sayfa"):
+            kuralli = False
+            for g in self._izgaralar.values():
+                g._kosullu_gecersiz()                  # koşullu biçim başka sayfaya da bakabilir: hepsi
+                kuralli = kuralli or bool(g.sayfa.kosullu)
+            gorunen = self._izgaralar.get(self._secili_sayfa)
+            if kuralli and gorunen is not None and olay.sayfa is not self._secili_sayfa:
+                gorunen.viewport().update()            # başka sayfadaki değişiklik görünen sayfanın biçimini değiştirebilir
+            if olay.tur == "ek" and olay.ayrinti.get("alan") in ("kosullu", "hepsi"):
+                ig = self._izgaralar.get(olay.sayfa)
+                if ig is not None:
+                    ig.viewport().update()
         if olay.tur == "sonuc":
             g = self._izgaralar.get(olay.sayfa)
             if g is not None and olay.sayfa is self._secili_sayfa:
@@ -754,6 +813,47 @@ class Pencere(DosyaIslemleri, QMainWindow):
             sonuc = (pen.anahtarlar(), pen.baslik(), pen.buyuk_kucuk(), pen.yon())
         anahtarlar, baslik, bk, yon = sonuc
         return self._siralama_uygula(aralik, anahtarlar, baslik, bk, yon)
+
+    # ------------------------------------------------------------------ koşullu biçim (5h)
+    def kosullu_kural_ac(self, tur: str = "hucre_degeri", islec=None, yuzde: bool = False,
+                         tur_sabit: bool = True, sonuc=None) -> bool:
+        """Hızlı kural ya da Yeni Kural penceresi; Tamam kuralı seçime en yüksek öncelikle ekler. `sonuc`: testler
+        için pencereyi atlayan `KosulluKural` (formüller etkin hücreye göre yazılmış sayılır)."""
+        from .kosullu_pencereleri import KuralPenceresi
+        g = self.izgara()
+        if sonuc is None:
+            pen = KuralPenceresi(self.kitap, self, tur=tur, islec=islec, tur_sabit=tur_sabit)
+            if yuzde:
+                pen.yuzde.setChecked(True)
+            if pen.exec() != QDialog.Accepted:
+                return False
+            sonuc = pen.kural()
+        return g.kosullu_kural_ekle(sonuc)
+
+    def kosullu_hazir(self, tur: str, ad: str) -> bool:
+        """Veri çubuğu (`ad`: mavi… ya da `duz_mavi`…) ya da renk ölçeği (`ad`: RENK_OLCEKLERI anahtarı) doğrudan eklenir."""
+        from ..model.kosullu import KosulluKural, RENK_OLCEKLERI, VERI_CUBUGU_RENKLERI
+        if tur == "veri_cubugu":
+            duz = ad.startswith("duz_")
+            kural = KosulluKural((), tur="veri_cubugu", bicim=None, gradyan=not duz,
+                                 renk=VERI_CUBUGU_RENKLERI[ad[4:] if duz else ad])
+        else:
+            kural = KosulluKural((), tur="renk_olcegi", bicim=None, noktalar=RENK_OLCEKLERI[ad])
+        return self.izgara().kosullu_kural_ekle(kural)
+
+    def kosullu_yonet(self, sonuc=None) -> bool:
+        """Kuralları Yönet. `sonuc`: testler için pencereyi atlayan yeni TAM kural listesi."""
+        from .kosullu_pencereleri import KuralYoneticisi
+        g = self.izgara()
+        if sonuc is None:
+            pen = KuralYoneticisi(self.kitap, g.sayfa, g.secimler, g.aktif, self)
+            if pen.exec() != QDialog.Accepted:
+                return False
+            sonuc = pen.liste()
+        return g.kosullu_listesi_yaz(sonuc)
+
+    def kosullu_temizle(self, tum_sayfa: bool = False) -> bool:
+        return self.izgara().kosullu_temizle(tum_sayfa)
 
     # ------------------------------------------------------------------ veri doğrulama (5g)
     def _dogrulama_karisik_onayi(self) -> bool:

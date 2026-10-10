@@ -187,7 +187,8 @@ def test_kosullu_bicim_ve_dogrulama_uyarisi(tmp_path):
     yol = str(tmp_path / "e.xlsx")
     wb.save(yol)
     _, rapor = xlsx_io.ac(yol)
-    assert any("koşullu biçim" in u for u in rapor.uyarilar)
+    assert not any("koşullu biçim" in u for u in rapor.uyarilar)       # 5h: koşullu biçim artık korunur
+    assert _.sayfalar[0].kosullu and _.sayfalar[0].kosullu[0].islec == "buyuk"
     assert not any("veri doğrulama" in u for u in rapor.uyarilar)       # 5g: veri doğrulama artık korunur
     assert _.sayfalar[0].dogrulama(1, 2) is not None
 

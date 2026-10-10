@@ -9,7 +9,7 @@ from typing import Dict, Iterator, List, Optional, Tuple
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import (
-    QColor, QFont, QFontMetrics, QPainter, QPen, QPolygon, QRegion, QStaticText, QTextLayout, QTextOption,
+    QColor, QFont, QFontMetrics, QLinearGradient, QPainter, QPen, QPolygon, QRegion, QStaticText, QTextLayout, QTextOption,
 )
 from PySide6.QtWidgets import (
     QAbstractScrollArea, QApplication, QInputDialog, QLabel, QLineEdit, QListWidget, QMenu,
@@ -22,7 +22,7 @@ from ..model.adres import (
 from ..formul import ceviri, isaretleme
 from ..formul.ceviri import hucre_girdisi, hucre_girdisi_akilli, hucre_metni
 from ..formul.sozcuk import FormulHatasi
-from ..formul.kosul import dogrula, liste_ogeleri
+from ..formul.kosul import KosulluHesap, dogrula, liste_ogeleri
 from ..model.harmanla import tr_kucuk
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
@@ -31,7 +31,7 @@ from ..model.sayi_bicimi import BicimSonucu
 from ..model import doldur as doldurma
 from ..model.stil import VARSAYILAN, Stil, StilYama
 from ..model.komutlar import (
-    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, DogrulamaDegis, HucreTasi, HucrelerDegis, NotlarDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
+    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, DogrulamaDegis, HucreTasi, HucrelerDegis, KosulluDegis, NotlarDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
     SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
@@ -291,6 +291,8 @@ class Izgara(QAbstractScrollArea):
         self._renk_onb: Dict[str, QColor] = {}
         self._baslik_onb: Dict[str, QStaticText] = {}   # satır/sütun başlığı metinleri
         self._stilli: list = []                     # son yerleşimde dolgu/kenarlıklı görünen hücreler
+        self._cubuklar: list = []                   # son yerleşimde veri çubuklu hücreler [(x, y, g, h, çubuk)]
+        self._kosullu: Optional[KosulluHesap] = None  # koşullu biçim değerlendirmesi (olayda geçersiz kılınır)
         self._onbellek_anahtari = None
         self._dikey_son = 0                         # artımlı kaydırma için önceki dikey kaydırma değeri
         self._yatay_son = 0                         # ... yatay kaydırma değeri
@@ -800,6 +802,9 @@ class Izgara(QAbstractScrollArea):
         havuz = sayfa.havuz
         ham_stil, satir_stil, sutun_stil = sayfa._stil.get, sayfa.satir_stil.get, sayfa.sutun_stil.get
         stilli_var = bool(sayfa._stil or sayfa.satir_stil or sayfa.sutun_stil)
+        kosullu = self._kosullu_hesap()                          # kural yoksa None: ek maliyet tek denetim
+        cubuklar = []
+        self._cubuklar = cubuklar
         varsayilan_fe = self._font_girdisi(0, VARSAYILAN)
         girinti_px = self._z(9)
         x1, x2 = kirp_x if kirp_x else (None, None)
@@ -830,6 +835,14 @@ class Izgara(QAbstractScrollArea):
                         k = satir_stil(r)
                         if k is None:
                             k = sutun_stil(c, 0)
+                if kosullu is not None:
+                    yama, cubuk = kosullu.hucre(r, c)
+                    if yama is not None:
+                        k = havuz.yama_uygula(k, yama)
+                    if cubuk is not None and not solda and not _birlesim_ciz:
+                        cubuklar.append((x, y, g, h, cubuk))
+                        if cubuk[2]:
+                            v = None                        # "yalnız çubuğu göster": metin çizilmez
                 if k:
                     stil = havuz.stil(k)
                     fe = self._font_girdisi(k, stil)
@@ -946,6 +959,43 @@ class Izgara(QAbstractScrollArea):
             metin = "#" * max(1, sigan // max(1, w))
         return metin, renk, hiz
 
+    # --- koşullu biçim (5h) ---
+    def _kosullu_hesap(self) -> Optional[KosulluHesap]:
+        """Sayfada kural varsa değerlendirici (tembel kurulur); yoksa None."""
+        if not self.sayfa.kosullu:
+            self._kosullu = None
+            return None
+        if self._kosullu is None:
+            self._kosullu = KosulluHesap(self.sayfa)
+        return self._kosullu
+
+    def _kosullu_gecersiz(self) -> None:
+        """İçerik/sonuç/yapı/kural değişti: önbellek boşalır (bir sonraki çizimde yeniden kurulur)."""
+        self._kosullu = None
+
+    def _cubuk_ciz(self, p: QPainter, cubuklar, kirp: QRect) -> None:
+        """Veri çubukları: hücrenin içinde 2 px iç boşlukla, soldan sağa uzar; gradyan renkten beyaza açılır."""
+        ic = self._z(2)
+        for x, y, g, h, (oran, renk, _yalniz, gradyan) in cubuklar:
+            w, hh = round((g - 1 - 2 * ic) * oran), h - 1 - 2 * ic
+            if w <= 0 or hh <= 0:
+                continue
+            kutu = QRect(x + ic, y + ic, w, hh)
+            if not kutu.intersects(kirp):
+                continue
+            c1 = self._renk(renk)
+            if gradyan:
+                gr = QLinearGradient(kutu.left(), 0, kutu.right() + 1, 0)
+                gr.setColorAt(0.0, c1)
+                acik = QColor(c1)
+                acik.setRed((c1.red() + 255 * 3) // 4)
+                acik.setGreen((c1.green() + 255 * 3) // 4)
+                acik.setBlue((c1.blue() + 255 * 3) // 4)
+                gr.setColorAt(1.0, acik)
+                p.fillRect(kutu, gr)
+            else:
+                p.fillRect(kutu, c1)
+
     def _dolgu_ciz(self, p: QPainter, stilli, kirp: QRect) -> None:
         for x, y, g, h, stil, fe in stilli:
             if fe.dolgu:
@@ -1049,6 +1099,9 @@ class Izgara(QAbstractScrollArea):
 
         if self._stilli:
             self._dolgu_ciz(p, self._stilli, kirp)
+        if self._cubuklar:
+            self._cubuk_ciz(p, self._cubuklar, kirp)
+        if self._stilli:
             self._kenar_ciz(p, self._stilli, kirp)
 
         self._metinleri_ciz(p, metinler, kirp)
@@ -1424,6 +1477,11 @@ class Izgara(QAbstractScrollArea):
             if dik is None or not dik.adjusted(-3, -3, 3, 3).intersects(kirp):
                 continue
             k = sayfa.stil_kimligi(b.ilk_satir, b.ilk_sutun)
+            kh = self._kosullu_hesap()
+            if kh is not None:
+                yama = kh.hucre(b.ilk_satir, b.ilk_sutun)[0]
+                if yama is not None:
+                    k = havuz.yama_uygula(k, yama)
             stil = havuz.stil(k)
             fe = self._font_girdisi(k, stil)
             p.setClipRect(kirp)
@@ -1431,11 +1489,11 @@ class Izgara(QAbstractScrollArea):
                        self._renk(stil.dolgu) if stil.dolgu else QColor(theme.SURFACE))
             if fe.kenarli:
                 self._kenar_ciz(p, [(dik.x(), dik.y(), dik.width(), dik.height(), stil, fe)], kirp)
-            eski_stilli = self._stilli
+            eski_stilli, eski_cubuklar = self._stilli, self._cubuklar
             metinler, _ = self._yerlesim([(b.ilk_sutun, dik.x(), dik.width())],
                                          [(b.ilk_satir, dik.y(), dik.height())], p.fontMetrics(), pad,
                                          _birlesim_ciz=True)
-            self._stilli = eski_stilli
+            self._stilli, self._cubuklar = eski_stilli, eski_cubuklar
             p.setClipRect(kirp.intersected(dik.adjusted(0, 0, -1, -1)))
             self._metinleri_ciz(p, metinler, kirp.intersected(dik))
             p.setClipRect(kirp)
@@ -2708,6 +2766,51 @@ class Izgara(QAbstractScrollArea):
         self._guncelle()
         return True
 
+    # --- koşullu biçim kuralları (5h) ---
+    def kosullu_kural_ekle(self, kural, araliklar=None) -> bool:
+        """Seçime (ya da `araliklar`a) yeni kural ekler; EN YÜKSEK öncelikli olur (Excel). Kuralın formülleri
+        etkin hücreye göre yazılmış sayılır; çapa (ilk aralığın sol üstü) etkin hücre değilse kaydırılır.
+        Tek geri al adımı."""
+        from dataclasses import replace
+        from ..formul.kaydir import kopyala
+        from ..model.kosullu import kural_ekle, KosulluKural
+        araliklar = list(araliklar) if araliklar is not None else list(self.secimler)
+        fr, fc = araliklar[0].ilk_satir - self._aktif[0], araliklar[0].ilk_sutun - self._aktif[1]
+
+        def kay(f):
+            return kopyala(f, fr, fc) if f is not None and f.startswith("=") and (fr, fc) != (0, 0) else f
+        noktalar = tuple((n[0], kay(n[1])) + tuple(n[2:]) for n in kural.noktalar)
+        kural = replace(kural, araliklar=tuple(araliklar), formul1=kay(kural.formul1), formul2=kay(kural.formul2),
+                        noktalar=noktalar, min_nokta=(kural.min_nokta[0], kay(kural.min_nokta[1])),
+                        max_nokta=(kural.max_nokta[0], kay(kural.max_nokta[1])))
+        self.yigin.calistir(KosulluDegis(self.sayfa, lambda eski: kural_ekle(eski, kural)))
+        self._guncelle(pano_iptal=False)
+        return True
+
+    def kosullu_listesi_yaz(self, liste) -> bool:
+        """Kural listesini (sıra = öncelik) aynen yazar (Kuralları Yönet); değişen yoksa False."""
+        kmt = KosulluDegis(self.sayfa, list(liste))
+        if kmt.bos_mu():
+            return False
+        self.yigin.calistir(kmt)
+        self._guncelle(pano_iptal=False)
+        return True
+
+    def kosullu_temizle(self, tum_sayfa: bool = False) -> bool:
+        """Kuralları Temizle: seçili hücrelerden ya da tüm sayfadan; tek geri al adımı."""
+        from ..model.kosullu import aralik_temizle
+        if tum_sayfa:
+            yeni = lambda eski: []
+        else:
+            secimler = list(self.secimler)
+            yeni = lambda eski: aralik_temizle(eski, secimler)
+        kmt = KosulluDegis(self.sayfa, yeni)
+        if kmt.bos_mu():
+            return False
+        self.yigin.calistir(kmt)
+        self._guncelle(pano_iptal=False)
+        return True
+
     # --- veri doğrulama (5g) ---
     _dogrulama_sonucu = True              # `_dogrulama_izni` False dönerse `hucre_gir`'in döndüreceği değer
 
@@ -2993,6 +3096,11 @@ class Izgara(QAbstractScrollArea):
         komutlar = ([HucrelerDegis(self.sayfa, icerik)] if icerik else []) + ([] if kmt.bos_mu() else [kmt])
         if notlar:
             komutlar.append(NotlarDegis(self.sayfa, notlar))
+        from ..model.kosullu import aralik_temizle
+        secimler = list(self.secimler)
+        kkmt = KosulluDegis(self.sayfa, lambda eski: aralik_temizle(eski, secimler))
+        if not kkmt.bos_mu():
+            komutlar.append(kkmt)               # Excel Tümünü Temizle koşullu biçimi de kaldırır
         dkmt = DogrulamaDegis(self.sayfa, list(self.secimler), None)
         if not dkmt.bos_mu():
             komutlar.append(dkmt)               # Excel Tümünü Temizle veri doğrulamayı da kaldırır
@@ -3022,6 +3130,7 @@ class Izgara(QAbstractScrollArea):
         if pano_iptal:
             Izgara._pano_durumu = None
         self._oto_ok = False                       # içerik/biçim/genişlik değişti: otomatik satır yükseklikleri
+        self._kosullu = None                       # koşullu biçim önbelleği (içerik/kural değişmiş olabilir)
         self._duzenleyici_yerlestir()
         self._sayfa_adimlari()
         self.viewport().update()

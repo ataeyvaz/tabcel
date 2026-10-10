@@ -3,7 +3,7 @@
 > **Ad geçici:** "Tabcel" çalışma adıdır, değişebilir. Kod bu yüzden görünen adı tek bir sabitten okur (bkz. `CLAUDE.md` → Kesin kurallar 1).
 
 ## Amaç
-Microsoft Excel'in kalabalık arayüzü yerine, gerçekten kullanılan %10'luk kısmı sade ve hızlı biçimde sunan bir masaüstü hesap tablosu uygulaması. Sözcük'ün (Word alternatifi, `Desktop\sozcuk`) kardeşi: aynı görünüm dili, aynı ilkeler (yerel çalışır, buluta veri göndermez, şerit/ribbon yok, Türkçe).
+Microsoft Excel'in kalabalık arayüzü yerine, gerçekten kullanılan %10'luk kısmı sade ve hızlı biçimde sunan bir masaüstü hesap tablosu uygulaması. Sözcük'ün (Word alternatifi, `Desktop\sozcuk`) kardeşi: aynı görünüm dili, aynı ilkeler (yerel çalışır, buluta veri göndermez, Türkçe; **arayüz Excel gibi sekmeli şerit olacak** — bkz. "Arayüz: sekmeli şerit").
 
 Hedef kullanıcı: ev/ofis kullanıcısı — bütçe, liste, fatura/stok takibi, basit hesaplar, Excel'den gelen dosyayı açıp düzenleyip geri göndermek.
 
@@ -160,7 +160,13 @@ Kural: `model/` ve `formul/` Qt içe aktarmaz → hızlı test edilir, ileride b
 
 ## Yapılmayacaklar
 - VBA/makro çalıştırma (güvenlik + kapsam), Power Query, Power Pivot, **Solver**, ortak canlı düzenleme (Excel Online'a özgü), bulut yapay zekâ (Sözcük kararı: veri buluta gitmez)
-- Şerit (ribbon) arayüz
+
+## Arayüz: sekmeli şerit (karar 2026-10-10, kullanıcı)
+Excel'e benzer **sekmeli şerit** (Dosya · Giriş · Ekle · Sayfa Düzeni · Formüller · Veri · Gözden Geçir · Görünüm; her sekmede gruplar, büyük/küçük düğmeler). Önceki "şerit yok" ilkesi kaldırıldı.
+- **Teknoloji: Python + PySide6 yeterli; C++/C# ayrı arayüz yok.** Şerit, Qt Widgets ile kendimiz yazılır (`QTabBar` + grup başlıklı düğme panelleri); hazır Qt şerit bileşeni yok ama yapı basit. Gerekçe ve karşılaştırma `surec.md` → Kararlar (2026-10-10).
+- **Zamanlama:** Faz 5 bitince (5i'den sonra) ayrı iş **5j**, grafikler (Faz 6) başlamadan: şerit bir kez tasarlansın. Komutlar zaten `Pencere`/`Izgara` yöntemleri ve menü eylemleridir; şerit yalnız yerleşimdir (mevcut `BicimCubugu` ve Düzen/Veri/Görünüm menüleri şeride taşınır, işlev değişmez).
+- **Kapsam:** daralan pencerede grup küçülmesi/taşma menüsü, şeridi daraltma (Ctrl+F1), Alt tuş ipuçları (isteğe bağlı), simge seti (`ui/icons.py` genişler, 20 px / 1 px çizgi kuralı), Dosya sekmesi (şimdilik açılır menü; arka sahne sayfası sonra).
+- **Ölçüt:** tüm mevcut kısayol ve komutlar şeritten de erişilir; mevcut testler değişmeden geçer; 1100 px genişlikte kırpılma yok.
 
 ## Model kullanımı (Claude Code)
 - **Planlama, mimari kararlar, faz sonu gözden geçirme:** Opus 5.5 (`/model opus`)
