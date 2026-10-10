@@ -5,6 +5,7 @@ Stil sayfası ve başlık çubuğu rengi pencere işiyle birlikte eklenecek.
 
 ACCENT = "#217346"
 ACCENT_DARK = "#1a5c38"
+BAGLAM = "#C55A11"        # bağlamsal şerit sekmesi (Grafik): Excel'in "Grafik Araçları" gibi ayrı renk
 TEXT = "#242424"
 TEXT_MUTED = "#616161"
 WINDOW = "#f3f3f3"
@@ -93,6 +94,8 @@ def serit_stil() -> str:
 #seritSekmeleri::tab:selected {{ color: {ACCENT}; border-bottom: 3px solid {ACCENT}; }}
 #seritSekmeleri::tab:hover:!selected {{ background: {HOVER}; }}
 #seritSekmeleri::tab:first {{ background: {ACCENT}; color: #ffffff; font-weight: 600; border-bottom: none; }}
+#seritSekmeleri[baglam="true"]::tab:last {{ color: {BAGLAM}; }}
+#seritSekmeleri[baglam="true"]::tab:last:selected {{ color: {BAGLAM}; border-bottom: 3px solid {BAGLAM}; }}
 #seritYigin, #seritSayfasi {{ background: {SURFACE}; }}
 #seritGrupAdi {{ color: {TEXT_MUTED}; font-size: 11px; }}
 #seritAyirac {{ color: {BORDER}; }}

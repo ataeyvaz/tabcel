@@ -22,7 +22,16 @@ def app():
 
 
 @pytest.fixture
-def pencere(app):
+def pencere(app, monkeypatch):
+    from tabcel.ui import grafik_eylemleri
+
+    class _AyarPenceresiYok:                         # 6f: `nesneAyarIstendi` artık gerçek (modal) pencereyi açar; burada yalnız sinyal denenir
+        def __init__(self, *a, **k):
+            pass
+
+        def exec(self):
+            return 0
+    monkeypatch.setattr(grafik_eylemleri, "GrafikAyarlariPenceresi", _AyarPenceresiYok)
     from tabcel.ui.grid import Izgara
     Izgara._nesne_panosu = None
     k = CalismaKitabi()

@@ -13,7 +13,9 @@ TASARIM_20 = ("cut copy autosum fill clear sort_az sort_za filter_clear reapply 
               "note_delete save").split()
 TASARIM_32 = ("paste32 cond_format32 insert32 delete32 format32 sort_filter32 find32 sort32 filter32 "
               "validation32 name_manager32 margins32 orientation32 paper32 print_area32 print_titles32 "
-              "note32 freeze32 zoom100_32 autosum32").split()
+              "note32 freeze32 zoom100_32 autosum32 chart32 chart_sutun32 chart_cubuk32 chart_cizgi32 chart_pasta32 "
+              "chart_halka32 chart_alan32 chart_dagilim32 chart_degistir32 chart_veri32 chart_renk32 chart_oge32 "
+              "sirala_nesne32 help32 keyboard32 info32").split()
 
 
 @pytest.fixture(scope="module")

@@ -405,6 +405,22 @@ class Serit(QWidget):
         i = self.sekmeler.addTab(ad)
         return i
 
+    def sekme_goster(self, ad: str, goster: bool) -> None:
+        """Bağlamsal sekmeyi (ör. "Grafik") gösterir/gizler. Gizlenen sekme seçiliyse Giriş'e dönülür."""
+        i = self.sekme_adlari().index(ad)
+        if self.sekmeler.isTabVisible(i) == goster:
+            return
+        if not goster and self.sekmeler.currentIndex() == i:
+            self.sekmeler.setCurrentIndex(1 if self._dosya_indeksi == 0 else 0)   # Qt kendiliğinden komşuya atlamasın
+        self.sekmeler.setTabVisible(i, goster)
+        # tema, bağlamsal sekmeyi (son sekme) yalnız görünürken ayrı renge boyar (`:last` gizli sekmeyi atlar)
+        self.sekmeler.setProperty("baglam", "true" if goster else "false")
+        self.sekmeler.style().unpolish(self.sekmeler)
+        self.sekmeler.style().polish(self.sekmeler)
+
+    def sekme_gorunur_mu(self, ad: str) -> bool:
+        return self.sekmeler.isTabVisible(self.sekme_adlari().index(ad))
+
     def dosya_sekmesi_ekle(self, menu: QMenu, ad: str = "Dosya") -> int:
         """Başa sayfasız sekme: tıklayınca `menu` açılır, seçili sekme değişmez."""
         self.yigin.insertWidget(0, QWidget())

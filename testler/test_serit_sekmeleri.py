@@ -11,7 +11,7 @@ from tabcel.model.notlar import Not
 from tabcel.model.sayfa import CalismaKitabi, Hucre
 from tabcel.ui.window import Pencere
 
-SEKMELER = ["Dosya", "Giriş", "Sayfa Düzeni", "Formüller", "Veri", "Gözden Geçir", "Görünüm"]
+SEKMELER = ["Dosya", "Giriş", "Ekle", "Sayfa Düzeni", "Formüller", "Veri", "Gözden Geçir", "Görünüm", "Yardım", "Grafik"]
 
 
 @pytest.fixture(scope="module")

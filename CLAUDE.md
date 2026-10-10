@@ -18,6 +18,7 @@ Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü he
 10. Commit yalnızca kullanıcı isteyince. Silme/taşıma kullanıcı onayıyla.
 11. **Fonksiyon test şablonu (Faz 2 ve sonrası):** her formül fonksiyonu için en az dört test vakası — normal durum, boş hücre/argüman, hata değeri girdisi, metin/sayı karışımı. Referans değer Microsoft belgesinden ya da kullanıcının Excel web'de doğruladığından alınır; emin olunmayan `surec.md` → "Excel web'de doğrulanacaklar" listesine yazılır (tahmin yürütme).
 12. **Regresyon kuralı:** bir değişiklik mevcut bir özelliği/testi bozarsa devam etmeden önce kullanıcıya bildir (neyi bozdu, neden). Testi silerek/gevşeterek geçirme.
+13. **Yardım güncel kalır:** yeni/değişen özellik, kısayol ya da Excel'den bilinçli fark `tabcel/yardim.md`'ye (ilgili konu, "Yenilikler", "Klavye Kısayolları", "Excel'den Farklar") aynı iş parçasında yazılır; testler yardımdaki kısayolların tanımlı olduğunu denetler.
 
 ## Dosya yapısı
 ```
@@ -27,16 +28,20 @@ requirements.txt     bağımlılıklar
 tabcel/__init__.py   APP_NAME, __version__, künye, resource_dir()
 tabcel/model/        sayfa (Hucre/Sayfa/CalismaKitabi), adres, girdi, deger (Hata), gosterim, olay,
                      komutlar (geri al), pano, olcu, stil, sayi_bicimi, doldur, sayfa_yapisi, sayfalama;
-                     Faz 5: harmanla, bul, sirala, filtre, dogrulama, kosullu — Qt yok
+                     Faz 5: harmanla, bul, sirala, filtre, dogrulama, kosullu; Faz 6: grafik, grafik_verisi,
+                     grafik_cizim (çizim listesi), grafik_islem — Qt yok
 tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustur, degerlendir,
                      fonksiyonlar/ (kayıt + gruplar), adlar (tr⇄en), ceviri, motor (bağımlılık +
                      yeniden hesap), kaydir (başvuru kaydırma); Faz 5: kosul (koşullu biçim +
                      doğrulama değerlendirmesi) — Qt yok
 tabcel/io/           xlsx_io, csv_io, kurtarma, son_dosyalar
-tabcel/ui/           window, grid, theme, icons, widgets, pencereler (bicim, csv, sayfa yapısı, yazdır…)
+tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
+                     serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
+                     pencereler (bicim, csv, sayfa yapısı, yazdır…)
 testler/             pytest
 araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, cizim_dogrula, test_raporu)
 kurulum/             Inno Setup betiği (Faz 7)
+tabcel/yardim.md     uygulama içi yardım içeriği (F1); ad `{APP_NAME}` yer tutucusuyla yazılır
 plan.md / surec.md / test.md                     plan, süreç günlüğü, test sonuçları
 faz2_tasarim.md / faz3_tasarim.md / faz5_tasarim.md   formül motoru / biçimlendirme / veri araçları tasarımı
 ```

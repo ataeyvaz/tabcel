@@ -11,11 +11,11 @@
 """
 from typing import Dict, Optional, Set, Tuple
 
-from PySide6.QtCore import QRect, QSize, Qt, QTimer
+from PySide6.QtCore import QPoint, QRect, QSize, Qt, QTimer
 from PySide6.QtGui import QPainter, QPixmap
 
 from ..model.adres import Aralik
-from ..model.grafik import Grafik, Resim, grafik_aralik_kesisir
+from ..model.grafik import Grafik, Konum, Resim, grafik_aralik_kesisir
 from ..model.grafik_verisi import grafik_verisi
 from .grafik_boyayici import grafik_ciz
 
@@ -212,3 +212,17 @@ class NesneKatmani:
             return None
         s = self._nesne_dikdortgeni(n)
         return s[0] if s else None
+
+    def nesne_yerlesim_konumu(self, boyut) -> Konum:
+        """Yeni nesne için konum: `boyut` (model pikseli) görünen alanın ortasına gelecek biçimde, en yakın
+        hücreye çapalı; başlıkların ve (1, 1)'in gerisine taşmaz (`faz6_tasarim.md` §6.1)."""
+        z = self.yakinlastirma
+        vp = self.viewport().rect()
+        x0, y0 = self._baslik_g(), self._baslik_y()
+        x = max(x0 + 1, vp.center().x() - round(boyut[0] * z / 2))
+        y = max(y0 + 1, vp.center().y() - round(boyut[1] * z / 2))
+        satir, sutun = self._noktadan(QPoint(x, y))
+        r = self.hucre_dikdortgeni(satir, sutun) if satir and sutun else None
+        if r is None:
+            return Konum(self.ilk_satir, self.ilk_sutun)
+        return Konum(satir, sutun, max(0, round((x - r.left()) / z)), max(0, round((y - r.top()) / z)))

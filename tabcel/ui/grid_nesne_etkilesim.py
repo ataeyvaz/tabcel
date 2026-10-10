@@ -289,6 +289,14 @@ class NesneEtkilesimi:
         self.degisti.emit()
         return True
 
+    def nesne_ekle(self, nesne) -> int:
+        """`nesne`yi (kimliksiz) sayfaya ekler ve seçer; TEK geri al adımı. Döner: atanan kimlik."""
+        kmt = NesneEkle(self.sayfa, nesne)
+        self.yigin.calistir(kmt)
+        self.nesne_sec(kmt.nesne.kimlik)
+        self.degisti.emit()
+        return kmt.nesne.kimlik
+
     def nesne_kopyala(self, kesilen: bool) -> bool:
         n = self.sayfa.nesne(self._secili_nesne) if self._secili_nesne is not None else None
         if n is None:

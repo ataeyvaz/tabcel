@@ -33,6 +33,7 @@ from . import icons, theme
 from .ad_penceresi import AdTanimlaPenceresi, AdYoneticisi, GitPenceresi
 from .bicim_cubugu import BicimCubugu
 from .dosya_islemleri import DosyaIslemleri
+from .grafik_eylemleri import BAGLAM_SEKMESI, GrafikEylemleri
 from .serit import Serit, SeritGrubu
 from .grid import Izgara, goster
 
@@ -124,6 +125,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
     # ------------------------------------------------------------------ kurulum
     def _kur(self):
         self._eylemleri_kur()
+        self.grafik_eylemleri = GrafikEylemleri(self)
+        self._yardim_eylemleri_kur()
         merkez = QWidget()
         merkez.setObjectName("central")
         dikey = QVBoxLayout(merkez)
@@ -177,12 +180,15 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.dosya_menusu = QMenu(self)
         self._dosya_menusu_doldur(self.dosya_menusu)
         self.serit.sekme_ekle("Giriş", self.bicim_cubugu)
-        from .serit_sekmeleri import (FormullerSayfasi, GorunumSayfasi, GozdenGecirSayfasi,
-                                      SayfaDuzeniSayfasi, VeriSayfasi)
-        for ad, sinif in (("Sayfa Düzeni", SayfaDuzeniSayfasi), ("Formüller", FormullerSayfasi),
-                          ("Veri", VeriSayfasi), ("Gözden Geçir", GozdenGecirSayfasi),
-                          ("Görünüm", GorunumSayfasi)):
+        from .serit_sekmeleri import (EkleSayfasi, FormullerSayfasi, GorunumSayfasi, GozdenGecirSayfasi,
+                                      GrafikSayfasi, SayfaDuzeniSayfasi, VeriSayfasi, YardimSayfasi)
+        for ad, sinif in (("Ekle", EkleSayfasi), ("Sayfa Düzeni", SayfaDuzeniSayfasi),
+                          ("Formüller", FormullerSayfasi), ("Veri", VeriSayfasi),
+                          ("Gözden Geçir", GozdenGecirSayfasi), ("Görünüm", GorunumSayfasi),
+                          ("Yardım", YardimSayfasi),
+                          (BAGLAM_SEKMESI, GrafikSayfasi)):          # bağlamsal sekme SON kalır (tema `:last` kuralı)
             self.serit.sekme_ekle(ad, sinif(self))
+        self.serit.sekme_goster(BAGLAM_SEKMESI, False)
         self.serit.dosya_sekmesi_ekle(self.dosya_menusu)
         dikey.addWidget(self.serit)
         self.bilgi_cubugu = self._bilgi_cubugu_olustur()      # açılan dosyada korunamayan öğe uyarısı
@@ -319,6 +325,24 @@ class Pencere(DosyaIslemleri, QMainWindow):
         ekle(tm, "temizle_sayfa", "Tüm Sayfadan Kuralları Temizle", pen("kosullu_temizle", True))
         ekle(m, "yonet", "Kuralları Yönet…", pen("kosullu_yonet"))
         return m
+
+    def _yardim_eylemleri_kur(self) -> None:
+        """Yardım sekmesinin eylemleri; F1 pencere düzeyinde kısayol (eyleme konmaz, bkz. `_eylemleri_kur`)."""
+        for anahtar, metin, konu, ipucu in (
+                ("yardim", "Nasıl Kullanılır", None, "Yardım ve Nasıl Kullanılır (F1)"),
+                ("yardim_kisayollar", "Klavye Kısayolları", "kisayollar", None),
+                ("yardim_yenilikler", "Yenilikler", "yenilikler", None),
+                ("yardim_farklar", "Excel'den Farklar", "farklar", None)):
+            a = QAction(metin, self)
+            a.setToolTip(ipucu or metin)
+            a.triggered.connect(lambda _=False, k=konu: self.yardim_ac(k))
+            self.eylemler[anahtar] = a
+        QShortcut(QKeySequence("F1"), self, activated=lambda: self.yardim_ac(None))
+
+    def yardim_ac(self, konu=None):
+        """Yardım penceresini açar (tek örnek); `konu` verilirse o konuya gider."""
+        from .yardim import yardim_goster
+        return yardim_goster(self, konu)
 
     def _menu(self, ogeler) -> QMenu:
         """Katalog anahtarlarından açılır menü; `None` ayırıcı, `(ad, [alt öğeler])` alt menü."""
@@ -517,6 +541,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         g.duzenlemeMetniDegisti.connect(self._duzenleme_aynala)
         g.suruklemeBitti.connect(self._arayuzu_guncelle)
         g.nesneSecimiDegisti.connect(self._arayuzu_guncelle)     # Ad Kutusu seçili nesnenin adını gösterir
+        g.nesneAyarIstendi.connect(self.grafik_eylemleri.ayar_istendi)
         g.boyaciDegisti.connect(lambda _a: self._arayuzu_guncelle())
         g.yakinlastirmaDegisti.connect(self._yakinlastirma_degisti)
         g.uyari.connect(self._uyari)
@@ -769,6 +794,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self._dongu_etiketi_guncelle()
         self.serit.guncelle()
         self._eylem_durumlari()
+        self.grafik_eylemleri.sekmeyi_esitle()
 
     def _uyari(self, metin: str):
         self.statusBar().showMessage(metin, 6000)

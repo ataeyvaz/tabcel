@@ -1,10 +1,55 @@
-"""Giriş dışındaki şerit sekmeleri (5j-5; `faz5j_tasarim.md` §4): Sayfa Düzeni, Formüller, Veri, Gözden Geçir,
-Görünüm. Yalnız yerleşimdir: düğmeler `Pencere.eylemler` kataloğundaki eylemleri kullanır; tek işlevsel
+"""Giriş dışındaki şerit sekmeleri (5j-5; `faz5j_tasarim.md` §4): Ekle (6f), Sayfa Düzeni, Formüller, Veri,
+Gözden Geçir, Görünüm ve bağlamsal Grafik (6f). Yalnız yerleşimdir: düğmeler `Pencere.eylemler` kataloğundaki eylemleri kullanır; tek işlevsel
 ekleme Sayfa Düzeni'ndeki ölçek/sığdır kutularıdır (`Pencere.sayfa_yapisi_degistir`)."""
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QCheckBox, QLabel, QSpinBox
 
+from ..model.grafik_islem import GALERI
 from .serit import SeritGrubu, SeritSayfasi
+
+
+class EkleSayfasi(SeritSayfasi):
+    """Ekle sekmesi (`faz6_tasarim.md` §6.1). Resim grubu 6g'de eklenir."""
+
+    def __init__(self, pencere):
+        super().__init__()
+        m = pencere._menu
+        g = SeritGrubu("Grafikler", 5, "chart32")
+        for tur, metin, ikon in (("sutun", "Sütun", "chart_sutun32"), ("cubuk", "Çubuk", "chart_cubuk32"),
+                                 ("cizgi", "Çizgi", "chart_cizgi32")):
+            g.buyuk(menu=m(tuple(f"grafik_ekle.{tur}.{a}" for a, _ in GALERI[tur])), ikon=ikon, metin=metin)
+        g.buyuk(menu=m(("grafik_ekle.pasta.kumelenmis", "grafik_ekle.halka.kumelenmis")),
+                ikon="chart_pasta32", metin="Pasta")
+        g.buyuk(menu=m(tuple(f"grafik_ekle.alan.{a}" for a, _ in GALERI["alan"])), ikon="chart_alan32", metin="Alan")
+        g.buyuk(pencere.eylemler["grafik_ekle.dagilim.kumelenmis"], ikon="chart_dagilim32", metin="Dağılım")
+        self.grup_ekle(g)
+
+
+class GrafikSayfasi(SeritSayfasi):
+    """Bağlamsal "Grafik" sekmesi: yalnız grafik seçiliyken görünür (`faz6_tasarim.md` §6.2)."""
+
+    def __init__(self, pencere):
+        super().__init__()
+        e = pencere.eylemler
+        m = pencere._menu
+        t = SeritGrubu("Tür", 5, "chart32")
+        t.buyuk(e["grafik_tur"], ikon="chart32")
+        t.buyuk(e["grafik_satir_sutun"], ikon="chart_degistir32")
+        t.buyuk(e["grafik_veri"], ikon="chart_veri32", metin="Veriyi\nSeç")
+        self.grup_ekle(t)
+        o = SeritGrubu("Grafik Öğeleri", 4, "chart_oge32")
+        o.buyuk(menu=m(tuple(k for k in e if k.startswith("grafik_gosterge."))), ikon="chart_oge32", metin="Gösterge")
+        o.kucukler([e["grafik_baslik"], e["grafik_eksen_basliklari"], e["grafik_veri_etiketleri"]])
+        self.grup_ekle(o)
+        r = SeritGrubu("Renkler", 3, "chart_renk32")
+        r.buyuk(menu=m(tuple(k for k in e if k.startswith("grafik_renk."))), ikon="chart_renk32",
+                metin="Renkleri\nDeğiştir")
+        self.grup_ekle(r)
+        d = SeritGrubu("Düzen", 2, "sirala_nesne32")
+        d.buyuk(menu=m(("grafik_one_getir", "grafik_bir_one")), ikon="sirala_nesne32", metin="Öne\nGetir")
+        d.buyuk(menu=m(("grafik_arkaya_gonder", "grafik_bir_arkaya")), ikon="sirala_nesne32", metin="Arkaya\nGönder")
+        d.kucukler([e["grafik_ayarlar"], e["grafik_sil"]])
+        self.grup_ekle(d)
 
 
 class SayfaDuzeniSayfasi(SeritSayfasi):
@@ -101,6 +146,20 @@ class GozdenGecirSayfasi(SeritSayfasi):
         n.buyuk(e["yeni_not"])
         n.kucukler([e["notu_sil"]])
         self.grup_ekle(n)
+
+
+class YardimSayfasi(SeritSayfasi):
+    """Yardım sekmesi: Nasıl Kullanılır (F1), Klavye Kısayolları, Yenilikler, Excel'den Farklar."""
+
+    def __init__(self, pencere):
+        super().__init__()
+        e = pencere.eylemler
+        y = SeritGrubu("Yardım", 5, "help32")
+        y.buyuk(e["yardim"], ikon="help32", metin="Nasıl\nKullanılır")
+        y.buyuk(e["yardim_kisayollar"], ikon="keyboard32", metin="Klavye\nKısayolları")
+        y.buyuk(e["yardim_yenilikler"], ikon="info32", metin="Yenilikler")
+        y.buyuk(e["yardim_farklar"], ikon="help32", metin="Excel'den\nFarklar")
+        self.grup_ekle(y)
 
 
 class GorunumSayfasi(SeritSayfasi):
