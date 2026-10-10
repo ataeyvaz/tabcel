@@ -188,7 +188,8 @@ def test_kosullu_bicim_ve_dogrulama_uyarisi(tmp_path):
     wb.save(yol)
     _, rapor = xlsx_io.ac(yol)
     assert any("koşullu biçim" in u for u in rapor.uyarilar)
-    assert any("veri doğrulama" in u for u in rapor.uyarilar)
+    assert not any("veri doğrulama" in u for u in rapor.uyarilar)       # 5g: veri doğrulama artık korunur
+    assert _.sayfalar[0].dogrulama(1, 2) is not None
 
 
 def test_bozuk_dosya_anlasilir_hata(tmp_path):

@@ -297,6 +297,27 @@ class FiltreDegis:
         self.sayfa.boyut_durumu_yukle(self._eski_boyut)
 
 
+class DogrulamaDegis:
+    """Aralıklara veri doğrulama kuralı koyar (`dv`) ya da kaldırır (`dv=None`); eski kuralların bu
+    hücrelerdeki etkisi kalkar (`dogrulama.yeni_liste`). Tek geri al adımı."""
+
+    def __init__(self, sayfa: Sayfa, araliklar, dv=None):
+        self.sayfa, self.araliklar, self.dv = sayfa, list(araliklar), dv
+        self._eski = None
+
+    def bos_mu(self) -> bool:
+        from .dogrulama import yeni_liste
+        return yeni_liste(self.sayfa.dogrulamalar, self.araliklar, self.dv) == self.sayfa.dogrulamalar
+
+    def yap(self) -> None:
+        from .dogrulama import yeni_liste
+        self._eski = list(self.sayfa.dogrulamalar)
+        self.sayfa.dogrulamalari_yaz(yeni_liste(self._eski, self.araliklar, self.dv))
+
+    def geri_al(self) -> None:
+        self.sayfa.dogrulamalari_yaz(self._eski)
+
+
 class AdDegis:
     """Tanımlı ad ekler / düzenler / yeniden adlandırır / siler (tek geri al adımı).
     `eski_anahtar`: düzenlenen/silinen adın anahtarı (yeni ad için None); `yeni`: yeni `TanimliAd`
@@ -647,7 +668,7 @@ def ana_sayfa(komut, geri_al: bool = False):
         return None
     return getattr(komut, "sayfa", None) if isinstance(
         komut, (HucrelerDegis, _SatirSutun, OlcuDegis, BicimDegis, BicimPlani, BirlesimDegis, Sirala,
-                NotlarDegis, FiltreDegis)) else None
+                NotlarDegis, FiltreDegis, DogrulamaDegis)) else None
 
 
 class GeriAlYigini:

@@ -484,6 +484,20 @@ class Sayfa:
         if degisti:
             self._bildir("ek", alan="hepsi", anahtarlar=set(eski_notlar) | set(notlar))
 
+    def dogrulama(self, satir: int, sutun: int):
+        """Hücrenin veri doğrulama kuralı (yoksa None). Kural sayısı küçüktür: doğrusal tarama."""
+        if not self.dogrulamalar:
+            return None
+        from .dogrulama import kural_ara
+        return kural_ara(self.dogrulamalar, satir, sutun)
+
+    def dogrulamalari_yaz(self, liste) -> None:
+        """Kural listesini aynen yazar; değişirse `ek` olayı (`alan="dogrulama"`)."""
+        if list(liste) == self.dogrulamalar:
+            return
+        self.dogrulamalar = list(liste)
+        self._bildir("ek", alan="dogrulama")
+
     def filtre_yaz(self, filtre) -> None:
         """Otomatik filtreyi değiştirir (None = kaldır); değişirse `ek` olayı (`alan="filtre"`).
         Satır gizliliği ayrıca `gizli_satir` + `boyut_degisti` ile yazılır (`komutlar.FiltreDegis`)."""

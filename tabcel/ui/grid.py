@@ -22,6 +22,8 @@ from ..model.adres import (
 from ..formul import ceviri, isaretleme
 from ..formul.ceviri import hucre_girdisi, hucre_girdisi_akilli, hucre_metni
 from ..formul.sozcuk import FormulHatasi
+from ..formul.kosul import dogrula, liste_ogeleri
+from ..model.harmanla import tr_kucuk
 from ..model.deger import Hata
 from ..model.gosterim import goster, sayiyi_sigdir  # noqa: F401  (testler grid.goster'i de kullanır)
 from ..model import sayi_bicimi
@@ -29,7 +31,7 @@ from ..model.sayi_bicimi import BicimSonucu
 from ..model import doldur as doldurma
 from ..model.stil import VARSAYILAN, Stil, StilYama
 from ..model.komutlar import (
-    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, HucreTasi, HucrelerDegis, NotlarDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
+    BicimDegis, BicimPlani, BirlesimDegis, GeriAlYigini, Grup, DogrulamaDegis, HucreTasi, HucrelerDegis, NotlarDegis, OlcuDegis, bicim_komutu, birlesim_komutu, birlesim_veri_kaybi,
     SatirEkleSil, SutunEkleSil,
 )
 from ..model import olcu, pano
@@ -39,6 +41,7 @@ from ..model.sayfa import Hucre, Sayfa
 from . import theme
 from .renkli import renkli_ciz
 
+VARSAYILAN_DOGRULAMA_IL = "Bu değer, bu hücre için tanımlanan veri doğrulama kısıtlamalarıyla eşleşmiyor."
 FILTRE_MAVISI = "#0563C1"        # filtreli listede satır numaraları (Excel)
 VARSAYILAN_PUNTO = 11.0     # `Stil.boyut` bu değere göre ölçeklenir (Excel varsayılanı 11 punto)
 _YATAY_BAYRAK = {"genel": Qt.AlignLeft, "sol": Qt.AlignLeft, "doldur": Qt.AlignLeft,
@@ -296,6 +299,9 @@ class Izgara(QAbstractScrollArea):
         self._not_kutusu: Optional[QLabel] = None            # fare üstü not kutusu (salt okunur)
         self._not_duzen: Optional[_NotDuzenleyici] = None    # Shift+F2 not düzenleyici
         self._not_duzen_hucre: Tuple[int, int] = (1, 1)
+        self.dogrulama_soru = None                           # (Dogrulama) -> 'devam' | 'tekrar' | 'iptal' (testler yamalar)
+        self._giris_etiketi: Optional[QLabel] = None         # veri doğrulama giriş iletisi (sarı ipucu kutusu)
+        self._liste_acik: Optional[QListWidget] = None       # açılır liste penceresi
         self._not_zamani = QTimer(self)
         self._not_zamani.setSingleShot(True)
         self._not_zamani.setInterval(400)
@@ -305,6 +311,7 @@ class Izgara(QAbstractScrollArea):
         self.horizontalScrollBar().setRange(0, MAX_COL - 1)
         self.verticalScrollBar().setRange(0, MAX_ROW - 1)
         self._dondur_uygula()
+        self.aktifDegisti.connect(lambda *_: self._giris_iletisi_guncelle())
         self.horizontalScrollBar().valueChanged.connect(self._yatay_kaydi)
         self.verticalScrollBar().valueChanged.connect(self._dikey_kaydi)
         QApplication.clipboard().dataChanged.connect(self._pano_degisti)
@@ -1051,6 +1058,8 @@ class Izgara(QAbstractScrollArea):
             self._not_uclari_ciz(p, sutunlar_k, satirlar)
         if self.sayfa.filtre is not None:
             self._filtre_dugmeleri_ciz(p, kirp)
+        if self.sayfa.dogrulamalar:
+            self._acilir_dugme_ciz(p, kirp)
         p.setFont(self._yazi_tipi())
 
         # seçim
@@ -1517,6 +1526,10 @@ class Izgara(QAbstractScrollArea):
         if self.duzenleniyor():
             return                    # formül hatalıydı, düzenleme yeniden açıldı: tıklama yok sayılır
         nokta = olay.position().toPoint()
+        ad_ = self._acilir_dugme_dikdortgeni() if self.sayfa.dogrulamalar else None
+        if ad_ is not None and ad_.contains(nokta):          # açılır liste oku: seçim değişmez
+            self.acilir_liste_ac()
+            return
         fc = self.filtre_dugmesi_sutunu(nokta)
         if fc is not None:                     # düğme alanına tıklama hücre seçimini değiştirmez
             self.filtreDugmesi.emit(fc)
@@ -1659,6 +1672,8 @@ class Izgara(QAbstractScrollArea):
             self._not_gizle()
         if k == Qt.Key_F2 and shift and not ctrl:
             self.not_duzenle()
+            return
+        if k == Qt.Key_Down and (m & Qt.AltModifier) and self.acilir_liste_ac():
             return
         f = self.sayfa.filtre
         if (k == Qt.Key_Down and (m & Qt.AltModifier) and f is not None and self._aktif[0] == f.aralik.ilk_satir
@@ -2673,6 +2688,8 @@ class Izgara(QAbstractScrollArea):
                 return False
             if kod is not None and self.sayfa.stil(satir, sutun).sayi_bicimi != "General":
                 kod = None                              # biçim yalnız Genel hücreye önerilir (Excel)
+        if not self._dogrulama_izni(satir, sutun, yeni):
+            return self._dogrulama_sonucu
         yama = {}
         if kod is not None:
             yama["sayi_bicimi"] = kod
@@ -2690,6 +2707,167 @@ class Izgara(QAbstractScrollArea):
         self.yigin.calistir(komut)
         self._guncelle()
         return True
+
+    # --- veri doğrulama (5g) ---
+    _dogrulama_sonucu = True              # `_dogrulama_izni` False dönerse `hucre_gir`'in döndüreceği değer
+
+    def _dogrulama_izni(self, satir: int, sutun: int, yeni) -> bool:
+        """Elle girişte kural denetlenir (formül girişi, yapıştırma, doldurma denetlenmez). Geçersizse kullanıcıya
+        sorulur: devam -> True (yazılır); yeniden dene -> False ve `hucre_gir` False döner (düzenleme açık kalır);
+        iptal -> False ve `hucre_gir` True döner (giriş bırakılır)."""
+        dv = self.sayfa.dogrulama(satir, sutun) if self.sayfa.dogrulamalar else None
+        if dv is None or (yeni is not None and yeni.formul is not None):
+            return True
+        if dogrula(self.sayfa, satir, sutun, None if yeni is None else yeni.deger, dv=dv):
+            return True
+        if not dv.hata[0]:
+            return True                                         # hata uyarısı kapalı: her girişe izin
+        yanit = (self.dogrulama_soru or self._dogrulama_kutusu)(dv)
+        if yanit == "devam":
+            return True
+        self._dogrulama_sonucu = yanit != "tekrar"
+        return False
+
+    def _dogrulama_kutusu(self, dv) -> str:
+        from PySide6.QtWidgets import QMessageBox
+        _, stil, baslik, ileti = dv.hata
+        pencere = self.window()
+        ad = pencere.windowTitle().split(" - ")[-1] if pencere is not None else ""
+        kutu = QMessageBox(self)
+        kutu.setWindowTitle(baslik or ad or "Veri Doğrulama")
+        if stil == "durdur":
+            kutu.setIcon(QMessageBox.Critical)
+            kutu.setText(ileti or VARSAYILAN_DOGRULAMA_IL)
+            yeniden = kutu.addButton("Yeniden Dene", QMessageBox.AcceptRole)
+            kutu.addButton("İptal", QMessageBox.RejectRole)
+            kutu.exec()
+            return "tekrar" if kutu.clickedButton() is yeniden else "iptal"
+        if stil == "uyari":
+            kutu.setIcon(QMessageBox.Warning)
+            kutu.setText(ileti or VARSAYILAN_DOGRULAMA_IL + "\nDevam etmek istiyor musunuz?")
+            evet = kutu.addButton("Evet", QMessageBox.YesRole)
+            hayir = kutu.addButton("Hayır", QMessageBox.NoRole)
+            kutu.addButton("İptal", QMessageBox.RejectRole)
+            kutu.exec()
+            t = kutu.clickedButton()
+            return "devam" if t is evet else "tekrar" if t is hayir else "iptal"
+        kutu.setIcon(QMessageBox.Information)
+        kutu.setText(ileti or VARSAYILAN_DOGRULAMA_IL)
+        tamam = kutu.addButton("Tamam", QMessageBox.AcceptRole)
+        kutu.addButton("İptal", QMessageBox.RejectRole)
+        kutu.exec()
+        return "devam" if kutu.clickedButton() is tamam else "iptal"
+
+    def dogrulama_uygula(self, dv, araliklar=None) -> bool:
+        """Seçime (ya da `araliklar`a) kural koyar; `dv=None` ya da etkisiz kural ("herhangi bir değer", ileti yok)
+        kuralı kaldırır. Tek geri al adımı; değişen yoksa False."""
+        araliklar = list(araliklar) if araliklar is not None else list(self.secimler)
+        if dv is not None and dv.etkisiz_mi():
+            dv = None
+        if dv is not None:
+            from dataclasses import replace
+            dv = replace(dv, araliklar=tuple(araliklar))
+        kmt = DogrulamaDegis(self.sayfa, araliklar, dv)
+        if kmt.bos_mu():
+            return False
+        self.yigin.calistir(kmt)
+        self._guncelle(pano_iptal=False)
+        return True
+
+    def _liste_dogrulamasi(self):
+        """Etkin hücrenin açılır listeli kuralı (yoksa None)."""
+        if not self.sayfa.dogrulamalar or self.duzenleniyor():
+            return None
+        dv = self.sayfa.dogrulama(*self._aktif)
+        return dv if dv is not None and dv.tur == "liste" and dv.acilir_liste else None
+
+    def acilir_liste_ogeleri(self):
+        """Etkin hücrenin açılır liste seçenekleri (aralıktaki boş hücre boş satır olur); yoksa None."""
+        dv = self._liste_dogrulamasi()
+        if dv is None:
+            return None
+        return liste_ogeleri(dv, self.sayfa, *self._aktif, self.sayfa.kitap, bos_dahil=True)
+
+    def acilir_liste_sec(self, metin: str) -> bool:
+        """Listeden seçim: değer elle yazılmış gibi `hucre_gir` yolundan girer (kural yine denetler)."""
+        return self.hucre_gir(*self._aktif, metin)
+
+    def _acilir_dugme_dikdortgeni(self) -> Optional[QRect]:
+        if self._liste_dogrulamasi() is None or len(self.secimler) > 1:
+            return None
+        ar = self.hucre_dikdortgeni(*self._aktif)
+        if ar is None:
+            return None
+        return QRect(ar.right() + 1, ar.top(), self._z(18), max(1, min(ar.height() - 1, self._z(20))))
+
+    def _acilir_dugme_ciz(self, p: QPainter, kirp: QRect) -> None:
+        d = self._acilir_dugme_dikdortgeni()
+        if d is None or not d.intersects(kirp):
+            return
+        p.setPen(QPen(QColor("#a6a6a6"), 1))
+        p.setBrush(QColor("#f3f3f3"))
+        p.drawRect(d.adjusted(0, 0, -1, -1))
+        cx, cy, w = d.center().x(), d.center().y(), self._z(3)
+        p.setPen(Qt.NoPen)
+        p.setBrush(QColor("#444444"))
+        p.drawPolygon(QPolygon([QPoint(cx - w - 1, cy - 1), QPoint(cx + w, cy - 1), QPoint(cx, cy + w)]))
+        p.setBrush(Qt.NoBrush)
+
+    def acilir_liste_ac(self) -> bool:
+        """Etkin hücrenin listesini hücrenin altında açar (en çok 8 satır görünür, kaydırılabilir)."""
+        ogeler = self.acilir_liste_ogeleri()
+        ar = self.hucre_dikdortgeni(*self._aktif)
+        if not ogeler or ar is None:
+            return False
+        liste = QListWidget(self.viewport())
+        liste.setWindowFlags(Qt.Popup)
+        liste.addItems(ogeler)
+        satir_h = liste.sizeHintForRow(0) if liste.count() else 20
+        liste.setFixedSize(max(ar.width(), 120), min(len(ogeler), 8) * (satir_h or 20) + 6)
+        mevcut = self.sayfa.deger(*self._aktif)
+        if mevcut is not None:
+            for i, o in enumerate(ogeler):
+                if tr_kucuk(o) == tr_kucuk(goster(mevcut)):
+                    liste.setCurrentRow(i)
+                    break
+
+        def sec(oge):
+            liste.close()
+            self.acilir_liste_sec(oge.text())
+        liste.itemClicked.connect(sec)
+        self._liste_acik = liste
+        liste.move(self.viewport().mapToGlobal(QPoint(ar.left(), ar.bottom() + 1)))
+        liste.show()
+        liste.setFocus()
+        return True
+
+    def _giris_iletisi_guncelle(self) -> None:
+        """Etkin hücrenin kuralında giriş iletisi varsa hücrenin altında sarı kutu gösterir (hücreden ayrılınca kapanır)."""
+        dv = self.sayfa.dogrulama(*self._aktif) if self.sayfa.dogrulamalar else None
+        ar = self.hucre_dikdortgeni(*self._aktif) if dv is not None else None
+        if dv is None or ar is None or not dv.giris[0] or (dv.giris[1] == "" and dv.giris[2] == ""):
+            if self._giris_etiketi is not None:
+                self._giris_etiketi.hide()
+            return
+        from html import escape
+        if self._giris_etiketi is None:
+            k = QLabel(self.viewport())
+            k.setWordWrap(True)
+            k.setTextFormat(Qt.RichText)
+            k.setAttribute(Qt.WA_TransparentForMouseEvents)
+            k.setStyleSheet("QLabel{background:#FFFFE1;color:#000;border:1px solid #000;padding:3px;}")
+            self._giris_etiketi = k
+        k = self._giris_etiketi
+        baslik, ileti = dv.giris[1], dv.giris[2]
+        k.setText((f"<b>{escape(baslik)}</b><br>" if baslik else "") + escape(ileti).replace("\n", "<br>"))
+        k.setFixedWidth(self._z(180))
+        k.adjustSize()
+        k.setFixedHeight(k.heightForWidth(k.width()) if k.hasHeightForWidth() else k.sizeHint().height())
+        vp = self.viewport()
+        k.move(min(ar.left(), max(0, vp.width() - k.width())),
+               min(ar.bottom() + self._z(3), max(0, vp.height() - k.height())))
+        k.show()
+        k.raise_()
 
     def filtreyle_gizli(self, satir: int) -> bool:
         """Satır etkin filtrenin veri aralığında ve gizli mi (Delete/Temizle/biçim yalnız görünenlere)."""
@@ -2815,6 +2993,9 @@ class Izgara(QAbstractScrollArea):
         komutlar = ([HucrelerDegis(self.sayfa, icerik)] if icerik else []) + ([] if kmt.bos_mu() else [kmt])
         if notlar:
             komutlar.append(NotlarDegis(self.sayfa, notlar))
+        dkmt = DogrulamaDegis(self.sayfa, list(self.secimler), None)
+        if not dkmt.bos_mu():
+            komutlar.append(dkmt)               # Excel Tümünü Temizle veri doğrulamayı da kaldırır
         if komutlar:
             self.yigin.calistir(komutlar[0] if len(komutlar) == 1 else Grup(komutlar))
             self._guncelle()

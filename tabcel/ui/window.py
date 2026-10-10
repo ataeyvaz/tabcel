@@ -296,6 +296,8 @@ class Pencere(DosyaIslemleri, QMainWindow):
             if kisayol:
                 self.veri_eylemleri[eylem].setText(self.veri_eylemleri[eylem].text() + "	" + kisayol)
                 QShortcut(QKeySequence(kisayol), self, activated=islev)
+        self.veri_eylemleri["dogrulama"].setEnabled(True)
+        self.veri_eylemleri["dogrulama"].triggered.connect(lambda _=False: self.dogrulama_ac())
         for eylem, islev in (("ad_tanimla", self.ad_tanimla_ac), ("ad_yoneticisi", self.ad_yoneticisi_ac)):
             self.veri_eylemleri[eylem].setEnabled(True)
             self.veri_eylemleri[eylem].triggered.connect(lambda _=False, f=islev: f())
@@ -752,6 +754,60 @@ class Pencere(DosyaIslemleri, QMainWindow):
             sonuc = (pen.anahtarlar(), pen.baslik(), pen.buyuk_kucuk(), pen.yon())
         anahtarlar, baslik, bk, yon = sonuc
         return self._siralama_uygula(aralik, anahtarlar, baslik, bk, yon)
+
+    # ------------------------------------------------------------------ veri doğrulama (5g)
+    def _dogrulama_karisik_onayi(self) -> bool:
+        c = QMessageBox.question(
+            self, APP_NAME,
+            "Seçim, veri doğrulama ayarları olmayan ya da farklı olan hücreler içeriyor. "
+            "Doğrulama ayarlarını bu hücrelere de uygulamak istiyor musunuz?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes)
+        return c == QMessageBox.Yes
+
+    def _dogrulama_kapsami(self, g):
+        """(etkin hücrenin kuralı, seçim farklı/kuralsız hücreler içeriyor mu). Seçimde hiç kural yoksa karışık
+        sayılmaz; kural varsa ve seçimin tamamı etkin hücrenin kuralıyla kaplı değilse karışıktır."""
+        from ..model.adres import aralik_cikar
+        mevcut = g.sayfa.dogrulama(*g.aktif)
+        kesen = [dv for dv in g.sayfa.dogrulamalar
+                 if any(not (a.son_satir < s.ilk_satir or a.ilk_satir > s.son_satir
+                             or a.son_sutun < s.ilk_sutun or a.ilk_sutun > s.son_sutun)
+                        for a in dv.araliklar for s in g.secimler)]
+        if not kesen:
+            return mevcut, False
+        if any(dv is not mevcut for dv in kesen):
+            return mevcut, True
+        kalan = list(g.secimler)
+        for a in mevcut.araliklar:
+            kalan = [p for k in kalan for p in aralik_cikar(k, a)]
+        return mevcut, bool(kalan)
+
+    def dogrulama_ac(self, sonuc=None) -> bool:
+        """Veri ▸ Veri Doğrulama…: etkin hücrenin kuralıyla açılır; Tamam seçimin tüm aralıklarına uygular.
+        Seçim farklı/kuralsız hücreler içeriyorsa önce Excel gibi sorulur. `sonuc`: testler için pencereyi atlayan
+        `Dogrulama` (ya da None = temizle); formüller etkin hücreye göre yazılmış sayılır."""
+        from dataclasses import replace
+        from .dogrulama_penceresi import DogrulamaPenceresi
+        from ..formul.kaydir import kopyala
+        g = self.izgara()
+        mevcut, karisik = self._dogrulama_kapsami(g)
+        if karisik and not self._dogrulama_karisik_onayi():
+            return False
+        if sonuc is None:
+            pen = DogrulamaPenceresi(self.kitap, mevcut, self)
+            if pen.exec() != QDialog.Accepted:
+                return False
+            dv = pen.sonuc()
+        else:
+            dv = None if sonuc == "temizle" else sonuc
+        if dv is not None:
+            # formüller etkin hücreye göre yazıldı; kural çapası = ilk aralığın sol üstü
+            cr, cc = g.secimler[0].ilk_satir, g.secimler[0].ilk_sutun
+            fr, fc = cr - g.aktif[0], cc - g.aktif[1]
+            if (fr, fc) != (0, 0):
+                kay = lambda f: kopyala(f, fr, fc) if f is not None and f.startswith("=") else f
+                dv = replace(dv, formul1=kay(dv.formul1), formul2=kay(dv.formul2))
+        return g.dogrulama_uygula(dv)
 
     # ------------------------------------------------------------------ filtre (5f)
     def filtre_ac_kapat(self) -> bool:

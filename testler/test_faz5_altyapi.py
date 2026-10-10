@@ -583,8 +583,7 @@ def test_duzen_ve_veri_menu_iskeleti_ve_olaylar_pencereyi_bozmaz():
         assert set(p.duzen_eylemleri) == {"bul", "degistir", "git"}
         assert {"artan", "azalan", "ozel_sirala", "filtre", "filtre_temizle", "filtre_yeniden",
                 "dogrulama", "ad_tanimla", "ad_yoneticisi"} <= set(p.veri_eylemleri)
-        assert not p.veri_eylemleri["dogrulama"].isEnabled()                      # 5g bağlayıp açar (Düzen: 5b, Sırala: 5c, Ad: 5d, Filtre: 5f açtı)
-        assert all(p.veri_eylemleri[a].isEnabled() for a in ("filtre", "filtre_temizle", "filtre_yeniden"))
+        assert all(p.veri_eylemleri[a].isEnabled() for a in ("filtre", "filtre_temizle", "filtre_yeniden", "dogrulama"))   # Veri menüsü eylemlerinin hepsi açık (5c, 5d, 5f, 5g)
         assert all(p.veri_eylemleri[a].isEnabled() for a in ("ad_tanimla", "ad_yoneticisi"))
         # None sayfalı `ad` ve `ek` olayları pencereyi/motoru bozmaz
         s = k.sayfalar[0]

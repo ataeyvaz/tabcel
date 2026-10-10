@@ -24,6 +24,7 @@ from openpyxl.worksheet.filters import (
     CustomFilter, CustomFilters, DynamicFilter, FilterColumn, Filters, Top10,
 )
 from openpyxl.worksheet.cell_range import CellRange
+from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.styles.colors import COLOR_INDEX
 from openpyxl.utils import get_column_letter
@@ -38,6 +39,7 @@ from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
 from ..model.adres import MAX_COL, MAX_ROW, Aralik
 from ..model.deger import Hata, hata_bul
+from ..model.dogrulama import Dogrulama
 from ..model.filtre import DegerKosulu, Filtre, IlkKosul, OrtalamaKosulu, OzelKosul, RenkKosulu
 from ..model.notlar import Not
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
@@ -147,7 +149,7 @@ _TARA = (
 )
 # sayfa XML'inde aranan, openpyxl ile korunamayan/bozulan öğeler
 _SAYFA_ISARETLERI = (
-    (b"<conditionalFormatting", "koşullu biçim"), (b"<dataValidations", "veri doğrulama"),
+    (b"<conditionalFormatting", "koşullu biçim"),
     (b"<hyperlinks", "köprü"), (b"outlineLevel=", "satır/sütun gruplama"),
     (b"<headerFooter", "üst/alt bilgi"), (b"<sheetProtection", "sayfa koruması"),
     (b't="array"', "dizi formülü (normal formüle dönüştürülür)"),
@@ -524,6 +526,8 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         _yapi_yaz(ws, sayfa.sayfa_yapisi)
         if sayfa.filtre is not None:
             _filtre_yaz(ws, sayfa.filtre, rapor)
+        if sayfa.dogrulamalar:
+            _dogrulamalari_yaz(ws, sayfa, kitap, rapor)
 
     _adlari_yaz(wb, kitap)
     if sayac.get("karakter"):
@@ -562,6 +566,78 @@ def _not_oku(yorum) -> Optional[Not]:
     if metin == "" and yazar == "":
         return None
     return Not(metin, yazar)
+
+
+_DV_TUR_YAZ = {"tam_sayi": "whole", "ondalik": "decimal", "liste": "list", "tarih": "date", "saat": "time",
+               "metin_uzunlugu": "textLength", "ozel": "custom", "her_deger": None}
+_DV_TUR_OKU = {v: k for k, v in _DV_TUR_YAZ.items() if v}
+_DV_ISLEC_YAZ = {"arasinda": "between", "arasinda_degil": "notBetween", "esit": "equal", "esit_degil": "notEqual",
+                 "buyuk": "greaterThan", "kucuk": "lessThan", "buyuk_esit": "greaterThanOrEqual",
+                 "kucuk_esit": "lessThanOrEqual"}
+_DV_ISLEC_OKU = {v: k for k, v in _DV_ISLEC_YAZ.items()}
+_DV_STIL_YAZ = {"durdur": "stop", "uyari": "warning", "bilgi": "information"}
+_DV_STIL_OKU = {v: k for k, v in _DV_STIL_YAZ.items()}
+
+
+def _dv_formul_yaz(f, kitap):
+    """Saklanan doğrulama formülü → dosyadaki metin ('=' yok; liste sabiti tırnaklı olduğu gibi)."""
+    if f is None:
+        return None
+    return f if not f.startswith("=") else ceviri.disa(f, kitap)[1:]
+
+
+def _dv_formul_oku(f, kitap):
+    if f is None:
+        return None
+    f = str(f)
+    if f.startswith('"'):
+        return f
+    return ceviri.iceri("=" + f, kitap)
+
+
+def _dogrulamalari_yaz(ws, sayfa, kitap, rapor: Rapor) -> None:
+    for dv in sayfa.dogrulamalar:
+        try:
+            x = DataValidation(
+                type=_DV_TUR_YAZ[dv.tur], operator=_DV_ISLEC_YAZ[dv.islec] if dv.tur not in ("liste", "ozel", "her_deger") else None,
+                formula1=_dv_formul_yaz(dv.formul1, kitap), formula2=_dv_formul_yaz(dv.formul2, kitap)
+                if dv.islec in ("arasinda", "arasinda_degil") and dv.tur not in ("liste", "ozel") else None,
+                allowBlank=dv.bos_yoksay, showDropDown=None if dv.acilir_liste else True,
+                showInputMessage=dv.giris[0], promptTitle=dv.giris[1] or None, prompt=dv.giris[2] or None,
+                showErrorMessage=dv.hata[0], errorStyle=_DV_STIL_YAZ[dv.hata[1]],
+                errorTitle=dv.hata[2] or None, error=dv.hata[3] or None)
+            for a in dv.araliklar:
+                x.add(f"{get_column_letter(a.ilk_sutun)}{a.ilk_satir}:{get_column_letter(a.son_sutun)}{a.son_satir}")
+            ws.add_data_validation(x)
+        except (FormulHatasi, KeyError, ValueError):
+            rapor.ekle(f"'{sayfa.ad}' sayfasındaki bir veri doğrulama kuralı yazılamadı.")
+
+
+def _dogrulamalari_oku(ws, s: Sayfa, kitap, rapor: Rapor) -> None:
+    kurallar = []
+    atlanan = 0
+    for x in ws.data_validations.dataValidation:
+        try:
+            tur = _DV_TUR_OKU.get(x.type, "her_deger")
+            if x.type not in (None, "none") and x.type not in _DV_TUR_OKU:
+                raise ValueError("tür")
+            araliklar = tuple(_aralik(r) for r in x.sqref.ranges)
+            if not araliklar:
+                continue
+            islec = _DV_ISLEC_OKU.get(x.operator or "between", "arasinda")
+            kurallar.append(Dogrulama(
+                araliklar, tur=tur, islec=islec,
+                formul1=_dv_formul_oku(x.formula1, kitap), formul2=_dv_formul_oku(x.formula2, kitap),
+                bos_yoksay=bool(x.allow_blank), acilir_liste=not x.showDropDown,
+                giris=(bool(x.showInputMessage), x.promptTitle or "", x.prompt or ""),
+                hata=(bool(x.showErrorMessage), _DV_STIL_OKU.get(x.errorStyle or "stop", "durdur"),
+                      x.errorTitle or "", x.error or "")))
+        except (FormulHatasi, ValueError, KeyError):
+            atlanan += 1
+    if atlanan:
+        rapor.ekle(f"'{ws.title}' sayfasında {atlanan} veri doğrulama kuralı çevrilemedi; atlandı.")
+    if kurallar:
+        s.dogrulamalari_yaz(kurallar)
 
 
 _ISLEC_YAZ = {"esit": "equal", "esit_degil": "notEqual", "buyuk": "greaterThan", "buyuk_esit": "greaterThanOrEqual",
@@ -831,6 +907,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
         s.gorunum_yaz(dondur=dondur, kilavuz=bool(ws.sheet_view.showGridLines is not False))
         s.sayfa_yapisi = _yapi_oku(ws)
         _filtre_oku(ws, s, rapor)
+        _dogrulamalari_oku(ws, s, kitap, rapor)
         tab = ws.sheet_properties.tabColor
         if tab is not None:
             s.sekme_rengi = _renk_oku(tab, tema)
