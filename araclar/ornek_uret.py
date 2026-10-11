@@ -4,6 +4,7 @@
 - butce.xlsx   : başka bir programın (openpyxl) yazdığı biçimli çok sayfalı çizelge
 - grafikli.xlsx: grafik + gerçek resim + yorum + koşullu biçim + veri doğrulama + tanımlı ad (korunamayan öğeler)
 - stok.xlsx    : Faz 5 öğelerinin hepsi (filtre koşullu, doğrulama, koşullu biçim, tanımlı ad, not, ALTTOPLAM)
+- grafikler.xlsx: Tabcel'in kendi yazdığı 13 grafik (her tür/alt tür) + resim (Faz 6 / 6j)
 - satis_tr.csv : Türkçe Excel'in `;` ayraçlı, Windows-1254 CSV'si
 - satis_utf8.csv: virgül ayraçlı UTF-8 (BOM'suz)
 """
@@ -185,6 +186,42 @@ def stok(yol):
     wb.save(yol)
 
 
+def grafikler(yol):
+    """Tabcel'in KENDİ yazdığı dosya: 7 tür × alt tür = 13 grafik (galeri) + resim (Faz 6 / 6j). Excel'de
+    `araclar\\excel_dogrula.ps1` ile açılıp doğrulanır; testler Tabcel imini (uyarısız açılış) denetler."""
+    sys.path.insert(0, os.path.dirname(KLASOR.rsplit(os.sep, 1)[0]))
+    from tabcel.io import xlsx_io
+    from tabcel.model.adres import Aralik
+    from tabcel.model.grafik import Konum, Resim
+    from tabcel.model.grafik_islem import GALERI, grafik_kur
+    from tabcel.model.sayfa import CalismaKitabi, Hucre
+    import io
+    from PIL import Image as PilImage
+
+    k = CalismaKitabi()
+    s = k.sayfalar[0]
+    for c, b in enumerate(["Ay", "Satış", "Maliyet", "Kâr"], start=1):
+        s.ata(1, c, Hucre(b))
+    for i, (ay, a, m) in enumerate([("Ocak", 120, 80), ("Şubat", 135, 90), ("Mart", 150, 95), ("Nisan", 142, 100),
+                                    ("Mayıs", 160, 110), ("Haziran", 175, 120)]):
+        r = i + 2
+        s.ata(r, 1, Hucre(ay))
+        s.ata(r, 2, Hucre(float(a)))
+        s.ata(r, 3, Hucre(float(m)))
+        s.ata(r, 4, Hucre(formul=f"=B{r}-C{r}"))
+    sira = 0
+    for tur, altlar in GALERI.items():
+        for alt, ad in altlar:
+            g = grafik_kur(s, Aralik(1, 1, 7, 3), tur, alt)
+            g = g.degistir(baslik=ad, konum=Konum(2 + (sira // 2) * 16, 6 + (sira % 2) * 9), boyut=(480, 288))
+            s.nesne_ekle(g)
+            sira += 1
+    b = io.BytesIO()
+    PilImage.new("RGB", (160, 80), (33, 115, 70)).save(b, "PNG")
+    s.nesne_ekle(Resim(veri=b.getvalue(), ad="logo", konum=Konum(10, 1), boyut=(160, 80)))
+    xlsx_io.kaydet(k, yol)
+
+
 def csvler():
     with open(os.path.join(KLASOR, "satis_tr.csv"), "wb") as f:
         f.write("Ürün;Adet;Fiyat;Tarih\r\nÇay;10;12,5;12.10.2026\r\nŞeker;4;8,25;13.10.2026\r\n"
@@ -198,6 +235,7 @@ def main():
     butce(os.path.join(KLASOR, "butce.xlsx"))
     grafikli(os.path.join(KLASOR, "grafikli.xlsx"))
     stok(os.path.join(KLASOR, "stok.xlsx"))
+    grafikler(os.path.join(KLASOR, "grafikler.xlsx"))
     csvler()
     print("Üretildi:", ", ".join(sorted(os.listdir(KLASOR))))
 

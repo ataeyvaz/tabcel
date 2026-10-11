@@ -19,19 +19,48 @@ class SayfaDilimi:
     olcek: float                     # uygulanan ölçek (1.0 = %100)
     no: int                          # 1'den
     toplam: int
+    baslik_sayisi: int = 0           # `satirlar` başındaki yinelenen başlık satırı sayısı
 
 
-def yazdirma_alani(sayfa: Sayfa, yapi: SayfaYapisi) -> Optional[Aralik]:
-    """Yazdırma alanı: ayarlanmışsa o, yoksa içerik + biçimli hücreleri kapsayan alan; sayfa boşsa None."""
+def nesne_son_hucre(n, genislik: Callable[[int], float], yukseklik: Callable[[int], float]) -> Tuple[int, int]:
+    """Nesnenin (grafik/resim) sağ alt ucunun düştüğü `(satır, sütun)`; ölçüler 100% pikseldir."""
+    k = n.konum
+    kalan = k.dx + n.boyut[0]
+    c = k.sutun
+    while c < MAX_COL and kalan > genislik(c):
+        kalan -= genislik(c)
+        c += 1
+    kalan = k.dy + n.boyut[1]
+    r = k.satir
+    while r < MAX_ROW and kalan > yukseklik(r):
+        kalan -= yukseklik(r)
+        r += 1
+    return r, c
+
+
+def yazdirma_alani(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Optional[Callable[[int], float]] = None,
+                   yukseklik: Optional[Callable[[int], float]] = None) -> Optional[Aralik]:
+    """Yazdırma alanı: ayarlanmışsa o, yoksa içerik + biçimli hücreleri **ve nesneleri** kapsayan alan; boşsa None.
+    Nesne sınırı için ölçü işlevleri gerekir (verilmezse nesneler yok sayılır)."""
     if yapi.alan is not None:
         return yapi.alan
     k = sayfa.kullanilan_aralik(bicim_dahil=True)
-    if k is None:
+    r1 = c1 = r2 = c2 = None
+    if k is not None:
+        r1, c1, r2, c2 = k
+        # birleşimlerin taştığı uçlar da alana dahil olsun
+        for b in sayfa.birlesimler:
+            r2, c2 = max(r2, b.son_satir), max(c2, b.son_sutun)
+    if genislik is not None and yukseklik is not None:
+        for n in sayfa.nesneler:
+            nr, nc = nesne_son_hucre(n, genislik, yukseklik)
+            if r1 is None:
+                r1, c1, r2, c2 = n.konum.satir, n.konum.sutun, nr, nc
+            else:
+                r1, c1 = min(r1, n.konum.satir), min(c1, n.konum.sutun)
+                r2, c2 = max(r2, nr), max(c2, nc)
+    if r1 is None:
         return None
-    # birleşimlerin taştığı uçlar da alana dahil olsun
-    r1, c1, r2, c2 = k
-    for b in sayfa.birlesimler:
-        r2, c2 = max(r2, b.son_satir), max(c2, b.son_sutun)
     return Aralik(r1, c1, min(r2, MAX_ROW), min(c2, MAX_COL))
 
 
@@ -56,7 +85,7 @@ def _bol(boyutlar: List[Tuple[int, float]], sinir: float, ayrilan: float = 0.0) 
 def sayfala(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
             yukseklik: Callable[[int], float]) -> List[SayfaDilimi]:
     """Sayfa dilimlerini üretir. `genislik(c)` / `yukseklik(r)` 100% pikseldir (gizli → 0)."""
-    alan = yazdirma_alani(sayfa, yapi)
+    alan = yazdirma_alani(sayfa, yapi, genislik, yukseklik)
     if alan is None:
         return []
     sutunlar = [(c, genislik(c)) for c in range(alan.ilk_sutun, alan.son_sutun + 1) if genislik(c) > 0]
@@ -91,5 +120,6 @@ def sayfala(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
             if k > 0 and baslik:
                 cizilecek = [r for r in baslik if r not in sat] + cizilecek
             no += 1
-            sonuc.append(SayfaDilimi(tuple(cizilecek), tuple(sut), olcek, no, toplam))
+            n_baslik = len(cizilecek) - len(sat)
+            sonuc.append(SayfaDilimi(tuple(cizilecek), tuple(sut), olcek, no, toplam, n_baslik))
     return sonuc

@@ -3430,3 +3430,54 @@ Tasarım: `faz5j_tasarim.md`. Uygulama: `ui/serit.py` (bileşenler, saf `daralma
 | 3 | Daraltma | Ctrl+F1, sekmeye çift tık; daraltılmışken sekme tıkında açılan sayfa; dar pencerede açılır grup düğmesi | ⏳ |
 | 4 | Dosya sekmesi | menü konumu, yeşil görünüm | ⏳ |
 | 5 | Sayfa Düzeni | kenar/yön/boyut/alan/ölçek değişimi PDF/önizlemede görünüyor mu; Ctrl+Z | ⏳ |
+
+## 17. Faz 6 — grafikler ve resimler (2026-10-11)
+
+Tasarım: `faz6_tasarim.md`. Uygulama: `model/grafik.py`, `grafik_verisi.py`, `grafik_cizim.py` (Qt'siz çizim listesi), `grafik_islem.py`, `resim_yukle.py`; `io/xlsx_grafik.py`; `ui/grid_nesneler.py`, `grid_nesne_etkilesim.py`, `grafik_boyayici.py`, `grafik_eylemleri.py`, `grafik_pencereleri.py`; yazdırma: `model/sayfalama.py` + `ui/yazdir.py`.
+
+### 17.1 Otomatik testler (Faz 6'ya özgü yeni dosyalar)
+| Alan | Dosya | Vaka |
+|---|---|---|
+| Çizim listesi (geometri sayısal), veri çözümleme, seri tahmini, komutlar/ekle-sil kayması | `test_grafik_*` (model, cizim, verisi, islem) | 6a–6c |
+| Izgara katmanı (konum, kaydırma, yakınlaştırma, dondurma, önbellek, 30 ms erteleme) | `test_grafik_katman.py` | 19 |
+| Etkileşim (seçme, taşıma, boyutlandırma, klavye, pano, menü) | `test_grafik_etkilesim.py` | 33 |
+| Ekle/Grafik sekmesi, pencereler, galeri | `test_grafik_arayuz.py` + `test_grafik_islem.py` | ≈ 66 |
+| Resim | `test_resim.py` | 19 |
+| .xlsx gidiş-dönüş (13 galeri öğesi, model eşitliği, Excel-benzeri dosya, uyarılar, **`ornekler/grafikler.xlsx`**) | `test_xlsx_grafik.py` | 34 |
+| **Yazdırma/PDF (6i)** | `test_yazdir_nesne.py` | 10 |
+| **Gerçek iş senaryosu (6j)** | `test_faz6_senaryo.py` | 1 (6 adım) |
+
+### 17.2 Tam paket (`araclar/test_parcali.py`, 2026-10-11)
+| Grup | Sonuç |
+|---|---|
+| model (38 dosya) | 1855 geçti, 1 başarısız → `test_sirala::test_yuz_bin_satir_hizli` (zamanlama) |
+| arayüz (32 dosya) | 781 geçti, 1 başarısız → `test_grafik_etkilesim::test_boyutlandirmada_onizleme_gerilir_sonra_gercek_boyut` (60 ms zamanlayıcı) |
+| arayüz2 (20 dosya) | 339 geçti |
+İki başarısız test **tek başına geçti** (13 sn): paket koşarken aynı anda başka ağır testler çalıştığı (7,9 GB RAM) için zamanlama aşımı; mantık hatası yok. Pakete sonradan eklenen `test_faz6_senaryo` ve `grafikler.xlsx` testi ayrı koşuda geçti. **Toplam ≈ 2977 test.** Süre ≈ 17 dk (paralel yük altında; tek başına ≈ 5,5 dk).
+
+### 17.3 Gerçek iş senaryosu (aylık gelir-gider, `test_faz6_senaryo.py`)
+12 aylık Gelir/Gider/Net (Net formül) → sütun grafiği (2 seri) + çizgi grafiği + resim → ✅ başlangıç verisi doğru · ✅ hücre değişince grafik verisi güncellenir ve önbellek yenilenir · ✅ 5. satıra satır eklenince seri aralıkları ve çapa kayar, değerler aynı · ✅ geri al her şeyi eski haline döndürür · ✅ kaydet → aç: 2 grafik + resim, uyarı yok, değerler eşit · ✅ PDF üretilir, grafik alanı yazdırma kapsamında.
+
+### 17.4 Performans (`araclar/performans_olcum.py`, 100.000 hücre, 2026-10-11)
+Nesnesiz sayfada çizim maliyeti **artmadı** (dikey sıçrama 23,9 ms [önceki 28,8], yatay 6,5, ok tuşu 10,8; stilli ilk çizim 21,6 ms). Hedefi aşan 7 kalem öncekilerle **aynı ve kabul edilmiş** (sıçrama, Shift+Ok, stilli 3 satır/sıçrama/Shift+Ok, ilk çizim). **Tek fark: durum çubuğu özeti 131 ms** (önce 82 ms; hedef 100) — ölçüm sırasında makine yüklüydü; ızgaranın kitap olayı dinlemesi eklendiği için **bir sonraki boş makinede yeniden ölçülecek** (⏳).
+
+### 17.5 Gerçek Excel (COM, `araclar/excel_dogrula.ps1`)
+6h'de: 13 tür/alt tür doğru okundu, Excel'in kendi kaydı Tabcel'e farksız döndü. **2026-10-11 kullanıcı elle doğruladı: 13 grafikli dosya Excel'de "dosya onarıldı" iletisi çıkmadan açıldı** ✅.
+
+### 17.6 Açık / bilinen
+| # | Konu | Durum |
+|---|---|---|
+| 1 | Karışık z sırası (resim/grafik) dosyada korunmuyor; ikincil eksen/birleşik grafik yalnız ilk grafik; başlık/eksen yazı biçimi yazılmaz | ➖ |
+| 2 | Yazdırma: nesne iki sayfaya bölününce Excel çıktısıyla karşılaştırılmadı | ⏳ (COM `ExportAsFixedFormat` ile denenebilir) |
+| 3 | Sayfa sınırı çizgileri / el ile sayfa sonu yok | ⏳ **T9** |
+| 4 | Offscreen testte yazı tipi yok (kutu): grafik/hücre yazısı görsel doğrulaması gerçek ekranda | ⏳ elle |
+| 5 | Durum çubuğu özeti 131 ms (bkz. 17.4) | ⏳ yeniden ölç |
+| 6 | Opus gözden geçirmesi (Faz 6 tasarım + uygulama) | ⏳ kullanıcı onayıyla |
+
+### 17.7 Elle test bekleyenler (kullanıcı)
+| # | Ne | Nasıl | Durum |
+|---|---|---|---|
+| 1 | Grafik görünümü | `testler/ornekler/grafikler.xlsx`'in kopyasını Tabcel ve Excel'de yan yana aç: renk, başlık, gösterge, eksen | ⏳ |
+| 2 | Etkileşim hissi | taşıma/boyutlandırma akıcılığı, tutamaçlar, sağ tık menüsü, Delete/Ctrl+C-V | ⏳ |
+| 3 | Yazdırma | grafikli sayfayı PDF'e al, sayfa sınırında bölünen grafiği Excel çıktısıyla karşılaştır | ⏳ |
+| 4 | Resim | PNG/JPEG/GIF/BMP ekle, 25 MB üstü, bozuk dosya | ⏳ |

@@ -34,6 +34,10 @@ Yazım kuralları:
 
 En yenisi en üstte.
 
+## 11 Ekim 2026
+
+- **Grafik ve resim yazdırma:** grafikler ve resimler artık yazdırılır ve PDF'e aktarılır. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
+
 ## 10 Ekim 2026
 
 - **Resim ekleme:** **Ekle → Resim…** ile PNG, JPEG, GIF ya da BMP dosyası ekleyin; taşıyıp boyutlandırabilirsiniz. Bkz. [Grafikler ve Resimler](konu:grafikler).
@@ -203,6 +207,8 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 ## Yazdırma ve PDF
 
 **Sayfa Düzeni** sekmesi: kenar boşlukları, yönlendirme, kâğıt boyutu, yazdırma alanı, başlıkları yazdır, ölçek / genişliği sayfaya sığdır. `Ctrl+P` yazdırır, **Dosya → Yazdırma Önizleme** sonucu gösterir; etkin sayfa ya da tüm sayfalar **PDF** olarak dışa aktarılabilir.
+
+**Grafik ve resimler** de yazdırılır ve PDF'e girer. Grafikler vektör olarak çizilir (büyütünce bulanıklaşmaz). Yazdırma alanı ayarlamadıysanız alan, hücreler ile grafik/resimlerin kapladığı yeri birlikte kapsar; sayfada yalnız grafik olsa bile basılır. Bir grafik sayfa sınırına denk gelirse (Excel'deki gibi) iki sayfaya bölünerek basılır; yazdırma alanı ayarladıysanız alanın dışında kalan kısmı basılmaz.
 
 <!-- konu: pano | Kopyala ve Yapıştır -->
 # Kopyala ve Yapıştır

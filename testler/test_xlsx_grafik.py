@@ -292,3 +292,16 @@ def test_sekil_iceren_cizim_hala_kaybolur_uyarisi_verir(kitap, tmp_path):
         o.writestr("xl/drawings/drawing1.xml", cizim)
     rapor = xlsx_io.tara(str(tmp_path / "b.xlsx"))
     assert "şekil" in " ".join(rapor.uyarilar) and rapor.veri_kaybi
+
+
+def test_ornek_grafikler_xlsx_uyarisiz_ve_kararli(tmp_path):
+    """6j: `testler/ornekler/grafikler.xlsx` (Tabcel'in yazdığı, 13 grafik + resim) uyarısız açılır, gidiş-dönüşte aynı kalır."""
+    import os
+    yol = os.path.join(os.path.dirname(__file__), "ornekler", "grafikler.xlsx")
+    k, rapor = xlsx_io.ac(yol)
+    n = k.sayfalar[0].nesneler
+    assert len(n) == 14 and not rapor.veri_kaybi and not rapor.uyarilar
+    xlsx_io.kaydet(k, str(tmp_path / "b.xlsx"))
+    k2, rapor2 = xlsx_io.ac(str(tmp_path / "b.xlsx"))
+    assert [x.degistir(kimlik=0) for x in k2.sayfalar[0].nesneler] == [x.degistir(kimlik=0) for x in n]
+    assert not rapor2.veri_kaybi

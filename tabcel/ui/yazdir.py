@@ -9,13 +9,16 @@ import os
 from typing import Callable, List, Optional, Sequence
 
 from PySide6.QtCore import QMarginsF, QPointF, QRectF, Qt
-from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPageLayout, QPageSize, QPainter, QPen
+from PySide6.QtGui import QColor, QFont, QFontMetricsF, QImage, QPageLayout, QPageSize, QPainter, QPen
 from PySide6.QtPrintSupport import QPrinter
 
 from ..formul.kosul import KosulluHesap
 from ..io.csv_io import hucre_metni
 from ..model.adres import Aralik
 from ..model.deger import Hata
+from ..model.grafik import Grafik, Resim
+from ..model.grafik_verisi import grafik_verisi
+from .grafik_boyayici import grafik_ciz
 from ..model.sayfa import Sayfa
 from ..model.sayfa_yapisi import SayfaYapisi
 from ..model.sayfalama import SayfaDilimi, sayfala
@@ -133,7 +136,59 @@ class SayfaCizici:
                 if (r, c) in kapsanan:
                     continue
                 self._kenarlik(p, self._stil(r, c), hucre_dikdortgeni(r, c))
+        if s.nesneler:
+            self._nesneleri_ciz(p, dilim, ys, toplam_g, toplam_y)
         p.restore()
+
+    # ------------------------------------------------------------------ nesneler (grafik / resim)
+    def _nesneleri_ciz(self, p: QPainter, dilim: SayfaDilimi, ys, toplam_g: float, toplam_y: float) -> None:
+        """Dilimle kesişen nesneleri dilim alanına kırparak çizer (nesne iki baskı sayfasına bölünebilir).
+        Painter 96 dpi piksel biriminde ölçeklenmiş durumda; grafik vektör, resim yazıcı pikseline ölçeklenir."""
+        s = self.sayfa
+        sutunlar, satirlar = dilim.sutunlar, dilim.satirlar
+        ilk_c = sutunlar[0]
+        govde = dilim.baslik_sayisi
+        ilk_r = satirlar[govde]
+        baslik_y = ys[ilk_r] if govde else 0.0
+        baslik_satirlar = set(satirlar[:govde])
+        son_c, son_r = sutunlar[-1], satirlar[-1]
+        for n in s.nesneler:
+            k = n.konum
+            if k.sutun > son_c:
+                continue
+            x = self._aralik_toplami(ilk_c, k.sutun, self.genislik) + k.dx
+            if k.satir in baslik_satirlar:
+                y, kes_ust, kes_alt = ys[k.satir] + k.dy, 0.0, baslik_y
+            else:
+                if k.satir > son_r:
+                    continue
+                y = ys[ilk_r] + self._aralik_toplami(ilk_r, k.satir, self.yukseklik) + k.dy
+                kes_ust, kes_alt = baslik_y, toplam_y
+            w, h = n.boyut
+            kes = QRectF(0, kes_ust, toplam_g, kes_alt - kes_ust).intersected(QRectF(x, y, w, h))
+            if kes.isEmpty():
+                continue
+            p.save()
+            p.setClipRect(kes, Qt.IntersectClip)
+            try:
+                if isinstance(n, Resim):
+                    img = QImage.fromData(n.veri)
+                    if not img.isNull():
+                        p.setRenderHint(QPainter.SmoothPixmapTransform)
+                        p.drawImage(QRectF(x, y, w, h), img)
+                elif isinstance(n, Grafik):
+                    p.translate(x, y)
+                    p.fillRect(QRectF(0, 0, w, h), Qt.white)
+                    grafik_ciz(p, grafik_verisi(s.kitap, n), n, (w, h), olcek=1.0, aile=self.taban.family())
+            finally:
+                p.restore()
+
+    @staticmethod
+    def _aralik_toplami(bas: int, son: int, olcu: Callable[[int], float]) -> float:
+        """`bas`'tan `son`'a ölçülerin işaretli toplamı: son < bas ise negatif (önceki dilimde başlayan nesne)."""
+        if son >= bas:
+            return sum(olcu(i) for i in range(bas, son))
+        return -sum(olcu(i) for i in range(son, bas))
 
     # ------------------------------------------------------------------ hücre
     def _yazi_tipi(self, st) -> QFont:
