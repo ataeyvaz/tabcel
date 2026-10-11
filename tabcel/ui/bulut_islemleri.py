@@ -125,7 +125,12 @@ class BulutIslemleri:
         from .window import Pencere
         from .dosya_islemleri import DosyaIslemleri, _damga
         try:
-            kitap, rapor = self._kitap_oku(self.yol)
+            sonuc = self._kitap_oku(self.yol, self.parola)
+            if sonuc is None:                                  # parola sorusunda vazgeçildi: yoklamada yeniden denenir
+                self._izleyici.conflict = False
+                self._izleyici.known = (-1, -1)
+                return False
+            kitap, rapor = sonuc
         except XlsxHatasi:                                     # eşitleme yarım olabilir: sonraki yoklamada yeniden dene
             self._izleyici.conflict = False
             self._izleyici.known = (-1, -1)
@@ -135,6 +140,7 @@ class BulutIslemleri:
         p.yol = os.path.abspath(yol)
         p._disk_damgasi = _damga(p.yol)
         p.rapor = rapor
+        p.parola = self.parola
         p.setGeometry(self.geometry())
         if self.isMaximized():
             p.setWindowState(p.windowState() | self.windowState())

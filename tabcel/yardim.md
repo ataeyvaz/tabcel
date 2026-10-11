@@ -36,6 +36,8 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Parolalı çalışma kitabı:** Dosya → *Parola Belirle…*; parolalı .xlsx açılırken parola sorulur. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
+- **.xls açma:** eski Excel dosyaları artık açılır (yalnız okuma; formüller değer olarak gelir). Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 - **Hızlı Erişim çubuğu:** şeritteki herhangi bir düğmeye sağ tıklayıp *Hızlı Erişim Araç Çubuğuna Ekle* deyin; komut pencerenin üst şeridinde Kaydet/Geri Al/Yinele'nin yanında durur (en çok 12). Kaldırmak için o düğmeye sağ tıklayın. Ayar kapatıp açınca kalır.
 - **Yazım denetimi (F7):** Gözden Geçir sekmesinde; Windows'un Türkçe yazım denetimiyle metin hücrelerini denetler. Bkz. [Veri Doğrulama, Koşullu Biçim ve Notlar](konu:veriaraclari).
 - **Hakkında ve uygulama ikonu:** Yardım sekmesi → Hakkında; sürüm, künye ve kullanılan açık kaynak bileşenler. Uygulamanın kendi ikonu (yeşil sayfa, ızgara, T) eklendi.
@@ -219,7 +221,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 ## Açma ve kaydetme
 
 - `Ctrl+N` yeni, `Ctrl+O` aç, `Ctrl+S` kaydet, `Ctrl+Shift+S` ya da `F12` farklı kaydet. Dosyayı komut satırından ya da Dosya Gezgini'nden de açabilirsiniz.
-- Biçimler: **.xlsx** (asıl biçim) ve **.csv**. CSV açarken kodlama (UTF-8 / Windows-1254) ve ayırıcı otomatik tanınır, bir **önizleme** penceresi görürsünüz; "metin olarak aç" seçeneği vardır. Bilgi kaybettirecek alanlar **otomatik metin kalır**: baştaki sıfırlı sayılar (`00123`), 11 haneli (TC kimlik no) ve 15 haneden uzun sayılar, IBAN, `1-2` / `3/4` gibi tarihe benzeyen kodlar. Tam tarihler (`01/02/2024`) ve normal sayılar çevrilmeye devam eder. Önizleme penceresinde ayrıca **sütun türü** (Genel / Metin / Sayı-tarih çevir), **ondalık ayırıcı** (Türkçe virgül ya da İngilizce nokta) seçebilir ve otomatik korumayı kapatabilirsiniz.
+- Biçimler: **.xlsx** (asıl biçim), **.xls** (eski Excel; yalnız okunur) ve **.csv**. `.xls` açılınca biçim, birleşim, sütun genişliği, not ve dondurma gelir; **formüller okunamaz** (hücreler son hesaplanan değerleriyle açılır), grafik/resim/makro/koşullu biçim/veri doğrulama/tanımlı adlar okunmaz — pencerenin üstündeki uyarı çubuğu bunu söyler. Kaydederken yeni bir **.xlsx** dosyası oluşturulur (özgün .xls'e dokunulmaz). CSV açarken kodlama (UTF-8 / Windows-1254) ve ayırıcı otomatik tanınır, bir **önizleme** penceresi görürsünüz; "metin olarak aç" seçeneği vardır. Bilgi kaybettirecek alanlar **otomatik metin kalır**: baştaki sıfırlı sayılar (`00123`), 11 haneli (TC kimlik no) ve 15 haneden uzun sayılar, IBAN, `1-2` / `3/4` gibi tarihe benzeyen kodlar. Tam tarihler (`01/02/2024`) ve normal sayılar çevrilmeye devam eder. Önizleme penceresinde ayrıca **sütun türü** (Genel / Metin / Sayı-tarih çevir), **ondalık ayırıcı** (Türkçe virgül ya da İngilizce nokta) seçebilir ve otomatik korumayı kapatabilirsiniz.
 - Kayıt güvenlidir: önce geçici dosyaya yazılır, sonra yerine konur; kayıt yarıda kesilirse özgün dosya bozulmaz.
 - **Grafikler ve resimler** .xlsx dosyasına kaydedilir ve Excel'de açıldığında grafik/resim olarak görünür. Excel'de hazırlanmış dosyalarda sütun, çubuk, çizgi, pasta, halka, alan ve dağılım grafikleri okunur; **3B, radar, borsa, kabarcık** gibi türler, ikincil eksenler ve birleşik grafikler desteklenmez.
 - Açılan dosyada {APP_NAME}'in korumadığı bir öğe varsa (ör. pivot tablo, şekil, makro, desteklenmeyen grafik türü) pencerenin üstünde **uyarı çubuğu** çıkar ve kaydederken ayrıca sorulur; böylece sessizce veri kaybetmezsiniz. Excel'de hazırlanmış grafikli dosyalarda "grafikler uyarlandı" bilgisi görürsünüz: grafik açılır, ancak Excel'e özgü süslemeler (gradyan, eğilim çizgisi vb.) kaydedince kaybolabilir.
@@ -229,6 +231,14 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Bilgisayarınızda **Google Drive** ya da **OneDrive** masaüstü uygulaması kuruluysa Dosya menüsünde *Google Drive'dan Aç…*, *Google Drive'a Kaydet…* (ve OneDrive karşılıkları) görünür. {APP_NAME} hesabınıza, şifrenize ya da buluta **hiç bağlanmaz**; dosyayı eşitleme klasörüne yazar, gerisini sizin Drive/OneDrive uygulamanız yapar.
 - Açık dosya başka yerde (web, başka bilgisayar) değişirse fark edilir: sizin kaydedilmemiş değişikliğiniz yoksa yeni sürüm kendiliğinden yüklenir; varsa **Onların Sürümünü Yükle**, **Benimkini Koru** ya da **Benimkini Ayrı Kaydet** seçeneklerini görürsünüz.
 - `.gsheet` gibi Google biçimli dosyaların içeriği bilgisayarda bulunmaz, açılamaz; tarayıcıda Dosya → İndir → Microsoft Excel (.xlsx) ile indirip burada açın.
+
+## Parola ile koruma
+
+- **Dosya → Parola Belirle…** çalışma kitabını parolayla şifreler (Excel'in *Parolayla Şifrele*si ile aynı biçim; Excel'de de açılır). Parola iki kez sorulur; boş bırakırsanız parola kaldırılır. Parola **bir sonraki kayıtta** uygulanır.
+- Parolalı .xlsx açılırken parola sorulur; yanlışsa yeniden sorulur. Kaydedince dosya aynı parolayla yeniden şifrelenir.
+- **Parolayı unutursanız dosya açılamaz** ({APP_NAME}'in de kurtarma yolu yoktur). Parola dosyaya, ayarlara ya da son dosyalar listesine yazılmaz; yalnız pencere açıkken bellekte durur.
+- Güvenlik gereği parolalı belgeler için **otomatik kurtarma kopyası yazılmaz** (düz kopya diskte kalmasın); sık kaydedin.
+- Parolalı **.xls** dosyaları açılamaz.
 
 ## Otomatik kayıt ve kurtarma
 
@@ -311,6 +321,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
 - Dışarıdan yapıştırılan metindeki tarihler tarih olarak anlaşılmaz (elle yazarken anlaşılır).
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
+- **.xls** yalnız okunur ve formüller değere döner (xlrd formül metnini vermez); .xls olarak kaydedilemez, `.xlsx` önerilir. Pivot tablo ve .ods sonraki sürümdedir.
 - **Yazım denetimi** sayfanın başından başlar (Excel etkin hücreden başlar, sonda baştan devam edilsin mi diye sorar); yalnız sabit metin hücreleri denetlenir, özel sözlüğe ekleme ve otomatik düzeltme yoktur.
 - Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.

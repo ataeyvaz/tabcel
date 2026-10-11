@@ -10,6 +10,7 @@ Bilinen sınırlar (her açılışta `Rapor`'a yazılır, arayüz bilgi çubuğu
 - kaydedilen formüllerin önbellek değeri yazılmaz (Excel açınca yeniden hesaplar)
 - tema renkleri varsayılan Office teması varsayımıyla RGB'ye çevrilir (§8b)
 """
+import io
 import math
 import os
 import re
@@ -40,7 +41,7 @@ from openpyxl.utils.datetime import to_excel
 
 from .. import APP_NAME
 from ..formul import ceviri
-from . import xlsx_grafik, xlsx_kayip
+from . import sifreleme, xlsx_grafik, xlsx_kayip
 from ..formul.sozcuk import FormulHatasi
 from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
@@ -503,8 +504,9 @@ def _guvenli_deger(deger, rapor: Rapor, sayac: dict):
     return deger
 
 
-def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
-    """Kitabı `yol`a yazar (önce geçici dosya, sonra yerine koyma: yarıda kalan kayıt dosyayı bozmaz)."""
+def kaydet(kitap: CalismaKitabi, yol: str, parola: Optional[str] = None) -> Rapor:
+    """Kitabı `yol`a yazar (önce geçici dosya, sonra yerine koyma: yarıda kalan kayıt dosyayı bozmaz). `parola` verilirse
+    dosya parolayla şifrelenir (paket yalnız bellekte; yazılan şifreli veri geri çözülerek doğrulanır, Faz 8b)."""
     rapor = Rapor()
     wb = Workbook()
     wb.remove(wb.active)
@@ -616,7 +618,17 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         rapor.ekle(f"{sayac['sonsuz']} hücredeki sonsuz/geçersiz sayı #SAYI! olarak yazıldı.")
     gecici = f"{yol}.{os.getpid()}.tmp"
     try:
-        wb.save(gecici)
+        if parola:
+            tampon = io.BytesIO()
+            wb.save(tampon)
+            paket = tampon.getvalue()
+            veri = sifreleme.sifrele(paket, parola)
+            if not sifreleme.dogrula(veri, parola, paket):
+                raise XlsxHatasi(sifreleme.DOGRULAMA_BASARISIZ)
+            with open(gecici, "wb") as h:
+                h.write(veri)
+        else:
+            wb.save(gecici)
         os.replace(gecici, yol)
     except PermissionError as e:
         raise XlsxHatasi("Dosya başka bir uygulamada açık olabilir; kapatıp yeniden deneyin.") from e
@@ -1092,9 +1104,17 @@ def _nesne_uyarilari(yol: str, rapor: Rapor, grafik: int, resim: int, atlanan_se
             rapor.ekle(metin, True)
 
 
-def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
-    """`yol`daki .xlsx dosyasını yeni bir kitaba okur. Dönen rapor desteklenmeyen öğeleri listeler.
+def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
+    """`yol`daki .xlsx dosyasını yeni bir kitaba okur (`yol` bellekteki paket de olabilir). Parolayla şifreliyse `parola`
+    verilmelidir (yanlışsa `sifreleme.YanlisParola`, verilmediyse XlsxHatasi); çözülmüş paket yalnız bellekte tutulur. Dönen rapor desteklenmeyen öğeleri listeler.
     Formül sonuçları dosyadan alınmaz; motor yeniden hesaplar."""
+    if isinstance(yol, (str, os.PathLike)) and sifreleme.sifreli_mi(yol):
+        if not parola:
+            raise XlsxHatasi("Bu dosya parolayla korunuyor; açmak için parola gerekir.")
+        try:
+            yol = sifreleme.coz(yol, parola)
+        except sifreleme.SifrelemeHatasi as e:
+            raise XlsxHatasi(str(e)) from e
     rapor = tara(yol)
     try:
         wb = load_workbook(yol, data_only=False)

@@ -9,6 +9,8 @@ BILESENLER = [
     ("PySide6 (Qt)", "arayüz", "LGPL v3"),
     ("openpyxl + et_xmlfile", ".xlsx okuma/yazma", "MIT"),
     ("Pillow", "resim işleme", "HPND (MIT benzeri)"),
+    ("xlrd", ".xls okuma", "BSD"),
+    ("msoffcrypto-tool + cryptography", "parolalı .xlsx", "MIT / Apache 2.0 / BSD"),
     ("comtypes", "Windows yazım denetimi", "MIT"),
 ]
 

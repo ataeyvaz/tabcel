@@ -9,12 +9,12 @@ from typing import List, Optional
 from PySide6.QtCore import Qt, QThread, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu, QMessageBox, QToolButton,
+    QDialog, QFileDialog, QFrame, QHBoxLayout, QInputDialog, QLabel, QLineEdit, QMenu, QMessageBox, QToolButton,
 )
 
 from .. import APP_NAME
 from .arka_plan import arka_planda
-from ..io import csv_io, kurtarma, son_dosyalar, xlsx_io
+from ..io import csv_io, kurtarma, sifreleme, son_dosyalar, xls_io, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
 from ..model.anlik import kitap_anligi
 from ..model.komutlar import SayfaYapisiDegis
@@ -24,7 +24,9 @@ XLSX_FILTRESI = "Excel Çalışma Kitabı (*.xlsx)"
 CSV_FILTRESI = "CSV (Noktalı virgülle ayrılmış) (*.csv)"
 KAYDET_FILTRESI = XLSX_FILTRESI + ";;" + CSV_FILTRESI
 PDF_FILTRESI = "PDF (*.pdf)"
-ACMA_FILTRESI = ("Excel ve CSV (*.xlsx *.csv);;" + XLSX_FILTRESI + ";;CSV (*.csv);;Tüm Dosyalar (*.*)")
+XLS_FILTRESI = "Eski Excel Çalışma Kitabı (*.xls)"
+ACMA_FILTRESI = ("Excel ve CSV (*.xlsx *.xls *.csv);;" + XLSX_FILTRESI + ";;" + XLS_FILTRESI
+                 + ";;CSV (*.csv);;Tüm Dosyalar (*.*)")
 
 
 def _damga(yol: str):
@@ -82,6 +84,7 @@ class DosyaIslemleri:
         self._otokayit_zamanlayici = QTimer(self)
         self._otokayit_zamanlayici.timeout.connect(lambda: self.otokayit_yap(arka_plan=True))
         self._otokayit_zamanlayici.start(self.OTOKAYIT_MS)
+        self.parola: Optional[str] = None                     # parolayla şifreli kaydet (yalnız bellekte; Faz 8b)
         self.yol: Optional[str] = None
         self.kaynak_yol: Optional[str] = None               # .csv'den açıldıysa o dosya (kayıt yolu değil)
         self.rapor: Rapor = Rapor()
@@ -138,6 +141,7 @@ class DosyaIslemleri:
         menu.addSeparator()
         ekle("kaydet", "Kaydet\tCtrl+S", self.kaydet)
         ekle("farkli_kaydet", "Farklı Kaydet…\tCtrl+Shift+S", self.farkli_kaydet)
+        ekle("parola", "Parola Belirle…", self.parola_belirle)
         self._bulut_menusu_doldur(menu)                       # yalnız bilgisayarda o bulut klasörü varsa görünür (7a)
         menu.addSeparator()
         ekle("sayfa_yapisi", "Sayfa Yapısı…", self.sayfa_yapisi_ac)
@@ -221,7 +225,9 @@ class DosyaIslemleri:
                 return p
         if self.google_bicimi_ac(yol):                       # .gsheet vb.: içerik bilgisayarda yok (7a)
             return None
-        csv_mi = os.path.splitext(yol)[1].lower() == ".csv"
+        uzanti = os.path.splitext(yol)[1].lower()
+        csv_mi = uzanti == ".csv"
+        kaynak_mi = csv_mi or uzanti == ".xls"               # .csv/.xls'den açılan: kayıt yolu değil, Farklı Kaydet (.xlsx)
         try:
             sonuc = self._csv_oku(yol) if csv_mi else self._kitap_oku(yol)
         except (XlsxHatasi, csv_io.CsvHatasi) as e:
@@ -232,13 +238,15 @@ class DosyaIslemleri:
             return None
         kitap, rapor = sonuc
         p = Pencere(kitap)
-        if csv_mi:
+        if kaynak_mi:
             p.kaynak_yol = os.path.abspath(yol)              # kayıt yolu değil: Kaydet → Farklı Kaydet (.xlsx önerilir)
         else:
             p.yol = os.path.abspath(yol)
             p._disk_damgasi = _damga(p.yol)
             p._izle()
         p.rapor = rapor
+        if not kaynak_mi:
+            p.parola = getattr(self, "_okunan_parola", None)     # parolalı dosya: kaydederken yeniden şifrelenir
         p._belge_adi_guncelle()
         p._bilgi_goster()
         son_dosyalar.ekle(yol)
@@ -266,10 +274,35 @@ class DosyaIslemleri:
             r.ekle(u)
         return kitap, r
 
-    def _kitap_oku(self, yol: str):
+    def _parola_sor(self, yol: str, yanlis: bool = False) -> Optional[str]:
+        """Parolalı dosya için parola ister (iptal → None). Testlerde yamalanır."""
+        metin = (f"“{os.path.basename(yol)}” parolayla korunuyor.\nParola:" if not yanlis
+                 else "Parola yanlış. Yeniden deneyin:")
+        parola, tamam = QInputDialog.getText(self, "Parola", metin, QLineEdit.Password)
+        return parola if tamam else None
+
+    def _kitap_oku(self, yol: str, parola: Optional[str] = None):
+        """(kitap, rapor) | None (parola sorusunda İptal). Parolalı .xlsx'te kullanılan parola `self._okunan_parola`ya
+        konur (pencere onu kaydederken yeniden kullanır; hiçbir yere yazılmaz)."""
         if not os.path.exists(yol):
             raise XlsxHatasi(f"Dosya bulunamadı: {yol}")
-        return arka_planda(self, "Dosya açılıyor…", lambda: xlsx_io.ac(yol))
+        self._okunan_parola = None
+        if os.path.splitext(yol)[1].lower() == ".xls":
+            return arka_planda(self, "Dosya açılıyor…", lambda: xls_io.ac(yol))
+        sifreli = sifreleme.sifreli_mi(yol)
+        yanlis = False
+        while True:
+            if sifreli and not parola:
+                parola = self._parola_sor(yol, yanlis)
+                if parola is None:
+                    return None
+            try:
+                sonuc = arka_planda(self, "Dosya açılıyor…", lambda: xlsx_io.ac(yol, parola if sifreli else None))
+            except sifreleme.YanlisParola:
+                parola, yanlis = None, True
+                continue
+            self._okunan_parola = parola if sifreli else None
+            return sonuc
 
     # ------------------------------------------------------------------ kaydet
     def _disk_degisti_sorusu(self) -> bool:
@@ -314,6 +347,39 @@ class DosyaIslemleri:
                 return False
         return self._kaydet_yola(yol)
 
+    def _parola_belirle_sorusu(self):
+        """(parola | '' (kaldır) | None (iptal)). Testlerde yamalanır. Yeni parola iki kez sorulur (yazım hatası
+        belgeyi kilitlemesin); boş bırakılırsa parola kaldırılır."""
+        varsa = " Boş bırakırsanız parola kaldırılır." if self.parola else ""
+        p1, tamam = QInputDialog.getText(self, "Parola Belirle", "Yeni parola:" + varsa, QLineEdit.Password)
+        if not tamam:
+            return None
+        if p1 == "":
+            return ""
+        p2, tamam = QInputDialog.getText(self, "Parola Belirle", "Parolayı yeniden yazın:", QLineEdit.Password)
+        if not tamam:
+            return None
+        if p1 != p2:
+            QMessageBox.warning(self, APP_NAME, "Parolalar eşleşmiyor; parola değiştirilmedi.")
+            return None
+        return p1
+
+    def parola_belirle(self) -> bool:
+        """Çalışma kitabını parolayla şifreler (Excel: Dosya → Parolayla Şifrele). Parola bir sonraki kayıtta uygulanır;
+        belge "değişti" sayılır. Parola unutulursa dosya AÇILAMAZ (kurtarma yolu yok). Kaydedilince bu pencerenin otomatik
+        kurtarma kopyası yazılmaz (düz kopya diskte kalmasın)."""
+        yeni = self._parola_belirle_sorusu()
+        if yeni is None:
+            return False
+        yeni = yeni or None
+        if yeni == self.parola:
+            return False
+        self.parola = yeni
+        self.gorunum_degisti_isaretle()
+        self.statusBar().showMessage("Parola belirlendi; kaydedince uygulanır." if yeni
+                                     else "Parola kaldırıldı; kaydedince uygulanır.", 6000)
+        return True
+
     def _csv_cok_sayfa_sorusu(self) -> bool:
         """Birden çok sayfalı kitap CSV'ye yazılırken yalnız etkin sayfa kaydedilir: devam edilsin mi?"""
         c = QMessageBox.question(
@@ -332,7 +398,9 @@ class DosyaIslemleri:
                 arka_planda(self, "Kaydediliyor…", lambda: csv_io.dosya_yaz(sayfa, yol))
             else:
                 self.otokayit_bekle()                         # iki yazım aynı anda belleği ikiye katlamasın
-                kayit_raporu = arka_planda(self, "Kaydediliyor…", lambda: xlsx_io.kaydet(self.kitap, yol))
+                parola = self.parola
+                kayit_raporu = arka_planda(self, "Kaydediliyor…", lambda: xlsx_io.kaydet(
+                    self.kitap, yol, **({"parola": parola} if parola else {})))
         except (XlsxHatasi, csv_io.CsvHatasi) as e:
             QMessageBox.critical(self, APP_NAME, str(e))
             return False
@@ -397,7 +465,9 @@ class DosyaIslemleri:
         Önceki yazım sürüyorsa yazmaz. Hata sessizce yutulur: otomatik işlem kullanıcıyı bölmez."""
         if self._otokayit_isi is not None or not self.degisti_mi():
             return False
-        damga = (self.yigin.damga(), self._gorunum_surum)
+        if self.parola:                                       # parolalı belge: düz kurtarma kopyası APPDATA'ya yazılmaz
+            return False
+        damga =(self.yigin.damga(), self._gorunum_surum)
         if self._son_otokayit is not None and self.yigin.damga_esit(damga[0], self._son_otokayit[0]) \
                 and damga[1] == self._son_otokayit[1]:
             return False

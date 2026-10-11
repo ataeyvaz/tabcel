@@ -12,7 +12,7 @@ Her şey **bilgisayarda** çalışır: çalışma kitaplarınız hiçbir sunucuy
 - **Biçimlendirme:** yazı tipi, kenarlık, dolgu, sayı biçimleri (Türkçe bölgesel), birleştirme, metni kaydır, dondurma, biçim boyacısı, doldurma/seriler
 - **Veri araçları:** sırala (Türkçe harf kurallarıyla), filtre, bul/değiştir, veri doğrulama, koşullu biçim, adlandırılmış aralıklar, notlar
 - **Grafikler ve resimler:** sütun, çubuk, çizgi, pasta, halka, alan, dağılım; .xlsx'e yazma ve okuma
-- **Dosyalar:** .xlsx (asıl biçim), .csv (kodlama/ayraç tanıma, kimlik koruması), PDF dışa aktarma, yazdırma, sayfa sonları, otomatik kayıt + çökme kurtarma
+- **Dosyalar:** .xlsx (asıl biçim; **parolalı** açma/kaydetme), .xls (yalnız okuma), .csv (kodlama/ayraç tanıma, kimlik koruması), PDF dışa aktarma, yazdırma, sayfa sonları, otomatik kayıt + çökme kurtarma
 - **Google Drive / OneDrive:** eşitleme klasöründeki dosyalarda canlı kayıt, dışarıdan değişikliği fark etme (API yok, hesaba dokunulmaz)
 - **Yazım denetimi (F7):** Windows'un Türkçe yazım denetimi, çevrimdışı
 - **Türkiye'ye özel işlevler:** `YAZIYLA`, `TCKİMLİKDOĞRULA` (Excel'de karşılığı yok; `.xlsx`e kaydederken uyarılır)
@@ -54,7 +54,7 @@ Sonuç: `dist\Tabcel\` (taşınabilir klasör, ≈75 MB) ve `dist\Tabcel-0.1-kur
 
 ## Kullanılan açık kaynak bileşenler
 
-PySide6 (Qt, LGPL v3) · openpyxl + et_xmlfile (MIT) · Pillow (HPND) · comtypes (MIT, yalnız Windows).
+PySide6 (Qt, LGPL v3) · openpyxl + et_xmlfile (MIT) · xlrd (BSD) · msoffcrypto-tool + cryptography (MIT / Apache 2.0 / BSD) · Pillow (HPND) · comtypes (MIT, yalnız Windows).
 Derleme aracı: PyInstaller (GPL + paketleme istisnası; pakete girmez) · Inno Setup.
 
 Tabcel'in kendi lisansı henüz belirlenmedi.

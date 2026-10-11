@@ -12,7 +12,8 @@ datas = [
     (str(project / "tabcel.ico"), "."),
 ]
 
-hiddenimports = ["comtypes", "comtypes.client", "PIL", "openpyxl", "et_xmlfile"]
+hiddenimports = ["comtypes", "comtypes.client", "PIL", "openpyxl", "et_xmlfile", "xlrd", "olefile",
+                 "msoffcrypto", "msoffcrypto.format.ooxml"]
 
 # Kullanılmayan büyük bileşenler (grafikler QPainter ile; QtCharts GPL olduğu için hiç kullanılmaz)
 excludes = ["tkinter", "matplotlib", "numpy", "scipy", "pandas", "torch", "sympy", "networkx",
