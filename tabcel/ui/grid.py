@@ -18,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..model.adres import (
-    MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, hucre_yaz, sutun_harfe,
+    MAX_COL, MAX_ROW, AdresHatasi, Aralik, aralik_icinde, bitisik_bolge, hucre_yaz, sutun_harfe,
 )
 from ..formul import ceviri, isaretleme
 from ..formul.ceviri import hucre_girdisi, hucre_girdisi_akilli, hucre_metni
@@ -243,6 +243,22 @@ class _NotDuzenleyici(QPlainTextEdit):
         self._bitir(self.toPlainText())
 
 
+def _adim(ic, dis, ic1, ic2, dis1, dis2, ileri):
+    """İç eksende bir adım; uçta dış eksende sonraki şeride geçer. Aralık bittiyse `tasti` True
+    (dönüş: aralığın öbür ucu — tek aralıkta başa sarmak için)."""
+    if ileri:
+        if ic < ic2:
+            return ic + 1, dis, False
+        if dis < dis2:
+            return ic1, dis + 1, False
+        return ic1, dis1, True
+    if ic > ic1:
+        return ic - 1, dis, False
+    if dis > dis1:
+        return ic2, dis - 1, False
+    return ic2, dis2, True
+
+
 class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
     aktifDegisti = Signal(int, int)       # satır, sütun
     secimDegisti = Signal(object)         # Aralik
@@ -272,7 +288,9 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         super().__init__(parent)
         self.sayfa = sayfa
         self.yakinlastirma = 1.0
-        self._aktif = (1, 1)
+        self._aktif = (1, 1)         # etkin hücre (düzenleme, formül çubuğu); seçimin içinde
+        self._capa = (1, 1)          # seçimin sabit ucu (Shift ile genişletme buradan)
+        self.hata_aciklayici = None  # T8: (sayfa, r, c) → açıklama metni; pencere bağlar (motor önbelleğiyle)
         self._uc = (1, 1)            # seçimin hareketli ucu
         self._surukleme: Optional[str] = None   # 'hucre' | 'satir' | 'sutun'
         self._boyaci: Optional[dict] = None     # biçim boyacısı: {"kaynak": Aralik, "kalici": bool}
@@ -693,7 +711,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
 
     @property
     def secim(self) -> Aralik:
-        (r1, c1), (r2, c2) = self._aktif, self._uc
+        (r1, c1), (r2, c2) = self._capa, self._uc
         return Aralik(min(r1, r2), min(c1, c2), max(r1, r2), max(c1, c2))
 
     @property
@@ -705,17 +723,19 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         return any(aralik_icinde(a, satir, sutun) for a in self.secimler)
 
     def sec(self, aktif: Tuple[int, int], uc: Optional[Tuple[int, int]] = None,
-            kaydir: bool = True) -> None:
+            kaydir: bool = True, etkin: Optional[Tuple[int, int]] = None) -> None:
+        """Seçim `aktif` (çapa) ↔ `uc`. Etkin hücre `etkin` (seçimin içindeyse) ya da çapa olur."""
         eski_aktif, eski_secim, eski_ekler = self._aktif, self.secim, list(self._ekler)
         if not self._koru:
             self._ekler.clear()
-        self._aktif = (min(max(aktif[0], 1), MAX_ROW), min(max(aktif[1], 1), MAX_COL))
-        uc = uc or self._aktif
+        self._capa = (min(max(aktif[0], 1), MAX_ROW), min(max(aktif[1], 1), MAX_COL))
+        uc = uc or self._capa
         self._uc = (min(max(uc[0], 1), MAX_ROW), min(max(uc[1], 1), MAX_COL))
+        self._aktif = etkin if etkin is not None and aralik_icinde(self.secim, *etkin) else self._capa
         if self.sayfa.birlesimler:
             self._birlesime_uydur()
         if kaydir:
-            self._gorunur_yap(self._uc if uc != self._aktif else self._aktif)
+            self._gorunur_yap(self._uc if uc != self._capa else self._aktif)
         self._secim_boya(eski_ekler + [eski_secim], eski_aktif)
         if self._aktif != eski_aktif:
             self.aktifDegisti.emit(*self._aktif)
@@ -726,11 +746,17 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         """Birleşik hücreler tek hücre gibi seçilir (Excel): etkin hücre birleşimin sol üstüne gider,
         seçim kestiği tüm birleşimleri kapsayacak kadar genişler."""
         sayfa = self.sayfa
-        tek = self._aktif == self._uc
-        b = sayfa.birlesim(*self._aktif)
+        tek = self._capa == self._uc
+        etkin_capa = self._aktif == self._capa
+        b = sayfa.birlesim(*self._capa)
         if b is not None:
+            self._capa = (b.ilk_satir, b.ilk_sutun)
+        b = sayfa.birlesim(*self._aktif)
+        if etkin_capa:
+            self._aktif = self._capa
+        elif b is not None:
             self._aktif = (b.ilk_satir, b.ilk_sutun)
-        (ar, ac), (ur, uc_) = self._aktif, self._uc
+        (ar, ac), (ur, uc_) = self._capa, self._uc
         r1, r2, c1, c2 = min(ar, ur), max(ar, ur), min(ac, uc_), max(ac, uc_)
         degisti = True
         while degisti:
@@ -1712,7 +1738,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             self._koru = True                       # Shift: son aralığı genişlet, öncekiler kalsın
         if satir is not None and sutun is not None:
             self._surukleme = "hucre"
-            self.sec(self._aktif, (satir, sutun)) if shift else self.sec((satir, sutun))
+            self.sec(self._capa, (satir, sutun), etkin=self._aktif) if shift else self.sec((satir, sutun))
         elif sutun is not None:      # sütun başlığı
             self._surukleme = "sutun"
             self._sutun_sec(sutun, shift)
@@ -1761,11 +1787,11 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         elif p.x() < self._baslik_g():
             sutun = max(self._uc[1] - 1, 1)
         if self._surukleme == "hucre" and satir and sutun:
-            self.sec(self._aktif, (satir, sutun))
+            self.sec(self._capa, (satir, sutun), etkin=self._aktif)
         elif self._surukleme == "sutun" and sutun:
-            self.sec(self._aktif, (MAX_ROW, sutun), kaydir=False)
+            self.sec(self._capa, (MAX_ROW, sutun), kaydir=False, etkin=self._aktif)
         elif self._surukleme == "satir" and satir:
-            self.sec(self._aktif, (satir, MAX_COL), kaydir=False)
+            self.sec(self._capa, (satir, MAX_COL), kaydir=False, etkin=self._aktif)
 
     def mouseReleaseEvent(self, olay):
         if self._surukleme == "nesne":
@@ -1805,21 +1831,43 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         else:
             super().wheelEvent(olay)
 
-    def _sutun_sec(self, sutun: int, shift: bool):
+    def _sutun_sec(self, sutun: int, shift: bool, etkin: Optional[Tuple[int, int]] = None):
         if shift:
-            self.sec((1, self._aktif[1]), (MAX_ROW, sutun), kaydir=False)
+            self.sec((1, self._capa[1]), (MAX_ROW, sutun), kaydir=False, etkin=self._aktif)
         else:
-            self.sec((1, sutun), (MAX_ROW, sutun), kaydir=False)
+            self.sec((1, sutun), (MAX_ROW, sutun), kaydir=False, etkin=etkin)
 
-    def _satir_sec(self, satir: int, shift: bool):
+    def _satir_sec(self, satir: int, shift: bool, etkin: Optional[Tuple[int, int]] = None):
         if shift:
-            self.sec((self._aktif[0], 1), (satir, MAX_COL), kaydir=False)
+            self.sec((self._capa[0], 1), (satir, MAX_COL), kaydir=False, etkin=self._aktif)
         else:
-            self.sec((satir, 1), (satir, MAX_COL), kaydir=False)
+            self.sec((satir, 1), (satir, MAX_COL), kaydir=False, etkin=etkin)
 
     def focusOutEvent(self, olay):
         self._koru = False        # fare bırakma olayı kaybolsa bile çoklu seçim kipi takılı kalmaz
         super().focusOutEvent(olay)
+
+    def viewportEvent(self, olay):
+        if olay.type() == QEvent.ToolTip:
+            self._hata_ipucu(olay)
+            return True
+        return super().viewportEvent(olay)
+
+    def _hata_ipucu(self, olay) -> None:
+        """T8: fare hata değerli hücrede bekleyince açıklama ipucu (notlu hücrede not kutusu öncelikli)."""
+        satir, sutun = self._noktadan(olay.pos())
+        metin = ""
+        if satir is not None and sutun is not None and self.hata_aciklayici is not None:
+            b = self.sayfa.birlesim(satir, sutun)
+            if b is not None:
+                satir, sutun = b.ilk_satir, b.ilk_sutun
+            if (satir, sutun) not in self.sayfa.notlar and isinstance(self.sayfa.deger(satir, sutun), Hata):
+                metin = self.hata_aciklayici(self.sayfa, satir, sutun)
+        if metin:
+            QToolTip.showText(olay.globalPos(), metin, self.viewport(),
+                              self.hucre_dikdortgeni(satir, sutun) or QRect())
+        else:
+            QToolTip.hideText()
 
     # --- klavye ---
     def event(self, olay):
@@ -1872,20 +1920,15 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             kul = self.sayfa.kullanilan_aralik()
             self._git((kul[2], kul[3]) if kul else (1, 1), shift)
         elif k == Qt.Key_A and ctrl:
-            self.sec((1, 1), (MAX_ROW, MAX_COL), kaydir=False)
+            self.tumunu_sec()
         elif k == Qt.Key_Space and ctrl:
-            self._sutun_sec(self._aktif[1], False)
+            self._sutun_sec(self._aktif[1], False, etkin=self._aktif)
         elif k == Qt.Key_Space and shift:
-            self._satir_sec(self._aktif[0], False)
+            self._satir_sec(self._aktif[0], False, etkin=self._aktif)
         elif k in (Qt.Key_Tab, Qt.Key_Backtab):
-            geri = k == Qt.Key_Backtab or shift
-            yon = (0, -1 if geri else 1)
-            kb = self._birlesim_kaynagi(self._aktif, yon)
-            self.sec(self._gizlileri_atla((kb[0], kb[1] + yon[1]), yon) or self._aktif)
+            self._enter_tab((0, -1 if (k == Qt.Key_Backtab or shift) else 1))
         elif k in (Qt.Key_Return, Qt.Key_Enter):
-            yon = (-1 if shift else 1, 0)
-            kb = self._birlesim_kaynagi(self._aktif, yon)
-            self.sec(self._gizlileri_atla((kb[0] + yon[0], kb[1]), yon) or self._aktif)
+            self._enter_tab((-1 if shift else 1, 0))
         elif k == Qt.Key_F2:
             self.duzenle_baslat(None)
         elif k == Qt.Key_Delete and not shift:
@@ -2815,8 +2858,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         self.setFocus()
         self.modDegisti.emit("Hazır")
         if dr or dc:
-            r, c = self._aktif
-            self.sec((r + dr, c + dc))
+            self._enter_tab((dr, dc))
 
     SECIME_YAYMA_SINIRI = 500_000
 
@@ -3281,9 +3323,78 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
     def _git(self, hedef: Tuple[int, int], genislet: bool):
         hedef = (min(max(hedef[0], 1), MAX_ROW), min(max(hedef[1], 1), MAX_COL))
         if genislet:
-            self.sec(self._aktif, hedef)
+            self.sec(self._capa, hedef, etkin=self._aktif)
         else:
             self.sec(hedef)
+
+    def tumunu_sec(self) -> None:
+        """Ctrl+A (Excel): etkin hücre bir veri bölgesindeyse önce bölge; bölge zaten seçiliyse (ya da
+        bölge yoksa) tüm sayfa. Etkin hücre yerinde kalır."""
+        bolge = bitisik_bolge(self.sayfa, *self._aktif)
+        tek = (bolge.ilk_satir, bolge.ilk_sutun) == (bolge.son_satir, bolge.son_sutun)
+        if not tek and (self._ekler or self.secim != bolge):
+            self.sec((bolge.ilk_satir, bolge.ilk_sutun), (bolge.son_satir, bolge.son_sutun),
+                     kaydir=False, etkin=self._aktif)
+        else:
+            self.sec((1, 1), (MAX_ROW, MAX_COL), kaydir=False, etkin=self._aktif)
+
+    def _enter_tab(self, yon: Tuple[int, int]) -> None:
+        """Enter/Tab (± Shift): çok hücreli seçimde etkin hücre seçimin içinde dolaşır; değilse bir
+        hücre ilerler (birleşimin kenarından, gizlileri atlayarak)."""
+        if self._secimde_ilerle(yon):
+            return
+        kb = self._birlesim_kaynagi(self._aktif, yon)
+        self.sec(self._gizlileri_atla((kb[0] + yon[0], kb[1] + yon[1]), yon) or self._aktif)
+
+    SECIM_GEZINME_SINIRI = 100_000      # gizli/birleşik hücre atlarken en çok adım (donma koruması)
+
+    def _secimde_ilerle(self, yon: Tuple[int, int]) -> bool:
+        """Excel: Enter sütun düzeninde (aşağı; sütun sonunda sonraki sütunun başı), Tab satır düzeninde
+        ilerler; Shift ters yön. Aralık sonunda sonraki aralığa (çoklu seçim), sonuncudan ilkine geçilir.
+        Gizli satır/sütun ve birleşimin kapsanan hücreleri atlanır. Seçim tek hücreyse False."""
+        araliklar = self.secimler                      # birincil (etkin hücreyi içeren) en sonda
+        if len(araliklar) == 1:
+            s = self.secim
+            if (s.ilk_satir, s.ilk_sutun) == (s.son_satir, s.son_sutun) or self.sayfa.birlesim(*self._aktif) == s:
+                return False                           # tek hücre ya da yalnız bir birleşik hücre
+        ileri = (yon[0] + yon[1]) > 0
+        sutun_duzeni = yon[0] != 0
+        gs, gc = self.sayfa.gizli_satir, self.sayfa.gizli_sutun
+        birlesim = self.sayfa.birlesim if self.sayfa.birlesimler else None
+        i = len(araliklar) - 1
+        r, c = self._aktif
+        for _ in range(self.SECIM_GEZINME_SINIRI):
+            a = araliklar[i]
+            if sutun_duzeni:
+                r, c, tasti = _adim(r, c, a.ilk_satir, a.son_satir, a.ilk_sutun, a.son_sutun, ileri)
+            else:
+                c, r, tasti = _adim(c, r, a.ilk_sutun, a.son_sutun, a.ilk_satir, a.son_satir, ileri)
+            if tasti and len(araliklar) > 1:
+                i = (i + (1 if ileri else -1)) % len(araliklar)
+                a = araliklar[i]
+                r, c = (a.ilk_satir, a.ilk_sutun) if ileri else (a.son_satir, a.son_sutun)
+            if r in gs or c in gc:
+                continue
+            if birlesim is not None:
+                b = birlesim(r, c)
+                if b is not None and (b.ilk_satir, b.ilk_sutun) != (r, c):
+                    continue
+            break
+        else:
+            return False
+        eski_koru, self._koru = self._koru, True      # öteki aralıklar seçili kalır
+        try:
+            if i == len(araliklar) - 1:
+                self.sec(self._capa, self._uc, kaydir=False, etkin=(r, c))
+            else:                                      # sonraki aralık birincil olur, sıra döner
+                hedef = araliklar[i]
+                self._ekler = araliklar[i + 1:] + araliklar[:i]
+                self.sec((hedef.ilk_satir, hedef.ilk_sutun), (hedef.son_satir, hedef.son_sutun),
+                         kaydir=False, etkin=(r, c))
+        finally:
+            self._koru = eski_koru
+        self._gorunur_yap(self._aktif)
+        return True
 
     def _atla(self, kaynak: Tuple[int, int], yon: Tuple[int, int]) -> Tuple[int, int]:
         """Ctrl+ok: Excel'deki gibi veri bloğunun ucuna / sonraki dolu hücreye atla."""

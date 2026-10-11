@@ -62,7 +62,7 @@ def sayi_yazi(x: float) -> str:
     return ("eksi " if eksi else "") + yazi
 
 
-@skaler("YAZIYLA", "s")
+@skaler("TR_NUMBERTOWORDS", "s")
 def _yaziyla(b, x):
     if abs(x) >= MAKS_YAZI:
         return D.SAYI
@@ -78,6 +78,6 @@ def tc_kimlik_gecerli_mi(no: str) -> bool:
     return sum(d[:10]) % 10 == d[10]
 
 
-@skaler("TCKIMLIKDOGRULA", "m")
+@skaler("TR_VALIDATE_TCKN", "m")
 def _tc_dogrula(b, no):
     return tc_kimlik_gecerli_mi(no.strip())

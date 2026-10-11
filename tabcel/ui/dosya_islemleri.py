@@ -6,7 +6,7 @@ import os
 import weakref
 from typing import List, Optional
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import Qt, QThread, QTimer
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QDialog, QFileDialog, QFrame, QHBoxLayout, QLabel, QMenu, QMessageBox, QToolButton,
@@ -16,6 +16,7 @@ from .. import APP_NAME
 from .arka_plan import arka_planda
 from ..io import csv_io, kurtarma, son_dosyalar, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
+from ..model.anlik import kitap_anligi
 from ..model.komutlar import SayfaYapisiDegis
 from ..model.sayfa import CalismaKitabi
 
@@ -39,6 +40,26 @@ def _ayni_yol(a: Optional[str], b: Optional[str]) -> bool:
     return bool(a and b) and os.path.normcase(os.path.abspath(a)) == os.path.normcase(os.path.abspath(b))
 
 
+class _OtokayitIsi(QThread):
+    """T4b: kurtarma kopyasını anlık görüntüden arka planda yazar (Qt nesnesine dokunmaz)."""
+
+    def __init__(self, islev, damga):
+        super().__init__()
+        self._islev = islev
+        self.damga = damga
+        self.basarili = False
+        self.sure_ms = 0.0
+
+    def run(self) -> None:
+        t0 = time.perf_counter()
+        try:
+            self._islev()
+            self.basarili = True
+        except Exception:                                    # otomatik işlem kullanıcıyı bölmez
+            self.basarili = False
+        self.sure_ms = (time.perf_counter() - t0) * 1000
+
+
 class DosyaIslemleri:
     """`Pencere` karışımı. Gerektirdiği alanlar: `kitap`, `yigin`, `belge_adi`, `_baslik_guncelle()`."""
 
@@ -57,8 +78,9 @@ class DosyaIslemleri:
         self._disk_damgasi = None                             # açılış/kayıtta dosyanın (mtime, boyut): başka yerde değişti mi
         self.kitap.dinle(self._gorunum_olayi)
         self._son_otokayit = None
+        self._otokayit_isi: Optional[_OtokayitIsi] = None   # arka planda süren kurtarma kopyası yazımı
         self._otokayit_zamanlayici = QTimer(self)
-        self._otokayit_zamanlayici.timeout.connect(self.otokayit_yap)
+        self._otokayit_zamanlayici.timeout.connect(lambda: self.otokayit_yap(arka_plan=True))
         self._otokayit_zamanlayici.start(self.OTOKAYIT_MS)
         self.yol: Optional[str] = None
         self.kaynak_yol: Optional[str] = None               # .csv'den açıldıysa o dosya (kayıt yolu değil)
@@ -160,6 +182,7 @@ class DosyaIslemleri:
         self._kurtarilan = False
         self._gorunum_kirli = False
         self._son_otokayit = None
+        self.otokayit_bekle()                                 # süren yazım silmeden SONRA dosya bırakmasın
         kurtarma.sil(self.kurtarma_kimligi)                   # kaydedildi: kurtarma kopyası gereksiz
         self._baslik_guncelle()
 
@@ -303,6 +326,7 @@ class DosyaIslemleri:
                 sayfa = self.izgara().sayfa
                 arka_planda(self, "Kaydediliyor…", lambda: csv_io.dosya_yaz(sayfa, yol))
             else:
+                self.otokayit_bekle()                         # iki yazım aynı anda belleği ikiye katlamasın
                 kayit_raporu = arka_planda(self, "Kaydediliyor…", lambda: xlsx_io.kaydet(self.kitap, yol))
         except (XlsxHatasi, csv_io.CsvHatasi) as e:
             QMessageBox.critical(self, APP_NAME, str(e))
@@ -360,26 +384,53 @@ class DosyaIslemleri:
         return c == "kaydetme"
 
     # ------------------------------------------------------------------ otomatik kurtarma (4e)
-    def otokayit_yap(self) -> bool:
+    def otokayit_yap(self, arka_plan: bool = False) -> bool:
         """Değişmiş belgenin kurtarma kopyasını yazar (değişiklik yoksa ya da son kopyadan beri aynıysa
-        yazmaz). Hata sessizce yutulur: otomatik işlem kullanıcıyı bölmez. Yazıldıysa True."""
-        if not self.degisti_mi():
+        yazmaz). Kitabın anlık görüntüsü ana iş parçacığında alınır (ucuz); `arka_plan` ise yazım iş
+        parçacığında sürer ve True "başlatıldı" demektir (zamanlayıcı yolu, T4b), değilse burada biter.
+        Önceki yazım sürüyorsa yazmaz. Hata sessizce yutulur: otomatik işlem kullanıcıyı bölmez."""
+        if self._otokayit_isi is not None or not self.degisti_mi():
             return False
         damga = (self.yigin.damga(), self._gorunum_surum)
         if self._son_otokayit is not None and self.yigin.damga_esit(damga[0], self._son_otokayit[0]) \
                 and damga[1] == self._son_otokayit[1]:
             return False
-        t0 = time.perf_counter()
         try:
-            kurtarma.kopya_yaz(self.kitap, self.kurtarma_kimligi, self.belge_adi, self.yol or self.kaynak_yol,
-                               self.rapor)
-        except Exception:                                    # otomatik işlem hiçbir koşulda kullanıcıyı bölmez
+            anlik = kitap_anligi(self.kitap)
+            rapor = Rapor(list(self.rapor.uyarilar), self.rapor.veri_kaybi)
+        except Exception:
             return False
-        # T4: yazma ana iş parçacığında olduğundan büyük kitapta donma payı ≤ ~%3 kalsın (süre × 30); küçük kitapta 2 dk
-        sure_ms = (time.perf_counter() - t0) * 1000
-        self._otokayit_zamanlayici.setInterval(max(self.OTOKAYIT_MS, int(sure_ms * 30)))
-        self._son_otokayit = damga
+        kimlik, ad, yol = self.kurtarma_kimligi, self.belge_adi, self.yol or self.kaynak_yol
+        is_ = _OtokayitIsi(lambda: kurtarma.kopya_yaz(anlik, kimlik, ad, yol, rapor), damga)
+        if not arka_plan:
+            is_.run()                                         # aynı iş, bu iş parçacığında
+            return self._otokayit_sonucu(is_)
+        self._otokayit_isi = is_
+        is_.finished.connect(lambda: self._otokayit_bitti(is_))
+        is_.start(QThread.LowPriority)
         return True
+
+    def _otokayit_sonucu(self, is_: _OtokayitIsi) -> bool:
+        if not is_.basarili:
+            return False
+        # yazım arka planda olsa da Python kilidini (GIL) ana iş parçacığıyla paylaşır: payı ≤ ~%10 kalsın
+        self._otokayit_zamanlayici.setInterval(max(self.OTOKAYIT_MS, int(is_.sure_ms * 10)))
+        self._son_otokayit = is_.damga
+        return True
+
+    def _otokayit_bitti(self, is_: _OtokayitIsi) -> None:
+        if self._otokayit_isi is not is_:                    # otokayit_bekle zaten işledi
+            return
+        self._otokayit_isi = None
+        self._otokayit_sonucu(is_)
+        is_.deleteLater()
+
+    def otokayit_bekle(self) -> None:
+        """Süren arka plan yazımı bitene dek bekler (silme, elle kayıt, kapanış öncesi)."""
+        is_ = getattr(self, "_otokayit_isi", None)
+        if is_ is not None:
+            is_.wait()
+            self._otokayit_bitti(is_)
 
     def _kurtarma_sorusu(self, liste):
         """(eylem, seçilenler); eylem 'ac' | 'sil' | 'sonra'. Testlerde yamalanır."""
@@ -431,6 +482,7 @@ class DosyaIslemleri:
 
     def _pencere_kapandi(self) -> None:
         self._otokayit_zamanlayici.stop()
+        self.otokayit_bekle()
         kurtarma.sil(self.kurtarma_kimligi)                   # bilerek kapatıldı: kopya gereksiz
         DosyaIslemleri._acik_pencereler.discard(self)
         if self in DosyaIslemleri._tutulan:

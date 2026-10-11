@@ -36,6 +36,8 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Hata açıklamaları:** hata değeri olan hücrede (ipucu ve durum çubuğu) hatanın nedeni ve hangi hücreden geldiği Türkçe yazılır. Bkz. [Formüller](konu:formuller).
+- **Seçim içinde gezinme (Excel gibi):** birden çok hücre seçiliyken `Enter`/`Tab` etkin hücreyi seçimin içinde dolaştırır; `Ctrl+Boşluk`/`Shift+Boşluk` etkin hücreyi yerinde bırakır; `Ctrl+A` önce veri bölgesini, ikinci basışta tüm sayfayı seçer.
 - **Türkiye'ye özel işlevler:** `YAZIYLA(sayı)` sayıyı yazıya çevirir (125 → *yüz yirmi beş*), `TCKİMLİKDOĞRULA(no)` T.C. kimlik numarasının sağlama kuralına uyup uymadığını söyler. Bkz. [Formüller](konu:formuller).
 
 - **Sayfa sınırı çizgileri ve el ile sayfa sonu:** Görünüm → Sayfa Sonlarını Göster; Sayfa Düzeni → Kesmeler. Ayrıca *yüksekliği tek sayfaya sığdır* ve *sayfa sırası* seçenekleri. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
@@ -55,7 +57,7 @@ En yenisi en üstte.
 
 ## Yazma ve düzenleme
 
-- Hücreye yazıp `Enter` (aşağı) ya da `Tab` (sağa) ile onaylayın; `Esc` girişi iptal eder.
+- Hücreye yazıp `Enter` (aşağı) ya da `Tab` (sağa) ile onaylayın; `Esc` girişi iptal eder. Birden çok hücre seçiliyse `Enter`/`Tab` (geri için `Shift` ile) seçimin **içinde** ilerler: önce sütun boyunca (Enter) ya da satır boyunca (Tab), sonda başa döner; seçim bozulmaz, böylece bir alanı art arda doldurabilirsiniz.
 - `F2` ya da çift tıklama hücreyi düzenleme kipine alır. Hücre içinde satır sonu için `Alt+Enter`; böyle girilen metin kendiliğinden "Metni Kaydır" olur.
 - `Ctrl+Enter` yazdığınızı seçili tüm hücrelere uygular.
 - `Delete` içeriği siler (biçim kalır). **Giriş → Temizle** menüsü biçimi, notu ya da hepsini temizler.
@@ -80,7 +82,7 @@ Anlaşılamayan her şey metin olarak kalır. Tarih ve sayı biçimi hücreye ot
 ## Seçim
 
 - Sürükleyin ya da `Shift` + ok / tıklama ile aralık seçin; `Ctrl` + tıklama ile birden çok aralık seçin.
-- Başlığa tıklayarak tüm satır/sütunu seçin; `Ctrl+Boşluk` sütunu, `Shift+Boşluk` satırı seçer.
+- Başlığa tıklayarak tüm satır/sütunu seçin; `Ctrl+Boşluk` sütunu, `Shift+Boşluk` satırı seçer (etkin hücre yerinde kalır). `Ctrl+A` etkin hücre bir veri bloğundaysa önce o bloğu, ikinci basışta tüm sayfayı seçer.
 - `Ctrl` + ok veri bloğunun kenarına atlar; `Ctrl+Home` / `Ctrl+End` sayfanın başına / son hücresine gider.
 - `Ctrl+G` ya da `F5` **Git** penceresini açar (adresler ve tanımlı adlar).
 
@@ -110,6 +112,8 @@ Formül `=` ile başlar. Fonksiyon adları **Türkçe**, bağımsız değişken 
 | `####` | sütun sayıyı göstermeye yetmeyecek kadar dar; genişletin |
 
 Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "Döngüsel Başvurular" olarak bildirilir.
+
+**Hatanın nedeni:** hata değeri olan bir hücreye fareyle gelip biraz bekleyin ya da hücreyi seçin; ipucunda ve durum çubuğunda Türkçe açıklama görünür, ör. *#DEĞER!: B3 hücresinde sayı yerine metin var ("abc").* Hata başka bir hücreden geliyorsa yol da gösterilir: *#DEĞER!: B3 hücresinden geliyor (D5 → C4 → B3). B3: …* Böylece hatayı asıl üreten hücreye gidip düzeltebilirsiniz. Çok uzun zincirlerde (2.000 hücreden fazla) arama durur ve son izlenen hücre söylenir.
 
 ## Türkiye'ye özel işlevler
 
@@ -284,12 +288,12 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 {APP_NAME} Excel davranışını esas alır; aşağıdakiler **bilerek** farklıdır ya da henüz yoktur.
 
+- **Hata açıklamaları:** Excel hatalı hücrede yeşil üçgen ve "Hatayı İzle" okları gösterir; {APP_NAME} açıklamayı ipucunda ve durum çubuğunda yazar (ok çizimi yok). Açıklama cümleleri {APP_NAME}'e özgüdür, Excel'in iletilerinin çevirisi değildir.
 - **Dizi taşması yok:** çok hücreli bir formül sonucu tek değere indirilir (Excel 365 komşu hücrelere taşırır). Dinamik dizi fonksiyonları sonraki sürümdedir.
 - **Pivot tablo, Tablo nesnesi, makro (VBA), Solver, .xls ve .ods** henüz desteklenmez.
 - **Excel'de eklenen eğilim çizgisi, ikincil eksen vb. korunmaz** (açılışta hangi grafikte olduğu bildirilir, kaydederken sorulur).
 - **Grafik başka çalışma kitabına yapıştırılamaz** (Excel yapıştırıp özgün kitaba bağlı kalır); resim yapıştırılır.
 - **Grafikler:** yalnız 7 temel tür vardır; ikincil eksen, eğilim çizgisi, hata çubukları ve 3B yoktur. Grafikler ve resimler dosyada ayrı katmanlarda saklandığından, karışık üst üste sıralama (bir resmin grafiğin üstünde olması gibi) kaydedip açınca grafikler altta, resimler üstte olacak biçimde yeniden dizilebilir.
-- **Seçimde etkin hücre:** {APP_NAME}'de etkin hücre her zaman seçimin ilk hücresidir. Bu yüzden çok hücreli seçimde `Enter`/`Tab` seçimin içinde dolaşmaz (seçimi kaldırıp bir hücre ilerler), `Ctrl+Boşluk`/`Shift+Boşluk` etkin hücreyi sütunun/satırın başına taşır ve Ctrl+A (tümünü seç) veri bölgesini atlayıp doğrudan tüm sayfayı seçer.
 - **Bölmeleri Dondur** sayfanın başından dondurur (Excel kaydırılmış pencerenin üstünden dondurur).
 - Var olmayan sayfaya başvuran formül reddedilir ve düzenleme açık kalır.
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
@@ -298,7 +302,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
 - Elle yazılan bazı nadir girdiler Excel'den farklı anlaşılır: `$5` (Excel Türkçe ayarında metin bırakır, burada para birimli sayı olur), tek haneli yıllı `1/2/3`, `1/13`, `1-2-3`, `12:3`, `25:00` ve `- 5` (Excel sayıya/tarihe çevirir, burada metin kalır).
-- `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok).
+- `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok); dosyada `TR_NUMBERTOWORDS` ve `TR_VALIDATE_TCKN` adıyla saklanır, Excel'de `#AD?` görünür.
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 
 <!-- konu: sorunlar | Sık Sorulanlar ve Sorun Giderme -->

@@ -19,7 +19,7 @@ from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
 from ..formul.ad_yardim import (
     aralik_basvurusu, basvurur_saklanan, gorunur_adlar, hedef_aralik, secimin_adi,
 )
-from ..formul import isaretleme
+from ..formul import hata_neden, isaretleme
 from .renkli import renkli_ciz
 from ..formul.ceviri import hucre_metni
 from ..formul.motor import Hesaplayici
@@ -113,12 +113,14 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self._son_indeks = 0
         self._gecmis_islemi = False
         self._dongu_bilinen = set()                   # son denetimde döngüde olan hücreler (yeni döngüyü ayırt eder)
+        self._hata_onb: Dict[tuple, str] = {}         # T8: (sayfa kimliği, r, c) → hata açıklaması; her olayda düşer
         self._mod = "Hazır"
         self.setStyleSheet(theme.stylesheet())
         self._kur()
         self._dosya_kur()
         self._sekmeleri_esitle(self.kitap.sayfalar[0])
         self.kitap.dinle(self._kitap_olayi)           # sayfa ekle/sil/ad/taşı + geri al/yinele buradan yansır
+        self.kitap.dinle(lambda _olay: self._hata_onb.clear())   # motordan sonra: açıklamalar yeni sonuçlarla
         self._baslik_guncelle()
         self.resize(1100, 700)
 
@@ -257,6 +259,9 @@ class Pencere(DosyaIslemleri, QMainWindow):
         self.dongu_etiketi = QLabel("")               # "Döngüsel Başvurular: A1" (yalnız döngü varken)
         self.dongu_etiketi.setStyleSheet(f"color: {theme.UYARI}; font-weight: 600; padding: 0 8px;")
         self.dongu_etiketi.hide()
+        self.hata_etiketi = QLabel("")                # T8: etkin hücredeki hatanın açıklaması
+        self.hata_etiketi.setStyleSheet("padding: 0 8px;")
+        self.hata_etiketi.hide()
         self.yakin_etiketi = QLabel("100%")
         self.yakin_etiketi.setMinimumWidth(40)
         self.yakin_etiketi.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -269,6 +274,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         sb.setSizeGripEnabled(False)
         sb.addWidget(self.mod_etiketi)
         sb.addWidget(self.dongu_etiketi)
+        sb.addWidget(self.hata_etiketi, 1)
         sb.addPermanentWidget(self.ozet_etiketi)
         sb.addPermanentWidget(self.yakin_kaydirici)
         sb.addPermanentWidget(self.yakin_etiketi)
@@ -565,6 +571,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         g.uzakOnay.connect(self._uzak_onayla)
         g.filtreDugmesi.connect(self.filtre_paneli_ac)
         g.veri_kaybi_onayi = self._birlestirme_onayi
+        g.hata_aciklayici = self.hata_aciklamasi
         g.gecmisIslemi.connect(self._gecmis_islemi_ayarla)
         self._izgaralar[sayfa] = g
         self.izgara_yigini.addWidget(g)
@@ -809,9 +816,34 @@ class Pencere(DosyaIslemleri, QMainWindow):
             self.formul.setText(g.aktif_duzenleme_metni())
         self._ozet_planla()
         self._dongu_etiketi_guncelle()
+        self._hata_etiketi_guncelle()
         self.serit.guncelle()
         self._eylem_durumlari()
         self.grafik_eylemleri.sekmeyi_esitle()
+
+    # ------------------------------------------------------------------ hata açıklamaları (T8)
+    def hata_aciklamasi(self, sayfa: Sayfa, satir: int, sutun: int) -> str:
+        """Hücredeki hatanın Türkçe açıklaması (hata yoksa ""); kitapta bir olay olana dek önbellekte."""
+        anahtar = (sayfa.kimlik, satir, sutun)
+        m = self._hata_onb.get(anahtar)
+        if m is None:
+            m = self._hata_onb[anahtar] = hata_neden.metin(
+                hata_neden.acikla(sayfa, satir, sutun, motor=self.motor))
+        return m
+
+    def _hata_etiketi_guncelle(self):
+        """Durum çubuğu: tek hücre (ya da tek birleşik hücre) seçiliyken etkin hücredeki hatanın açıklaması."""
+        g = self.izgara()
+        sec = g.secim
+        tek = (sec.ilk_satir, sec.ilk_sutun) == (sec.son_satir, sec.son_sutun) or g.sayfa.birlesim(*g.aktif) == sec
+        metin = self.hata_aciklamasi(g.sayfa, *g.aktif) if tek and not g._ekler else ""
+        if not metin:
+            self.hata_etiketi.hide()
+            return
+        genislik = max(200, self.width() // 2)
+        self.hata_etiketi.setText(self.hata_etiketi.fontMetrics().elidedText(metin, Qt.ElideRight, genislik))
+        self.hata_etiketi.setToolTip(metin)
+        self.hata_etiketi.show()
 
     def _uyari(self, metin: str):
         self.statusBar().showMessage(metin, 6000)

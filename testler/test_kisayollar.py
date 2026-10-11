@@ -52,10 +52,6 @@ def tus(p, k, m=YOK):
     QApplication.processEvents()
 
 
-FARK = ("Excel'den fark: Tabcel'de etkin hücre seçim çapasıyla AYNI alan (`_aktif`); Excel'de ayrı. "
-        "surec.md → T2 bulguları. Düzelince strict xfail kendiliğinden uyarır.")
-
-
 def git(p, r, c):
     p.izgara().sec((r, c))
 
@@ -149,7 +145,6 @@ def test_ok_tuslari_ve_tab_enter_gezinmesi(p):
     assert aktif(p) == (2, 2)
 
 
-@pytest.mark.xfail(strict=True, reason=FARK)
 def test_enter_secim_icinde_dolasir(p):
     """Excel: çok hücreli seçim varken Enter/Tab seçimin İÇİNDE ilerler."""
     git(p, 1, 1)
@@ -164,7 +159,6 @@ def test_enter_secim_icinde_dolasir(p):
 
 
 # ---------------------------------------------------------------- seçim
-@pytest.mark.xfail(strict=True, reason=FARK)
 def test_ctrl_bosluk_sutunu_shift_bosluk_satiri_secer_etkin_hucre_kalir(p):
     git(p, 3, 2)
     tus(p, Qt.Key_Space, CTRL)
@@ -174,7 +168,6 @@ def test_ctrl_bosluk_sutunu_shift_bosluk_satiri_secer_etkin_hucre_kalir(p):
     assert secim(p) == Aralik(3, 1, 3, MAX_COL) and aktif(p) == (3, 2)
 
 
-@pytest.mark.xfail(strict=True, reason=FARK)
 def test_ctrl_a_once_veri_bolgesi_sonra_tum_sayfa(p):
     """Excel: veri bölgesindeyken Ctrl+A önce bölgeyi, ikinci basış tüm sayfayı seçer."""
     git(p, 2, 2)
@@ -182,6 +175,89 @@ def test_ctrl_a_once_veri_bolgesi_sonra_tum_sayfa(p):
     assert secim(p) == Aralik(1, 1, 5, 3)
     tus(p, Qt.Key_A, CTRL)
     assert secim(p) == Aralik(1, 1, MAX_ROW, MAX_COL)
+
+
+def test_enter_tab_secim_icinde_sarar_ve_shift_ters(p):
+    g = p.izgara()
+    g.sec((1, 1), (2, 2))
+    for beklenen in [(2, 1), (1, 2), (2, 2), (1, 1)]:          # sütun düzeni, sondan başa sarar
+        tus(p, Qt.Key_Return)
+        assert aktif(p) == beklenen and secim(p) == Aralik(1, 1, 2, 2)
+    tus(p, Qt.Key_Return, SHIFT)                               # ters: baştan sona
+    assert aktif(p) == (2, 2)
+    for beklenen in [(1, 1), (1, 2), (2, 1), (2, 2)]:           # Tab satır düzeni; (2,2)'den başa sarar
+        tus(p, Qt.Key_Tab)
+        assert aktif(p) == beklenen and secim(p) == Aralik(1, 1, 2, 2)
+    tus(p, Qt.Key_Tab, SHIFT)
+    assert aktif(p) == (2, 1)
+
+
+def test_enter_secimde_sinyaller(p):
+    g = p.izgara()
+    g.sec((1, 1), (3, 1))
+    aktifler, secimler = [], []
+    g.aktifDegisti.connect(lambda r, c: aktifler.append((r, c)))
+    g.secimDegisti.connect(lambda s: secimler.append(s))
+    tus(p, Qt.Key_Return)
+    assert aktifler == [(2, 1)] and secimler == []             # seçim aynı: özet yeniden hesaplanmaz
+
+
+def test_enter_secimde_gizli_satiri_ve_birlesimi_atlar(p):
+    from tabcel.model.komutlar import birlesim_komutu
+    g = p.izgara()
+    s = g.sayfa
+    s.gizli_satir.add(2)
+    g.yigin.calistir(birlesim_komutu(s, [Aralik(3, 1, 4, 1)], "birlestir"))
+    g.sec((1, 1), (5, 1))
+    tus(p, Qt.Key_Return)
+    assert aktif(p) == (3, 1)                                   # 2. satır gizli
+    tus(p, Qt.Key_Return)
+    assert aktif(p) == (5, 1)                                   # A3:A4 birleşimi tek adım
+
+
+def test_enter_coklu_secimde_sonraki_araliga_gecer(p):
+    g = p.izgara()
+    g.sec((1, 1), (2, 1))
+    g._ekler = [Aralik(1, 5, 1, 6)]                              # önceki (Ctrl ile) aralık
+    tus(p, Qt.Key_Return)
+    assert aktif(p) == (2, 1)
+    tus(p, Qt.Key_Return)                                       # birincilin sonu → diğer aralığın başı
+    assert aktif(p) == (1, 5) and secim(p) == Aralik(1, 5, 1, 6)
+    assert Aralik(1, 1, 2, 1) in g.secimler                     # öteki aralık seçili kalır
+    tus(p, Qt.Key_Return)
+    assert aktif(p) == (1, 6)
+
+
+def test_tek_hucrede_enter_eski_davranis(p):
+    git(p, 2, 2)
+    tus(p, Qt.Key_Return)
+    assert aktif(p) == (3, 2) and secim(p) == Aralik(3, 2, 3, 2)
+
+
+def test_duzenleme_enterle_onaylaninca_secim_icinde_ilerler(p):
+    g = p.izgara()
+    g.sec((1, 1), (2, 2))
+    QTest.keyClicks(g, "7")
+    QApplication.processEvents()
+    assert g.duzenleniyor()
+    tus(p, Qt.Key_Return)
+    assert g.sayfa.deger(1, 1) == 7.0
+    assert aktif(p) == (2, 1) and secim(p) == Aralik(1, 1, 2, 2)
+
+
+def test_ctrl_bosluk_sonra_shift_sag_genisletir(p):
+    git(p, 3, 2)
+    tus(p, Qt.Key_Space, CTRL)
+    tus(p, Qt.Key_Right, SHIFT)
+    assert secim(p) == Aralik(1, 2, MAX_ROW, 3) and aktif(p) == (3, 2)
+
+
+def test_shift_tik_etkin_hucreyi_korur(p):
+    g = p.izgara()
+    g.sec((1, 1), (3, 3))
+    tus(p, Qt.Key_Return)                                       # etkin (2,1), çapa (1,1)
+    g._git((4, 4), True)                                        # Shift ile genişletme çapadan
+    assert secim(p) == Aralik(1, 1, 4, 4) and aktif(p) == (2, 1)
 
 
 def test_ctrl_a_bos_hucrede_tum_sayfa(p):

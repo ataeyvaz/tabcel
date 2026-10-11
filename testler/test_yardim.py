@@ -16,7 +16,7 @@ from tabcel.ui import yardim as y
 from tabcel.ui.window import Pencere
 
 # Izgara/düzenleyici `keyPressEvent`inde işlenen (QShortcut/eylem olmayan) kısayollar; yardımda geçerler.
-IZGARA_TUSLARI = {"Ctrl+Enter", "F2", "Alt+Enter", "F4", "Ctrl+Boşluk", "Shift+Boşluk", "Ctrl+Home", "Ctrl+End",
+IZGARA_TUSLARI = {"Ctrl+Enter", "F2", "Alt+Enter", "F4", "Ctrl+Boşluk", "Shift+Boşluk", "Ctrl+A", "Ctrl+Home", "Ctrl+End",
                   "Delete", "Esc", "Ctrl+F1", "F1", "Ctrl+Z", "Ctrl+Y", "Ctrl+C", "Ctrl+X", "Ctrl+V"}
 
 

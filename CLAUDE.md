@@ -19,6 +19,9 @@ Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü he
 11. **Fonksiyon test şablonu (Faz 2 ve sonrası):** her formül fonksiyonu için en az dört test vakası — normal durum, boş hücre/argüman, hata değeri girdisi, metin/sayı karışımı. Referans değer Microsoft belgesinden ya da kullanıcının Excel web'de doğruladığından alınır; emin olunmayan `surec.md` → "Excel web'de doğrulanacaklar" listesine yazılır (tahmin yürütme).
 12. **Regresyon kuralı:** bir değişiklik mevcut bir özelliği/testi bozarsa devam etmeden önce kullanıcıya bildir (neyi bozdu, neden). Testi silerek/gevşeterek geçirme.
 13. **Yardım güncel kalır:** yeni/değişen özellik, kısayol ya da Excel'den bilinçli fark `tabcel/yardim.md`'ye (ilgili konu, "Yenilikler", "Klavye Kısayolları", "Excel'den Farklar") aynı iş parçasında yazılır; testler yardımdaki kısayolların tanımlı olduğunu denetler.
+14. **Türkçe büyük/küçük harf:** kullanıcı metninde (hücre değeri, sayfa/ad/not metni, arama) `str.upper/lower/casefold/title/capitalize` kullanılmaz; yalnız `tabcel.metin_tr` (`kucuk`, `buyuk`, `esit_mi`). ASCII teknik dizgiler (İngilizce işlev/hata adı, renk kodu, dosya uzantısı) serbest. Bilinçli istisna: sayfa adı karşılaştırması `casefold` (Excel davranışı doğrulanana dek, `surec.md` §8b).
+15. **İçe aktarmada kimlik koruması:** CSV/dışarıdan gelen veride baştaki sıfırlı, 11 haneli (TC), 15 haneden uzun sayılar, IBAN ve `1-2`/`3/4` biçimli alanlar varsayılan olarak metin kalır (`csv_io.korunmali_mi`); kullanıcı sütun türüyle değiştirebilir.
+16. **Tabcel'e özel işlevler** (Excel'de olmayan): kanonik adı İngilizce/ASCII `TR_` önekli (`TR_NUMBERTOWORDS`), Türkçe görünümü `adlar.TABCEL_OZEL`'de; `.xlsx`e kaydederken uyarı verilir.
 
 ## Dosya yapısı
 ```
@@ -26,24 +29,32 @@ main.py              giriş noktası (komut satırından dosya açma)
 Tabcel.bat           .venv ile konsolsuz başlatma
 requirements.txt     bağımlılıklar
 tabcel/__init__.py   APP_NAME, __version__, künye, resource_dir()
-tabcel/model/        sayfa (Hucre/Sayfa/CalismaKitabi), adres, girdi, deger (Hata), gosterim, olay,
+tabcel/metin_tr.py   Türkçe büyük/küçük harf, tek kaynak (kural 14) — Qt yok
+tabcel/model/        sayfa (Hucre/Sayfa/CalismaKitabi), anlik (salt okunur kitap kopyası), adres, girdi, deger (Hata), gosterim, olay,
                      komutlar (geri al), pano, olcu, stil, sayi_bicimi, doldur, sayfa_yapisi, sayfalama;
                      Faz 5: harmanla, bul, sirala, filtre, dogrulama, kosullu; Faz 6: grafik, grafik_verisi,
-                     grafik_cizim (çizim listesi), grafik_islem — Qt yok
+                     grafik_cizim (çizim listesi), grafik_islem, resim_yukle; ayrıca ad, notlar, bicim_islem,
+                     bicim_kodlari, tarihseri, sirala — Qt yok
 tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustur, degerlendir,
                      fonksiyonlar/ (kayıt + gruplar), adlar (tr⇄en), ceviri, motor (bağımlılık +
-                     yeniden hesap), kaydir (başvuru kaydırma); Faz 5: kosul (koşullu biçim +
-                     doğrulama değerlendirmesi) — Qt yok
-tabcel/io/           xlsx_io, csv_io, kurtarma, son_dosyalar
+                     yeniden hesap), kaydir (başvuru kaydırma), ad_yardim, isaretleme, hata_neden (T8 hata açıklaması); Faz 5: kosul (koşullu
+                     biçim + doğrulama değerlendirmesi); fonksiyonlar/turkiye (Tabcel'e özel, kural 16) — Qt yok
+tabcel/io/           xlsx_io, xlsx_grafik (grafik/resim), xlsx_kayip (Excel'de değişmiş grafik tespiti),
+                     csv_io, kurtarma, son_dosyalar
 tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
                      serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
-                     pencereler (bicim, csv, sayfa yapısı, yazdır…)
+                     arka_plan (iş parçacığı), dosya_islemleri, bicim_cubugu, renkli,
+                     pencereler (*_penceresi: bicim, csv, sayfa yapısı, yazdır…)
 testler/             pytest
-araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, cizim_dogrula, test_raporu)
+araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, dosya_olcum, cizim_dogrula,
+                     test_raporu, test_parcali [tam paket 3 süreçte], ornek_uret(.py/_excel.ps1),
+                     excel_dogrula.ps1, excel_girdi_karsilastir.ps1 [gerçek Excel, COM])
 kurulum/             Inno Setup betiği (Faz 7)
 tabcel/yardim.md     uygulama içi yardım içeriği (F1); ad `{APP_NAME}` yer tutucusuyla yazılır
 plan.md / surec.md / test.md                     plan, süreç günlüğü, test sonuçları
-faz2_tasarim.md / faz3_tasarim.md / faz5_tasarim.md   formül motoru / biçimlendirme / veri araçları tasarımı
+faz2/3/5/5j/6_tasarim.md   formül motoru / biçimlendirme / veri araçları / şerit / grafik tasarımı
+t8/t9/t10_*/t4_arkaplan/secim_tasarim.md   T-işleri tasarım notları (hata açıklamaları, sayfa sonları,
+                     xlsx kayıp tespiti, arka plan otokayıt, seçim modeli)
 ```
 
 ## Teknoloji ve kısıtlar
@@ -66,5 +77,8 @@ faz2_tasarim.md / faz3_tasarim.md / faz5_tasarim.md   formül motoru / biçimlen
 - Ayrıntı: `plan.md` → "Model kullanımı"
 
 ## Bilinen sınırlar
-- Faz 1–4 bitti (model, formül motoru, biçimlendirme, .xlsx/.csv/PDF/kurtarma). Faz 5 (veri araçları) tasarlandı, uygulama sürüyor. Ayrıntı: `surec.md`
+- Faz 1–6 bitti (model, formül, biçim, .xlsx/.csv/PDF/kurtarma, veri araçları, şerit, grafik/resim); Faz 6 kapanış onayı bekliyor. T1–T7, T9, T10 bitti. Ayrıntı: `surec.md`
+- Tabcel'e özel işlevler (YAZIYLA, TCKİMLİKDOĞRULA) Excel'de `#AD?` verir
+- Otomatik kayıt arka planda (anlık görüntü `model/anlik.py`; yazım sırasında arayüz GIL payı yüzünden en çok ≈ 0,2 sn takılabilir)
+- Hata açıklamaları (`formul/hata_neden.py`) en çok 2.000 halkalı zinciri izler
 - Taşma (spill) yok (Faz 8): çok hücreli formül sonucu tek değere indirgenir

@@ -289,14 +289,13 @@ def _oneki_ekle(g) -> str:
 def _tabcel_ozel_kullanimi(kitap) -> set:
     """Kitapta kullanılan Tabcel'e özgü (Excel'de olmayan) işlevlerin adları (T7)."""
     from ..formul.adlar import TABCEL_OZEL
+    desen = re.compile(r"(?<![\w.])(" + "|".join(TABCEL_OZEL) + r")\(", re.IGNORECASE)
     bulunan = set()
     for sayfa in kitap.sayfalar:
         for _, _, h in sayfa.dolu_hucreler(False):
             f = h.formul
             if f is not None:
-                for ad in TABCEL_OZEL:
-                    if ad not in bulunan and ad + "(" in f.upper():
-                        bulunan.add(ad)
+                bulunan.update(m.upper() for m in desen.findall(f))
         if len(bulunan) == len(TABCEL_OZEL):
             break
     return {TABCEL_OZEL[a] for a in bulunan}

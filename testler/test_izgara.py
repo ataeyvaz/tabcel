@@ -85,7 +85,9 @@ def test_ctrl_home_end(izgara):
 
 
 def test_ctrl_a_ve_bosluk(izgara):
-    tus(izgara, Qt.Key_A, Qt.ControlModifier)
+    tus(izgara, Qt.Key_A, Qt.ControlModifier)                 # A1 veri bölgesinde: önce bölge (Excel)
+    assert izgara.secim != Aralik(1, 1, MAX_ROW, MAX_COL)
+    tus(izgara, Qt.Key_A, Qt.ControlModifier)                 # ikinci basış: tüm sayfa
     assert izgara.secim == Aralik(1, 1, MAX_ROW, MAX_COL)
     tus(izgara, Qt.Key_Space, Qt.ControlModifier)
     assert izgara.secim == Aralik(1, 1, MAX_ROW, 1)
@@ -226,6 +228,8 @@ def test_delete_ve_geri_al(izgara):
 
 def test_tum_secim_delete_hizli(izgara):
     tus(izgara, Qt.Key_A, Qt.ControlModifier)
+    tus(izgara, Qt.Key_A, Qt.ControlModifier)                 # veri bölgesinden sonra tüm sayfa (Excel)
+    assert izgara.secim == Aralik(1, 1, MAX_ROW, MAX_COL)
     tus(izgara, Qt.Key_Delete)
     assert izgara.sayfa.kullanilan_aralik() is None
 

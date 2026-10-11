@@ -142,6 +142,13 @@ class Hesaplayici:
                 self._agac_onb = {formul: self._agac_onb[formul]}
         return self._agac_onb[formul]
 
+    def agac(self, anahtar: Anahtar, formul: str) -> Optional[Dugum]:
+        """Hücrenin ayrıştırılmış formül ağacı: kayıttan (motor olaylarla güncel tutar), yoksa önbellekten."""
+        k = self._kayit.get(anahtar)
+        if k is not None and k.agac is not None:
+            return k.agac
+        return self._agac(formul)
+
     def _kaydi_sil(self, anahtar: Anahtar) -> None:
         k = self._kayit.pop(anahtar, None)
         if k is None:

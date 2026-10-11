@@ -27,16 +27,16 @@ def test_tam_sayi_yazi(n, yazi):
 
 
 def test_yaziyla_formulde_normal_eksi_kesir():
-    assert _hesapla("=YAZIYLA(125)") == "yüz yirmi beş"
-    assert _hesapla("=YAZIYLA(-3)") == "eksi üç"
-    assert _hesapla("=YAZIYLA(2.05)") == "iki virgül sıfır beş"
+    assert _hesapla("=TR_NUMBERTOWORDS(125)") == "yüz yirmi beş"
+    assert _hesapla("=TR_NUMBERTOWORDS(-3)") == "eksi üç"
+    assert _hesapla("=TR_NUMBERTOWORDS(2.05)") == "iki virgül sıfır beş"
 
 
 def test_yaziyla_bos_hata_metin():
-    assert _hesapla("=YAZIYLA(A1)") == "sıfır"                      # boş hücre = 0
-    assert _hesapla("=YAZIYLA(\"abc\")") == D.DEGER_HATASI
-    assert _hesapla("=YAZIYLA(10^15)") == D.SAYI
-    assert _hesapla("=YAZIYLA(\"12\")") == "on iki"                  # metin sayı: Excel gibi sayıya çevrilir
+    assert _hesapla("=TR_NUMBERTOWORDS(A1)") == "sıfır"                      # boş hücre = 0
+    assert _hesapla("=TR_NUMBERTOWORDS(\"abc\")") == D.DEGER_HATASI
+    assert _hesapla("=TR_NUMBERTOWORDS(10^15)") == D.SAYI
+    assert _hesapla("=TR_NUMBERTOWORDS(\"12\")") == "on iki"                  # metin sayı: Excel gibi sayıya çevrilir
 
 
 # Geçerli: algoritma gereği üretilmiş örnek; (d10, d11) hesaplanır
@@ -57,24 +57,33 @@ def test_tc_kimlik_algoritma():
 
 def test_tc_formulde_metin_sayi_bos_hata():
     no = _gecerli("123456789")
-    assert _hesapla(f'=TCKIMLIKDOGRULA("{no}")') is True
-    assert _hesapla(f"=TCKIMLIKDOGRULA({no})") is True              # sayı olarak yazılmış
-    assert _hesapla("=TCKIMLIKDOGRULA(A1)") is False                # boş
-    assert _hesapla('=TCKIMLIKDOGRULA("12a")') is False
-    assert _hesapla("=TCKIMLIKDOGRULA(A1)", {"A1": D.YOK}) == D.YOK       # hata girdisi olduğu gibi döner
+    assert _hesapla(f'=TR_VALIDATE_TCKN("{no}")') is True
+    assert _hesapla(f"=TR_VALIDATE_TCKN({no})") is True              # sayı olarak yazılmış
+    assert _hesapla("=TR_VALIDATE_TCKN(A1)") is False                # boş
+    assert _hesapla('=TR_VALIDATE_TCKN("12a")') is False
+    assert _hesapla("=TR_VALIDATE_TCKN(A1)", {"A1": D.YOK}) == D.YOK       # hata girdisi olduğu gibi döner
 
 
 def test_turkce_ad_ve_goruntu():
     from tabcel.formul import ceviri
     k = CalismaKitabi()
-    assert ceviri.girdiden("=TCKİMLİKDOĞRULA(A1)", k) == "=TCKIMLIKDOGRULA(A1)"
-    assert "TCKİMLİKDOĞRULA" in ceviri.gosterime("=TCKIMLIKDOGRULA(A1)", k)
+    assert ceviri.girdiden("=TCKİMLİKDOĞRULA(A1)", k) == "=TR_VALIDATE_TCKN(A1)"
+    assert "TCKİMLİKDOĞRULA" in ceviri.gosterime("=TR_VALIDATE_TCKN(A1)", k)
+    assert ceviri.girdiden("=YAZIYLA(5)", k) == "=TR_NUMBERTOWORDS(5)"
+    assert ceviri.gosterime("=TR_NUMBERTOWORDS(5)", k) == "=YAZIYLA(5)"
+
+
+def test_kanonik_adlar_ingilizce():
+    """Kural 3: kanonik (dosyadaki) ad İngilizce/ASCII; Türkçe yalnız görünüm."""
+    from tabcel.formul.adlar import TABCEL_OZEL
+    assert set(TABCEL_OZEL) == {"TR_NUMBERTOWORDS", "TR_VALIDATE_TCKN"}
+    assert all(ad.isascii() for ad in TABCEL_OZEL)
 
 
 def test_xlsx_kaydederken_uyari(tmp_path):
     from tabcel.io import xlsx_io
     k = CalismaKitabi()
-    k.sayfalar[0].ata(1, 1, Hucre(None, "=YAZIYLA(5)"))
+    k.sayfalar[0].ata(1, 1, Hucre(None, "=TR_NUMBERTOWORDS(5)"))
     r = xlsx_io.kaydet(k, str(tmp_path / "a.xlsx"))
     assert any("YAZIYLA" in u and "Excel" in u for u in r.uyarilar)
     k2 = CalismaKitabi()
