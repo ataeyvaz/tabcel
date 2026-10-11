@@ -283,3 +283,90 @@ def test_doldurma_formul_motorunu_gunceller(pencere):
     g.sec((1, 1), (2, 1))
     surukle(g, (2, 1), (4, 1))
     assert g.sayfa.sonuc(1, 2) == 10.0                                    # 1+2+3+4
+
+
+# ---------------------------------------------------------------- Faz 8: Ctrl'lu sürükleme + Otomatik Doldurma Seçenekleri
+def surukle_mod(g, hedef_hucre, mod):
+    vp = g.viewport()
+    QTest.mousePress(vp, Qt.LeftButton, Qt.NoModifier, tutamac(g))
+    QTest.mouseMove(vp, merkez(g, *hedef_hucre))
+    QTest.mouseRelease(vp, Qt.LeftButton, mod, merkez(g, *hedef_hucre))
+
+
+def test_ctrl_surukle_tek_sayi_seri_olur(pencere):
+    g = pencere.izgara()
+    g.sayfa.ata(1, 1, Hucre(5.0))
+    g.sec((1, 1))
+    surukle_mod(g, (3, 1), Qt.ControlModifier)                 # Excel: tek sayı + Ctrl → 5, 6, 7
+    assert [deger(g, r, 1) for r in (1, 2, 3)] == [5.0, 6.0, 7.0]
+
+
+def test_ctrl_surukle_seri_kopyaya_doner(pencere):
+    g = pencere.izgara()
+    g.sayfa.ata(1, 1, Hucre(1.0))
+    g.sayfa.ata(2, 1, Hucre(2.0))
+    g.sayfa.ata(1, 3, Hucre("Ocak"))
+    g.sec((1, 1), (2, 1))
+    surukle_mod(g, (4, 1), Qt.ControlModifier)                 # Excel: 1,2 + Ctrl → 1,2,1,2 (seri değil kopya)
+    assert [deger(g, r, 1) for r in (1, 2, 3, 4)] == [1.0, 2.0, 1.0, 2.0]
+    g.sec((1, 3))
+    surukle_mod(g, (3, 3), Qt.ControlModifier)
+    assert [deger(g, r, 3) for r in (1, 2, 3)] == ["Ocak", "Ocak", "Ocak"]
+
+
+def test_secenek_dugmesi_gorunur_ve_secenekler(pencere):
+    g = pencere.izgara()
+    g.sayfa.ata(1, 1, Hucre("Ocak"))
+    g.bicim_uygula if False else None
+    g.sec((1, 1))
+    surukle_mod(g, (3, 1), Qt.NoModifier)
+    assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Şubat", "Mart"]
+    assert g._doldur_dugmesi is not None and g._doldur_dugmesi.isVisible()
+    menu = g.doldur_secenek_menusu()
+    assert [a.text() for a in menu.actions()] == ["Hücreleri Kopyala", "Seriyi Doldur", "Yalnızca Biçimleri Doldur",
+                                                  "Biçimlendirmeden Doldur"]
+    assert [a.isChecked() for a in menu.actions()] == [False, True, False, False]
+    assert g.doldur_secenegi("kopya")                           # seriyi geri alıp kopyayla yeniden doldurur
+    assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Ocak", "Ocak"]
+    assert g.doldur_secenek_menusu().actions()[0].isChecked()
+    assert g.doldur_secenegi("seri") and [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Şubat", "Mart"]
+    pencere.yigin.geri_al() if hasattr(pencere, "yigin") else g.geri_al()
+    assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", None, None]                    # tek geri al adımı
+
+
+def test_yalniz_bicim_ve_bicimsiz_doldur(pencere):
+    from tabcel.model.stil import StilYama
+    from tabcel.model.komutlar import bicim_komutu
+    g = pencere.izgara()
+    g.sayfa.ata(1, 1, Hucre("Ocak"))
+    g.sayfa.ata(2, 1, Hucre("elle"))
+    g.yigin.calistir(bicim_komutu(g.sayfa, [A(1, 1, 1, 1)], StilYama(kalin=True, dolgu="#FFFF00")))
+    g.sec((1, 1))
+    surukle_mod(g, (3, 1), Qt.NoModifier)
+    assert g.doldur_secenegi("bicim")
+    assert deger(g, 2, 1) == "elle" and deger(g, 3, 1) is None                           # içerik değişmedi
+    assert g.sayfa.stil(2, 1).kalin and g.sayfa.stil(3, 1).dolgu == "#FFFF00"             # biçim yayıldı
+    assert g.doldur_secenegi("bicimsiz")
+    assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Şubat", "Mart"]
+    assert not g.sayfa.stil(2, 1).kalin and not g.sayfa.stil(3, 1).kalin                 # hedefin biçimi korunur (boş)
+
+
+def test_baska_islem_dugmeyi_gizler_ve_secenek_islemez(pencere):
+    g = pencere.izgara()
+    g.sayfa.ata(1, 1, Hucre("Ocak"))
+    g.sec((1, 1))
+    surukle_mod(g, (3, 1), Qt.NoModifier)
+    assert g._doldur_dugmesi.isVisible()
+    g.hucre_gir(8, 8, "x")                                      # başka bir işlem
+    QTest.keyClick(g, Qt.Key_Down)
+    assert g._son_doldurma is None and not g._doldur_dugmesi.isVisible()
+    assert g.doldur_secenegi("kopya") is False and deger(g, 3, 1) == "Mart"
+
+
+def test_cift_tik_doldur_secenek_dugmesi_gosterir(pencere):
+    g = pencere.izgara()
+    for r, v in enumerate([1.0, 2.0, 3.0], 1):
+        g.sayfa.ata(r, 1, Hucre(v))
+    g.sayfa.ata(1, 2, Hucre("x"))
+    g.sec((1, 2))
+    assert g.tutamac_cift_tik() and g._doldur_dugmesi is not None and g._doldur_dugmesi.isVisible()

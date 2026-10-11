@@ -14,7 +14,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import (
     QAbstractScrollArea, QApplication, QInputDialog, QLabel, QLineEdit, QListWidget, QMenu,
-    QPlainTextEdit, QToolTip,
+    QPlainTextEdit, QToolButton, QToolTip,
 )
 
 from ..model.adres import (
@@ -304,6 +304,8 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         self._oto: Dict[int, int] = {}                       # satır → otomatik yükseklik (piksel, yakınlaştırılmış)
         self._oto_ok = False                                 # otomatik yükseklikler güncel mi
         self._doldur: Optional[dict] = None                # doldurma tutamacı sürüklemesi: {kaynak, hedef}
+        self._son_doldurma: Optional[dict] = None          # son doldurma: {kaynak, hedef, komut, secili} (Otomatik Doldurma Seçenekleri)
+        self._doldur_dugmesi: Optional[QToolButton] = None
         self.veri_kaybi_onayi = None                       # () -> bool: birleştirme veri silecekse pencere sorar
         self.uzak_sayfa: Optional[Sayfa] = None            # formül başka sayfadan yazılıyorsa asıl sayfa
         self.dis_duzenleyici: Optional[QLineEdit] = None   # formül çubuğu (pencere verir): aynı işaretleme modu
@@ -1181,6 +1183,8 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
                 self._boya(p, kirp)
         finally:
             p.end()
+        if self._son_doldurma is not None:
+            self._doldur_dugmesi_konumla()                   # kaydırma/yeniden boyutlandırmada düğme köşede kalır
 
     def _boya(self, p: QPainter, kirp: QRect) -> None:
         p.setClipRect(kirp)           # bölgenin her parçası kendi dikdörtgeniyle sınırlı (üst üste çizim olmasın)
@@ -1693,6 +1697,8 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
 
     # --- fare ---
     def mousePressEvent(self, olay):
+        if self._son_doldurma is not None:
+            self._doldur_dugmesi_gizle()                     # düğmenin kendi tıklaması buraya gelmez (alt widget)
         if olay.button() != Qt.LeftButton:
             return
         if self._isaret_modu():
@@ -1801,7 +1807,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         if self._surukleme == "boyut":
             self._boyut_bitir()
         elif self._surukleme == "doldur":
-            self._doldur_bitir()
+            self._doldur_bitir(bool(olay.modifiers() & Qt.ControlModifier))
         elif self._surukleme in ("hucre", "satir", "sutun") and self._boyaci is not None:
             self._boyaci_uygula()
         self._surukleme = None
@@ -1880,6 +1886,8 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         k, m = olay.key(), olay.modifiers()
         ctrl = bool(m & Qt.ControlModifier)
         shift = bool(m & Qt.ShiftModifier)
+        if self._son_doldurma is not None and k not in (Qt.Key_Control, Qt.Key_Shift, Qt.Key_Alt, Qt.Key_Meta):
+            self._doldur_dugmesi_gizle()                     # doldurmadan sonra başka işlem: seçenek düğmesi kalkar
         if self._not_kutusu is not None and self._not_kutusu.isVisible():
             self._not_gizle()
         if self._secili_nesne is not None and self._nesne_klavye(olay):
@@ -1991,18 +1999,30 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         t = self._tutamac_dikdortgeni()
         return t is not None and t.adjusted(-2, -2, 2, 2).contains(p)
 
-    def doldur(self, kaynak: Aralik, hedef: Aralik, seri: bool = True) -> bool:
-        """Kaynak bölgeyi hedefe doldurur (seri ya da kopya); içerik + biçim tek geri al adımı."""
+    DOLDUR_SECENEKLERI = (("kopya", "Hücreleri Kopyala"), ("seri", "Seriyi Doldur"),
+                          ("bicim", "Yalnızca Biçimleri Doldur"), ("bicimsiz", "Biçimlendirmeden Doldur"))
+
+    def doldur(self, kaynak: Aralik, hedef: Aralik, seri: bool = True, mod: str = "tum", ters: bool = False,
+               secenek: bool = False, secili: Optional[str] = None) -> bool:
+        """Kaynak bölgeyi hedefe doldurur (seri ya da kopya); içerik + biçim tek geri al adımı.
+        `mod`: "tum" (içerik+biçim) | "bicim" (yalnız biçim) | "bicimsiz" (içerik, hedefin biçimi korunur). `ters`: Ctrl basılı
+        sürükleme (seri ⇄ kopya). `secenek`: bitince "Otomatik Doldurma Seçenekleri" düğmesi gösterilir."""
         if self.sayfa.birlesim_kesisen(hedef):
             self.uyari.emit("Birleşik hücrelerin bulunduğu alana doldurulamaz.")
             return False
         try:
-            hucreler, stiller = (doldurma.seri_plani if seri else doldurma.kopya_plani)(
-                self.sayfa, kaynak, hedef)
+            if mod == "bicim":
+                hucreler, stiller = doldurma.bicim_plani(self.sayfa, kaynak, hedef)
+            elif seri:
+                hucreler, stiller = doldurma.seri_plani(self.sayfa, kaynak, hedef, ters)
+            else:
+                hucreler, stiller = doldurma.kopya_plani(self.sayfa, kaynak, hedef)
+            if mod == "bicimsiz":
+                stiller = {}
         except ValueError:
             return False
-        self.yigin.calistir(Grup([HucrelerDegis(self.sayfa, hucreler),
-                                  BicimDegis(self.sayfa, hucreler=stiller)]))
+        komut = Grup([HucrelerDegis(self.sayfa, hucreler), BicimDegis(self.sayfa, hucreler=stiller)])
+        self.yigin.calistir(komut)
         birlesik = Aralik(min(kaynak.ilk_satir, hedef.ilk_satir), min(kaynak.ilk_sutun, hedef.ilk_sutun),
                           max(kaynak.son_satir, hedef.son_satir), max(kaynak.son_sutun, hedef.son_sutun))
         geri = hedef.ilk_satir < kaynak.ilk_satir or hedef.ilk_sutun < kaynak.ilk_sutun
@@ -2011,7 +2031,77 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         else:
             self.sec((birlesik.ilk_satir, birlesik.ilk_sutun), (birlesik.son_satir, birlesik.son_sutun))
         self._guncelle()
+        if secenek:
+            if secili is None:
+                tek_sayi = (kaynak.ilk_satir == kaynak.son_satir and kaynak.ilk_sutun == kaynak.son_sutun
+                            and isinstance(self.sayfa.deger(kaynak.ilk_satir, kaynak.ilk_sutun), float))
+                secili = ("seri" if tek_sayi else "kopya") if ters else "seri"
+            self._son_doldurma = {"kaynak": kaynak, "hedef": hedef, "komut": komut, "secili": secili,
+                                  "birlesik": birlesik}
+            self._doldur_dugmesi_goster()
+        else:
+            self._doldur_dugmesi_gizle()
         return True
+
+    # --- Otomatik Doldurma Seçenekleri (Excel): doldurmanın hemen sonrasında köşede küçük düğme ---
+    def _doldur_dugmesi_goster(self) -> None:
+        if self._doldur_dugmesi is None:
+            d = QToolButton(self.viewport())
+            d.setText("▾")
+            d.setToolTip("Otomatik Doldurma Seçenekleri")
+            d.setAutoRaise(False)
+            d.setFocusPolicy(Qt.NoFocus)
+            d.setFixedSize(20, 20)
+            d.setStyleSheet("QToolButton { background: #ffffff; border: 1px solid #8a8a8a; padding: 0; }"
+                            " QToolButton:hover { background: #e6f2ec; }")
+            d.clicked.connect(self._doldur_menusu_ac)
+            self._doldur_dugmesi = d
+        self._doldur_dugmesi_konumla()
+
+    def _doldur_dugmesi_konumla(self) -> None:
+        d, s = self._doldur_dugmesi, self._son_doldurma
+        if d is None or s is None:
+            return
+        r = self.hucre_dikdortgeni(s["birlesik"].son_satir, s["birlesik"].son_sutun)
+        if r is None or not self.viewport().rect().adjusted(0, 0, 20, 20).contains(r.bottomRight()):
+            d.hide()
+            return
+        d.move(r.right() - 6, r.bottom() + 2)
+        d.show()
+        d.raise_()
+
+    def _doldur_dugmesi_gizle(self) -> None:
+        self._son_doldurma = None
+        if self._doldur_dugmesi is not None:
+            self._doldur_dugmesi.hide()
+
+    def doldur_secenek_menusu(self) -> QMenu:
+        """Düğmenin menüsü (testte doğrudan kullanılır): her öğe `doldur_secenegi(anahtar)` çağırır."""
+        menu = QMenu(self)
+        s = self._son_doldurma or {}
+        for anahtar, ad in self.DOLDUR_SECENEKLERI:
+            a = menu.addAction(ad)
+            a.setCheckable(True)
+            a.setChecked(anahtar == s.get("secili"))
+            a.triggered.connect(lambda _=False, k=anahtar: self.doldur_secenegi(k))
+        return menu
+
+    def _doldur_menusu_ac(self) -> None:
+        d = self._doldur_dugmesi
+        if d is not None:
+            self.doldur_secenek_menusu().exec(d.mapToGlobal(QPoint(0, d.height())))
+
+    def doldur_secenegi(self, anahtar: str) -> bool:
+        """Son doldurmayı geri alıp seçilen seçenekle yeniden yapar (doldurmadan sonra başka işlem yapıldıysa hiçbir şey olmaz)."""
+        s = self._son_doldurma
+        if s is None or not self.yigin._geri or self.yigin._geri[-1] is not s["komut"]:
+            self._doldur_dugmesi_gizle()
+            return False
+        kaynak, hedef = s["kaynak"], s["hedef"]
+        self.yigin.geri_al()
+        mod, seri = {"kopya": ("tum", False), "seri": ("tum", True), "bicim": ("bicim", False),
+                     "bicimsiz": ("bicimsiz", True)}[anahtar]
+        return self.doldur(kaynak, hedef, seri=seri, mod=mod, secenek=True, secili=anahtar)
 
     def asagi_doldur(self) -> bool:
         """Ctrl+D: seçimin ilk satırı kalanına kopyalanır (tek satırda üstteki satır)."""
@@ -2051,7 +2141,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         son = doldurma.bitisik_son_satir(self.sayfa, sec)
         if son is None:
             return False
-        return self.doldur(sec, Aralik(sec.son_satir + 1, sec.ilk_sutun, son, sec.son_sutun))
+        return self.doldur(sec, Aralik(sec.son_satir + 1, sec.ilk_sutun, son, sec.son_sutun), secenek=True)
 
     def _doldur_surukle(self, p: QPoint) -> None:
         satir, sutun = self._noktadan(QPoint(max(p.x(), self._baslik_g()), max(p.y(), self._baslik_y())))
@@ -2072,11 +2162,11 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             d["hedef"] = hedef
             self.viewport().update()
 
-    def _doldur_bitir(self) -> None:
+    def _doldur_bitir(self, ters: bool = False) -> None:
         d, self._doldur = self._doldur, None
         self.viewport().update()
         if d and d["hedef"] is not None:
-            self.doldur(d["kaynak"], d["hedef"])
+            self.doldur(d["kaynak"], d["hedef"], ters=ters, secenek=True)
 
     def _birlesim_kaynagi(self, konum: Tuple[int, int], yon: Tuple[int, int]) -> Tuple[int, int]:
         """Birleşik hücreden `yon` yönünde adım atılırken başlangıç: birleşimin o yöndeki kenarı."""

@@ -147,18 +147,28 @@ def _sayili_metin_serisi(metinler: List[str], n: int, geri: bool) -> Optional[Li
 
 
 def _serit_degerleri(girdiler: List[Optional[Hucre]], kodlar: List[str], n: int,
-                     geri: bool) -> Optional[List[Optional[Hucre]]]:
+                     geri: bool, ters: bool = False) -> Optional[List[Optional[Hucre]]]:
     """Şerit seri olarak tanınırsa `n` yeni hücre (ileri yönde, kaynağın devamı), yoksa None (desen
-    kopyası). `girdiler` ilerleme yönünde sıralıdır (geri doldurmada ters çevrilmiş)."""
+    kopyası). `girdiler` ilerleme yönünde sıralıdır (geri doldurmada ters çevrilmiş).
+
+    `ters` (Ctrl basılı sürükleme, Excel): varsayılanı tersine çevirir — tek sayı seri olur (+1), diğer her şey (çok sayı,
+    tarih, ad/sayılı metin serisi) seri olmadan kopyalanır."""
     if any(h is None or h.formul is not None or h.deger is None for h in girdiler):
         return None
     deg = [h.deger for h in girdiler]
     if all(isinstance(v, float) for v in deg):
-        if all(_tarih_mi(k) for k in kodlar):
+        tarih = all(_tarih_mi(k) for k in kodlar)
+        if ters:
+            if len(deg) == 1 and not tarih:
+                return [Hucre(deg[0] + (-1 if geri else 1) * (j + 1)) for j in range(n)]
+            return None
+        if tarih:
             return [Hucre(v) for v in _tarih_serisi(deg, n, geri)]
         if len(deg) == 1:
             return None                                   # tek sayı: kopya (Excel, Ctrl'siz sürükleme)
         return [Hucre(v) for v in _sayisal(deg, n, geri)]
+    if ters:
+        return None
     if all(isinstance(v, str) for v in deg):
         s = _ad_serisi(deg, n, geri) or _sayili_metin_serisi(deg, n, geri)
         if s is not None:
@@ -177,7 +187,7 @@ def _kaydirilmis(h: Optional[Hucre], dr: int, dc: int) -> Optional[Hucre]:
 kaydirilmis = _kaydirilmis
 
 
-def _plan(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik, seri: bool):
+def _plan(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik, seri: bool, ters: bool = False):
     dikey, geri = _yon_ve_serit(kaynak, hedef)
     havuz = sayfa.havuz
     hucreler: Dict[Anahtar, Optional[Hucre]] = {}
@@ -198,7 +208,7 @@ def _plan(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik, seri: bool):
         if seri:
             sirali = list(reversed(range(m))) if geri else list(range(m))
             yeni = _serit_degerleri([girdiler[i] for i in sirali],
-                                    [havuz.stil(stil_kimlikleri[i]).sayi_bicimi for i in sirali], n, geri)
+                                    [havuz.stil(stil_kimlikleri[i]).sayi_bicimi for i in sirali], n, geri, ters)
         for j in range(n):
             p = -(j + 1) if geri else m + j                # kaynak şeridine göre konum
             src = p % m
@@ -213,10 +223,15 @@ def _plan(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik, seri: bool):
     return hucreler, stiller
 
 
-def seri_plani(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik):
+def seri_plani(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik, ters: bool = False):
     """Doldurma planı: ({anahtar: Hucre | None}, {anahtar: stil kimliği}). Hedef kaynağa bitişik değilse
-    ValueError."""
-    return _plan(sayfa, kaynak, hedef, True)
+    ValueError. `ters`: Ctrl basılı sürükleme (seri ⇄ kopya tersine çevrilir; bkz. `_serit_degerleri`)."""
+    return _plan(sayfa, kaynak, hedef, True, ters)
+
+
+def bicim_plani(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik):
+    """"Yalnızca Biçimleri Doldur": içerik değişmez ({}), kaynağın biçimi hedefe yinelenir."""
+    return {}, _plan(sayfa, kaynak, hedef, False)[1]
 
 
 def kopya_plani(sayfa: Sayfa, kaynak: Aralik, hedef: Aralik):
