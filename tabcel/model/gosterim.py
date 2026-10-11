@@ -11,6 +11,7 @@ from .deger import Hata
 HATA_TR = {
     "#DIV/0!": "#BÖL/0!", "#N/A": "#YOK", "#NAME?": "#AD?", "#NULL!": "#BOŞ!",
     "#NUM!": "#SAYI!", "#REF!": "#BAŞV!", "#VALUE!": "#DEĞER!",
+    "#SPILL!": "#TAŞMA!", "#CALC!": "#HESAPLA!",       # 2026-10-11 Excel 365 (COM) ile doğrulandı
 }
 
 

@@ -52,3 +52,4 @@ def bul(ad: str) -> Optional[Tanim]:
 from . import temel  # noqa: E402,F401
 from . import matematik, istatistik, mantik, bilgi, metin  # noqa: E402,F401
 from . import tarih, arama, finans, turkiye  # noqa: E402,F401
+from . import dizi  # noqa: E402,F401  (Faz 8e)

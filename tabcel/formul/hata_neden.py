@@ -63,6 +63,8 @@ _GENEL = {
     "#NUM!": "Geçersiz sayısal değer ya da sonuç (çok büyük sayı, negatif sayının kökü vb.).",
     "#REF!": "Geçersiz hücre başvurusu (silinmiş hücre ya da sayfa).",
     "#VALUE!": "Değerin türü uygun değil (ör. sayı yerine metin).",
+    "#SPILL!": "Dizi sonucunun yayılacağı hücrelerden biri dolu ya da birleşik (veya sayfa sınırı aşılıyor).",
+    "#CALC!": "Dizi sonucu boş (ör. FİLTRE koşula uyan satır bulamadı).",
 }
 
 
@@ -282,6 +284,29 @@ def acikla(sayfa, satir: int, sutun: int, sinir: int = ZINCIR_SINIRI, motor=None
         return None
 
 
+def _tasma_nedeni(sayfa, satir: int, sutun: int, motor, ara) -> str:
+    kutu = motor._tasma_alan.get((sayfa.kimlik, satir, sutun)) if motor is not None else None
+    if kutu is None:
+        return _GENEL["#SPILL!"]
+    r1, c1, r2, c2 = kutu
+    if r2 > 1_048_576 or c2 > 16_384:
+        return "Dizi sonucu sayfa sınırını aşıyor."
+    sayac = 0
+    for r in range(r1, r2 + 1):
+        for c in range(c1, c2 + 1):
+            if (r, c) == (satir, sutun):
+                continue
+            sayac += 1
+            if sayac > 20_000:
+                return _GENEL["#SPILL!"]
+            h = sayfa.hucre(r, c)
+            if h is not None and getattr(h, "sahip", None) != (satir, sutun):
+                return f"Dizi sonucu yayılamıyor: {ara.adres(sayfa, r, c)} hücresi dolu."
+            if (r, c) in sayfa._birlesim_idx:
+                return f"Dizi sonucu yayılamıyor: {ara.adres(sayfa, r, c)} birleşik bir hücre."
+    return _GENEL["#SPILL!"]
+
+
 def _deger(sayfa, r, c):
     h = sayfa.hucre(r, c)
     if h is None:
@@ -295,6 +320,8 @@ def _acikla(sayfa, satir, sutun, sinir, motor):
         return None
     kod = v.kod
     ara = _Arayici(sayfa)
+    if kod == "#SPILL!" and h is not None and h.formul is not None:          # taşma engeli: yayılacak alandaki ilk dolu hücre
+        return [Halka(sayfa, satir, sutun, kod, _tasma_nedeni(sayfa, satir, sutun, motor, ara))]
     zincir: List[Halka] = []
     gorulen = set()
     s, r, c = sayfa, satir, sutun

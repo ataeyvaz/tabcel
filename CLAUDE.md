@@ -83,4 +83,4 @@ t8/t9/t10_*/t4_arkaplan/secim_tasarim.md   T-işleri tasarım notları (hata aç
 - Tabcel'e özel işlevler (YAZIYLA, TCKİMLİKDOĞRULA) Excel'de `#AD?` verir
 - Otomatik kayıt arka planda (anlık görüntü `model/anlik.py`; yazım sırasında arayüz GIL payı yüzünden en çok ≈ 0,2 sn takılabilir)
 - Hata açıklamaları (`formul/hata_neden.py`) en çok 2.000 halkalı zinciri izler
-- Taşma (spill) yok (Faz 8): çok hücreli formül sonucu tek değere indirgenir
+- Taşma (spill): yalnız hesaplanmış `Dizi` sonuçları taşar (`TasmaHucre`, motor yönetir); düz aralık başvurusu (`=A1:A3`) taşmaz, `A1#`/`@` ve LAMBDA ailesi yok; xlsx'e eski tür dizi formülü olarak yazılır

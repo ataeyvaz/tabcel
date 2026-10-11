@@ -26,8 +26,10 @@ BOS = Hata("#NULL!")
 SAYI = Hata("#NUM!")
 BASV = Hata("#REF!")
 DEGER_HATASI = Hata("#VALUE!")
+TASMA = Hata("#SPILL!")          # dinamik dizi hedefe sığmıyor / hedef dolu (Excel: #TAŞMA!)
+HESAPLA = Hata("#CALC!")         # boş dizi sonucu (Excel: #HESAPLA!)
 
-HATALAR = {h.kod: h for h in (BOL0, YOK, AD, BOS, SAYI, BASV, DEGER_HATASI)}
+HATALAR = {h.kod: h for h in (BOL0, YOK, AD, BOS, SAYI, BASV, DEGER_HATASI, TASMA, HESAPLA)}
 
 
 def hata_bul(kod: str) -> Optional[Hata]:

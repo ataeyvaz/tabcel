@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Dinamik diziler:** formül sonuçları komşu hücrelere taşar; `SIRALA`, `FİLTRE`, `BENZERSİZ`, `SIRALI`, `AL`, `BIRAK`, `DÜŞEYYIĞ`, `YATAYYIĞ`, `SÜTUNA`, `SATIRA`, `SÜTUNSEÇ`, `SATIRSEÇ`, `GENİŞLET`, `RASGDİZİ`, `DEVRİK_DÖNÜŞÜM` ve `LET` işlevleri eklendi. Bkz. [Formüller](konu:formuller).
 - **Özet Tablo:** Ekle sekmesinden satır/sütun/değer alanlarıyla özet tablo oluşturulur (anlık görüntü). Bkz. [Sırala, Filtre, Bul ve Değiştir](konu:siralafiltre).
 - **.ods (OpenDocument Hesap Tablosu):** açılır ve kaydedilir; Excel ve LibreOffice ile uyumludur. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 - **Parolalı çalışma kitabı:** Dosya → *Parola Belirle…*; parolalı .xlsx açılırken parola sorulur. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
@@ -128,6 +129,15 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **YAZIYLA(sayı):** sayıyı Türkçe yazıya çevirir. `=YAZIYLA(125)` → *yüz yirmi beş*, `=YAZIYLA(-3)` → *eksi üç*, `=YAZIYLA(2,05)` → *iki virgül sıfır beş*. Mutlak değeri katrilyonun (10^15) altında olmalı, yoksa `#SAYI!` verir.
 - **TCKİMLİKDOĞRULA(no):** 11 haneli T.C. kimlik numarası sağlama kurallarına uyuyorsa DOĞRU, uymuyorsa YANLIŞ verir. Sayı ya da metin kabul eder (baştaki sıfır kaybolmasın diye metin yazabilirsiniz). Kişinin gerçekten var olup olmadığını denetlemez.
 - Bu iki işlev **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
+
+## Dinamik diziler (taşma)
+
+Çok hücreli bir sonuç üreten formül, sonucunu **komşu hücrelere taşırır**: `=SIRALA(A1:B10;2;-1)` yalnız D1'e yazılır, sonuç D1:E10'u doldurur. Taşan hücreler formülün parçasıdır; onları ayrıca düzenlemezsiniz. Kaynak değişince taşma büyür/küçülür; `TOPLA(D1:D20)` gibi formüller taşan hücreleri okur.
+
+- **Yeni işlevler:** `SIRALA` (SORT), `SIRALAÖLÇÜT` (SORTBY), `FİLTRE` (FILTER), `BENZERSİZ` (UNIQUE), `SIRALI` (SEQUENCE), `RASGDİZİ` (RANDARRAY), `AL` (TAKE), `BIRAK` (DROP), `DÜŞEYYIĞ` (VSTACK), `YATAYYIĞ` (HSTACK), `SÜTUNA` (TOCOL), `SATIRA` (TOROW), `SÜTUNSEÇ` (CHOOSECOLS), `SATIRSEÇ` (CHOOSEROWS), `GENİŞLET` (EXPAND), `DEVRİK_DÖNÜŞÜM` (TRANSPOSE) ve `LET` (adlı ara değerler: `=LET(x;TOPLA(B1:B9);x*2)`).
+- **#TAŞMA!:** taşacak alanda dolu ya da birleşik bir hücre varsa (ya da alan sayfa sınırını aşarsa) formül `#TAŞMA!` verir; hücrenin üstüne gelince hangi hücrenin engellediği yazılır. Engeli kaldırınca formül kendiliğinden taşar. Taşan bir hücrenin üstüne yazarsanız da formül `#TAŞMA!` olur (geri alınca düzelir).
+- **#HESAPLA!:** sonuç boş bir dizi (ör. `FİLTRE` koşula uyan satır bulamadı; üçüncü bağımsız değişkenle yerine bir değer verebilirsiniz).
+- **Excel'e kaydederken** taşan formül eski tür dizi formülü (`{=…}`) olarak yazılır: Excel'de açılır ve değerler doğrudur, ancak alanı sabittir. `.ods`/`.csv`'ye değer olarak yazılır.
 
 ## Adlandırılmış aralıklar
 
@@ -325,7 +335,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 {APP_NAME} Excel davranışını esas alır; aşağıdakiler **bilerek** farklıdır ya da henüz yoktur.
 
 - **Hata açıklamaları:** Excel hatalı hücrede yeşil üçgen ve "Hatayı İzle" okları gösterir; {APP_NAME} açıklamayı ipucunda ve durum çubuğunda yazar (ok çizimi yok). Açıklama cümleleri {APP_NAME}'e özgüdür, Excel'in iletilerinin çevirisi değildir.
-- **Dizi taşması yok:** çok hücreli bir formül sonucu tek değere indirilir (Excel 365 komşu hücrelere taşırır). Dinamik dizi fonksiyonları sonraki sürümdedir.
+- **Taşma yalnız hesaplanmış dizilerde:** `=SIRALA(…)`, `=A1:A3*2` gibi hesaplanmış dizi sonuçları taşar; düz aralık başvurusu (`=A1:A3`) taşmaz, tek değer (örtük kesişim) verir (Excel 365 bu durumda da taşırır). Taşan formül Excel'e eski tür dizi formülü olarak kaydedilir (alan sabit). `LAMBDA`, `MAP`, `REDUCE`, `BYROW`, `METİNBÖL`, `SATIRSAR` gibi diğer dinamik dizi işlevleri henüz yoktur; `@` işleci ve `A1#` taşma başvurusu da yoktur.
 - **Pivot tablo, Tablo nesnesi, makro (VBA), Solver, .xls ve .ods** henüz desteklenmez.
 - **Excel'de eklenen eğilim çizgisi, ikincil eksen vb. korunmaz** (açılışta hangi grafikte olduğu bildirilir, kaydederken sorulur).
 - **Grafik başka çalışma kitabına yapıştırılamaz** (Excel yapıştırıp özgün kitaba bağlı kalır); resim yapıştırılır.

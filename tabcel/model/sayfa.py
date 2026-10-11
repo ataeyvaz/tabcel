@@ -44,13 +44,21 @@ class Hucre:
         a, b = self.deger, diger.deger
         # `_anahtar()` ile aynı anlam, demet kurmadan (sıralama/toplu yazımda yüz binlerce çağrı)
         return (self.formul == diger.formul and a.__class__ is b.__class__
-                and (a is b or a == b))
+                and (a is b or a == b) and self.__class__ is diger.__class__)
 
     def __hash__(self):
         return hash(self._anahtar())
 
     def bos_mu(self) -> bool:
         return self.deger is None and self.formul is None
+
+
+@dataclass(frozen=True, eq=False)
+class TasmaHucre(Hucre):
+    """Dinamik dizi taşmasından gelen hücre (Faz 8e): sabit değer gibi okunur (çizim, TOPLA, bul, kopyalama değişmeden çalışır)
+    ama **girdi değildir**: formül motoru yönetir (`Sayfa.tasma_yaz`), .xlsx'e yazılmaz. `sahip`: taşmayı üreten formül
+    hücresi (satır, sütun). Düz `Hucre` ile eşit sayılmaz (kullanıcı aynı değeri yazınca da taşma engellenir)."""
+    sahip: Optional[Tuple[int, int]] = None
 
 
 class Sayfa:
@@ -73,6 +81,7 @@ class Sayfa:
         self.sekme_rengi: Optional[str] = None     # '#rrggbb' ya da None
         self._kul: Optional[Tuple[int, int, int, int]] = None   # kullanılan aralık önbelleği
         self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
+        self.tasma: Dict[Anahtar, Aralik] = {}     # taşan formül hücresi → yazılı taşma alanı (kendisi dahil, ≥ 2 hücre; Faz 8e)
         self.dondur: Optional[Tuple[int, int]] = None   # kaydırılabilir bölgenin sol üst hücresi; None = dondurma yok
         self.kilavuz: bool = True                  # kılavuz çizgileri görünür mü
         self.sayfa_sonlari: bool = False           # ekranda sayfa sınırı çizgileri (T9; dosyaya yazılmaz)
@@ -134,6 +143,84 @@ class Sayfa:
     def sonuc(self, satir: int, sutun: int) -> Deger:
         return self._sonuc.get((satir, sutun))
 
+    # --- dinamik dizi taşması (motor yönetir; geri al yığınına girmez, olay yaymaz — çağıran `sonuc` olayı yayar) ---
+    def tasma_engeli(self, anahtar: Anahtar, satir_sayisi: int, sutun_sayisi: int) -> bool:
+        """`anahtar` hücresinden başlayan `satir_sayisi`×`sutun_sayisi` alan taşmaya uygun değil mi (sayfa dışı, kendisinin olmayan
+        dolu hücre, birleşik hücre)?"""
+        r0, c0 = anahtar
+        if r0 + satir_sayisi - 1 > MAX_ROW or c0 + sutun_sayisi - 1 > MAX_COL:
+            return True
+        hucreler = self._hucreler
+        for r in range(r0, r0 + satir_sayisi):
+            for c in range(c0, c0 + sutun_sayisi):
+                if (r, c) == anahtar:
+                    continue
+                h = hucreler.get((r, c))
+                if h is not None and not (type(h) is TasmaHucre and h.sahip == anahtar):
+                    return True
+                if (r, c) in self._birlesim_idx:
+                    return True
+        return False
+
+    def tasma_kaldir(self, anahtar: Anahtar) -> Dict[Anahtar, Deger]:
+        """`anahtar`ın taşma hücrelerini siler; {kaldırılan hücre: None} döner (kendisi hariç)."""
+        alan = self.tasma.pop(anahtar, None)
+        kaldirilan: Dict[Anahtar, Deger] = {}
+        if alan is None:
+            return kaldirilan
+        for r in range(alan.ilk_satir, alan.son_satir + 1):
+            for c in range(alan.ilk_sutun, alan.son_sutun + 1):
+                h = self._hucreler.get((r, c))
+                if type(h) is TasmaHucre and h.sahip == anahtar:
+                    del self._hucreler[(r, c)]
+                    kaldirilan[(r, c)] = None
+        if kaldirilan:
+            self._kul = None
+        return kaldirilan
+
+    def tasma_yaz(self, anahtar: Anahtar, satirlar: List[list]) -> Dict[Anahtar, Deger]:
+        """`satirlar` (skaler değerler) dizisini `anahtar`dan başlayarak yazar (önce `tasma_engeli` denetlenmeli); önceki taşma
+        alanının dışında kalanlar silinir. Dönen: değişen hücreler {anahtar: yeni değer | None(silindi)} (kendisi hariç)."""
+        r0, c0 = anahtar
+        R, C = len(satirlar), len(satirlar[0])
+        eski = self.tasma.get(anahtar)
+        degisen: Dict[Anahtar, Deger] = {}
+        hucreler = self._hucreler
+        yeni_alan = Aralik(r0, c0, r0 + R - 1, c0 + C - 1)
+        if eski is not None:
+            for r in range(eski.ilk_satir, eski.son_satir + 1):
+                for c in range(eski.ilk_sutun, eski.son_sutun + 1):
+                    if not (yeni_alan.ilk_satir <= r <= yeni_alan.son_satir and yeni_alan.ilk_sutun <= c <= yeni_alan.son_sutun):
+                        h = hucreler.get((r, c))
+                        if type(h) is TasmaHucre and h.sahip == anahtar:
+                            del hucreler[(r, c)]
+                            degisen[(r, c)] = None
+        for i, satir in enumerate(satirlar):
+            for j, v in enumerate(satir):
+                k = (r0 + i, c0 + j)
+                if k == anahtar:
+                    continue
+                if v is None:
+                    v = 0.0                                  # Excel: boş öğe taşarken 0 görünür
+                h = hucreler.get(k)
+                if type(h) is TasmaHucre and h.sahip == anahtar and h.deger.__class__ is v.__class__ and h.deger == v:
+                    continue
+                hucreler[k] = TasmaHucre(deger=v, sahip=anahtar)
+                degisen[k] = v
+        self.tasma[anahtar] = yeni_alan
+        if degisen:
+            self._kul = None
+        return degisen
+
+    def tasma_hepsini_kaldir(self) -> None:
+        """Tüm taşma hücrelerini sessizce siler (motor baştan hesaplarken)."""
+        if not self.tasma and not any(type(h) is TasmaHucre for h in self._hucreler.values()):
+            return
+        for k in [k for k, h in self._hucreler.items() if type(h) is TasmaHucre]:
+            del self._hucreler[k]
+        self.tasma.clear()
+        self._kul = None
+
     def _yaz(self, satir: int, sutun: int, hucre: Optional[Hucre]):
         """Olay yaymadan yazar. Döner: (eski, yeni_normallestirilmis, degisti)."""
         if not (1 <= satir <= MAX_ROW and 1 <= sutun <= MAX_COL):
@@ -158,11 +245,15 @@ class Sayfa:
         return eski, yeni_h, degisti
 
     def ata(self, satir: int, sutun: int, hucre: Optional[Hucre]) -> Optional[Hucre]:
-        """Hücreyi yazar (None/boş = siler); eski hücreyi döndürür. Değiştiyse bir `hucre` olayı yayar."""
+        """Hücreyi yazar (None/boş = siler); eski hücreyi döndürür. Değiştiyse bir `hucre` olayı yayar.
+        Taşma hücreleri (`TasmaHucre`) girdi değildir: dışarıdan verilen sade sabit değere çevrilir, eski olarak dönen
+        taşma hücresi "boş" sayılır (geri al onu geri yüklemez; motor taşmayı kendisi yeniden üretir)."""
+        if type(hucre) is TasmaHucre:
+            hucre = Hucre(hucre.deger)
         eski, yeni_h, degisti = self._yaz(satir, sutun, hucre)
         if degisti:
             self._bildir("hucre", degisiklikler={(satir, sutun): (eski, yeni_h)})
-        return eski
+        return None if type(eski) is TasmaHucre else eski
 
     def toplu_yaz(self, yeni: Dict[Anahtar, Optional[Hucre]]) -> Dict[Anahtar, Optional[Hucre]]:
         """Birçok hücreyi yazar ve TEK `hucre` olayı yayar (100.000 hücrede olay maliyeti sabit kalır).
@@ -175,7 +266,9 @@ class Sayfa:
             if not (1 <= satir <= MAX_ROW and 1 <= sutun <= MAX_COL):
                 raise AdresHatasi(f"Hücre aralık dışı: ({satir}, {sutun})")
             eski = hucreler.get(anahtar)
-            eskiler[anahtar] = eski
+            eskiler[anahtar] = None if type(eski) is TasmaHucre else eski        # taşma hücresi girdi değil (bkz. `ata`)
+            if type(hucre) is TasmaHucre:
+                hucre = Hucre(hucre.deger)
             yeni_h = None if hucre is None or (hucre.deger is None and hucre.formul is None) else hucre
             if eski is yeni_h or (eski is not None and yeni_h is not None and eski == yeni_h):
                 continue

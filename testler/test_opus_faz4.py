@@ -200,16 +200,23 @@ def test_tablo_koprul_gruplama_ustbilgi_koruma_uyarilir(tmp_path):
     assert rapor.veri_kaybi
 
 
-def test_dizi_formulu_uyarilir(tmp_path):
+def test_dizi_formulu_tasan_formul_olarak_okunur(tmp_path):
+    """Faz 8e (kural 12 bildirimi): dizi formülleri artık uyarı vermez — taşan (dinamik dizi) formül olarak yüklenir;
+    eski uyarı ("dizi formülü … normal formüle dönüştürülür") kalktı."""
     from openpyxl.worksheet.formula import ArrayFormula
+    from tabcel.formul.motor import Hesaplayici
     wb = Workbook()
     ws = wb.active
     ws["A1"], ws["A2"] = 1, 2
     ws["B1"] = ArrayFormula("B1:B2", "=A1:A2*2")
+    ws["B2"] = 99                                       # dosyadaki önbellek değeri: yeniden üretilir, engel sayılmaz
     yol = str(tmp_path / "d.xlsx")
     wb.save(yol)
-    _, rapor = xlsx_io.ac(yol)
-    assert any("dizi formülü" in u for u in rapor.uyarilar)
+    k, rapor = xlsx_io.ac(yol)
+    Hesaplayici(k)
+    assert not any("dizi formülü" in u for u in rapor.uyarilar)
+    s = k.sayfalar[0]
+    assert [s.deger(1, 2), s.deger(2, 2)] == [2.0, 4.0] and s.hucre(1, 2).formul == "=A1:A2*2"
 
 
 def test_gizli_sayfa_kayip_sayilir(tmp_path):

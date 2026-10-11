@@ -15,7 +15,7 @@ from ..model import deger as D
 from ..model.olay import Olay
 from . import fonksiyonlar
 from .agac import Ad, Cagri, Dugum, Ref, agac_kaydir, formul_ayristir
-from .degerler import BEKLIYOR, ONEK_ONBELLEGI, Bekle
+from .degerler import BEKLIYOR, ONEK_ONBELLEGI, Bekle, Dizi
 from .degerlendir import AD_DERINLIK, Baglam, ad_agaci, hucre_sonucu
 from .sozcuk import FormulHatasi
 
@@ -125,6 +125,8 @@ class Hesaplayici:
         self._gizlilik: Set[Anahtar] = set()          # ALTTOPLAM gibi satır gizliliğine bağlı hücreler
         self._sayfalar: Dict[int, object] = {}
         self._yaziyor = False
+        self._tasma_alan: Dict[Anahtar, Kutu] = {}       # taşmayı deneyen formül hücresi → istenen alan (engelli olsa da)
+        self._tasma_derinlik = 0
         self.tumunu_hesapla()
         self._birak = kitap.dinle(self._olay)
 
@@ -224,6 +226,15 @@ class Hesaplayici:
             for (r, c) in olay["degisiklikler"]:
                 self._hucreyi_yenile(sayfa, r, c)
                 degisen.append((sayfa.kimlik, r, c))
+                if (r, c) in sayfa.tasma:                 # taşan formül silindi ya da sabit değerle değişti
+                    h = sayfa.hucre(r, c)
+                    if h is None or h.formul is None:
+                        kal = sayfa.tasma_kaldir((r, c))
+                        self._tasma_alan.pop((sayfa.kimlik, r, c), None)
+                        if kal:
+                            sayfa._bildir("sonuc", degisiklikler=dict(kal))
+                            degisen.extend((sayfa.kimlik,) + k for k in kal)
+            degisen.extend(self._tasma_etkilenenler(sayfa.kimlik, olay["degisiklikler"]))
             self._yeniden_hesapla(degisen)
         elif t == "yapi":
             self.tumunu_hesapla()
@@ -240,8 +251,27 @@ class Hesaplayici:
 
     # ------------------------------------------------------------------ hesaplama
     def tumunu_hesapla(self) -> None:
+        self._tasma_alan.clear()
+        for s in self.kitap.sayfalar:
+            s.tasma_hepsini_kaldir()                      # taşma hücreleri türetilmiştir: baştan üretilir
         self._grafigi_kur()
         self._hesapla(set(self._kayit))
+
+    def _tasma_etkilenenler(self, kimlik: int, degisen_hucreler) -> List[Anahtar]:
+        """Değişen hücrelerden biri bir taşma alanına (istenen alan; engelli olanlar dahil) düşüyorsa o taşmayı üreten formül
+        hücresi yeniden hesaplanmalı (alan doldu → #TAŞMA!, boşaldı → yeniden taşar)."""
+        sonuc: List[Anahtar] = []
+        aday = [(a, k) for a, k in self._tasma_alan.items() if a[0] == kimlik]
+        if not aday:
+            return sonuc
+        if len(aday) * len(degisen_hucreler) > 5_000_000:             # dev yapıştırma: hepsini yeniden hesapla
+            return [a for a, _ in aday]
+        for a, (r1, c1, r2, c2) in aday:
+            for (r, c) in degisen_hucreler:
+                if r1 <= r <= r2 and c1 <= c <= c2 and (r, c) != (a[1], a[2]):
+                    sonuc.append(a)
+                    break
+        return sonuc
 
     def _bagimlilar(self, oncu: Set[Anahtar], kirli: Set[Anahtar]) -> Set[Anahtar]:
         """`oncu` kümesindeki hücrelere (doğrudan) bağlı formül hücreleri; `kirli`dekiler atlanır."""
@@ -309,7 +339,14 @@ class Hesaplayici:
 
         ONEK_ONBELLEGI["etkin"] = {}           # tur boyunca geçerli önek toplamları
 
+        tasan: Dict[Anahtar, Dizi] = {}
+        tasma_degisen: Set[Anahtar] = set()
+
         def koy(a, v):
+            if type(v) is Dizi:                      # çok hücreli dizi: sol üst öğe hücrede, tamamı taşar (aşağıda)
+                tasan[a] = v
+                v = v.satirlar[0][0]
+                v = 0.0 if v is None else v
             sayfalar[a[0]]._sonuc[(a[1], a[2])] = v
             hesaplanan[a] = v
             bekleyen.discard(a)
@@ -347,14 +384,55 @@ class Hesaplayici:
             ONEK_ONBELLEGI.pop("etkin", None)
             for k, r, c in bekleyen:                          # yarıda kaldıysa işaret kalmasın
                 sayfalar[k]._sonuc.pop((r, c), None)
+            tasma_degisen = self._tasmalari_isle(hesaplanan, tasan)
             self._sonuclari_yaz(hesaplanan)
+        if tasma_degisen and self._tasma_derinlik < 8:        # taşan/boşalan hücreleri okuyan formüller yeniden hesaplanır
+            self._tasma_derinlik += 1
+            try:
+                self._yeniden_hesapla(list(tasma_degisen))
+            finally:
+                self._tasma_derinlik -= 1
+
+    def _tasmalari_isle(self, hesaplanan: Dict[Anahtar, object], tasan: Dict[Anahtar, Dizi]) -> Set[Anahtar]:
+        """Hesaplanan formül hücrelerinin taşmasını sayfaya yazar/kaldırır; engel varsa hücre `#TAŞMA!` olur.
+        Dönen: değeri değişen taşma hücreleri (bağımlıları yeniden hesaplanmalı)."""
+        degisen: Set[Anahtar] = set()
+        olaylar: Dict[int, Dict[Tuple[int, int], object]] = defaultdict(dict)
+        for a in list(hesaplanan):
+            sayfa = self._sayfalar.get(a[0])
+            if sayfa is None:
+                continue
+            ank = (a[1], a[2])
+            dizi = tasan.get(a)
+            if dizi is None:
+                self._tasma_alan.pop(a, None)
+                kal = sayfa.tasma_kaldir(ank) if ank in sayfa.tasma else {}
+                degisen.update((a[0],) + k for k in kal)
+                olaylar[a[0]].update(kal)
+                continue
+            R, C = dizi.satir_sayisi, dizi.sutun_sayisi
+            self._tasma_alan[a] = (ank[0], ank[1], ank[0] + R - 1, ank[1] + C - 1)
+            if sayfa.tasma_engeli(ank, R, C):
+                kal = sayfa.tasma_kaldir(ank)
+                degisen.update((a[0],) + k for k in kal)
+                olaylar[a[0]].update(kal)
+                hesaplanan[a] = D.TASMA
+                sayfa._sonuc[ank] = D.TASMA
+            else:
+                yaz = sayfa.tasma_yaz(ank, dizi.satirlar)
+                degisen.update((a[0],) + k for k in yaz)
+                olaylar[a[0]].update(yaz)
+        for k, ol in olaylar.items():
+            if ol:
+                self._sayfalar[k]._bildir("sonuc", degisiklikler=dict(ol))
+        return degisen
 
     def _degerle(self, a: Anahtar):
         kayit = self._kayit[a]
         if kayit.agac is None:
             return D.AD
         try:
-            return hucre_sonucu(kayit.agac, Baglam(self._sayfalar[a[0]], a[1], a[2], self.kitap))
+            return hucre_sonucu(kayit.agac, Baglam(self._sayfalar[a[0]], a[1], a[2], self.kitap), True)
         except RecursionError:
             return D.SAYI                    # çok derin iç içe formül
         except Exception:                    # fonksiyon hatası programı düşürmesin

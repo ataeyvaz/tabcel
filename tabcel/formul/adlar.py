@@ -23,6 +23,12 @@ EN_TR: Dict[str, str] = {
     "TODAY": "BUGÜN", "NOW": "ŞİMDİ", "DATE": "TARİH", "TIME": "ZAMAN", "YEAR": "YIL", "MONTH": "AY", "DAY": "GÜN", "HOUR": "SAAT", "MINUTE": "DAKİKA", "SECOND": "SANİYE", "WEEKDAY": "HAFTANINGÜNÜ", "WEEKNUM": "HAFTASAY", "EDATE": "SERİTARİH", "EOMONTH": "SERİAY", "DATEDIF": "ETARİHLİ", "DAYS": "GÜNSAY", "NETWORKDAYS": "TAMİŞGÜNÜ", "WORKDAY": "İŞGÜNÜ",
     "NA": "YOKSAY", "ISNUMBER": "ESAYIYSA", "ISTEXT": "EMETİNSE", "ISBLANK": "EBOŞSA", "ISERROR": "EHATALIYSA", "ISNA": "EYOKSA", "ISLOGICAL": "EMANTIKSALSA",
     "PMT": "DEVRESEL_ÖDEME", "FV": "GD", "PV": "BD", "RATE": "FAİZ_ORANI", "NPV": "NBD", "IRR": "İÇ_VERİM_ORANI",
+    # 2026-10-11 (Faz 8e): dinamik dizi işlevleri — Microsoft sayfaları yerine gerçek Excel 365'ten (COM `Formula2Local`,
+    # Türkçe bölgesel ayar) doğrulandı; harf harf kod noktasıyla okundu.
+    "FILTER": "FİLTRE", "SORT": "SIRALA", "SORTBY": "SIRALAÖLÇÜT", "UNIQUE": "BENZERSİZ", "SEQUENCE": "SIRALI",
+    "RANDARRAY": "RASGDİZİ", "TAKE": "AL", "DROP": "BIRAK", "VSTACK": "DÜŞEYYIĞ", "HSTACK": "YATAYYIĞ",
+    "TOCOL": "SÜTUNA", "TOROW": "SATIRA", "CHOOSECOLS": "SÜTUNSEÇ", "CHOOSEROWS": "SATIRSEÇ", "EXPAND": "GENİŞLET",
+    "TRANSPOSE": "DEVRİK_DÖNÜŞÜM", "LET": "LET",
 }
 
 # Tabcel'e özel (Microsoft Excel'de YOK; adlar Microsoft listesinden doğrulanmadı — surec.md §8b). `.xlsx`e

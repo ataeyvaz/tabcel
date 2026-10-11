@@ -402,7 +402,7 @@ def test_k4_hata_degeri():
     from tabcel.model.deger import BASV, BOL0, HATALAR, Hata, hata_bul
     assert BOL0 == Hata("#DIV/0!") and BOL0 != BASV and hash(BOL0) != hash(BASV)
     assert hata_bul("#ref!") is BASV and hata_bul("yok") is None
-    assert len(HATALAR) == 7
+    assert len(HATALAR) == 9                          # Faz 8e: + #TAŞMA! (#SPILL!) ve #HESAPLA! (#CALC!)
     s = Sayfa("S")
     s.ata(1, 1, Hucre(None, "=1/0"))
     s.sonuc_ata(1, 1, BOL0)

@@ -4,6 +4,7 @@ Dizi semantiği Excel 365 gibidir (işleçler aralık/dizi üzerinde öğe öğe
 olmadığından hücre sonucu `hucre_sonucu` ile tek değere indirgenir (faz2_tasarim.md §3).
 """
 import math
+from typing import Optional
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -32,6 +33,7 @@ class Baglam:
     sutun: int
     kitap: object = None
     ad_yigini: tuple = ()          # değerlendirilmekte olan tanımlı adlar (özyineleme koruması)
+    yerel: Optional[dict] = None   # LET değişkenleri: {ADI: değer} (Faz 8e); tanımlı adların içine geçmez
 
     def sayfa_bul(self, ref_sayfa):
         if ref_sayfa is None:
@@ -101,6 +103,10 @@ def ad_coz(ad: str, b: "Baglam"):
 
 
 def _ad_degerle(d: Ad, b: "Baglam"):
+    if b.yerel:
+        v = b.yerel.get(d.ad.upper())
+        if v is not None:
+            return v[0]
     agac, tanim = ad_coz(d.ad, b)
     if agac is None:
         return D.AD
@@ -110,16 +116,30 @@ def _ad_degerle(d: Ad, b: "Baglam"):
     return degerlendir(agac, Baglam(b.sayfa, b.satir, b.sutun, b.kitap, b.ad_yigini + (anahtar,)))
 
 
-def hucre_sonucu(d: Dugum, b: Baglam):
+def _cok_hucreli(v) -> bool:
+    return type(v) is Dizi and v.satir_sayisi * v.sutun_sayisi > 1
+
+
+def hucre_sonucu(d: Dugum, b: Baglam, dizi_koru: bool = False):
     """Hücreye yazılacak tek değer. Boş hücreye başvuru 0 olur (Excel: `=A1`, A1 boşsa 0).
-    Kök işlem toplama/çıkarmaysa Excel'in 'yakın sıfır' düzeltmesi uygulanır."""
+    Kök işlem toplama/çıkarmaysa Excel'in 'yakın sıfır' düzeltmesi uygulanır.
+
+    `dizi_koru=True` (motor; Faz 8e): sonuç ÇOK HÜCRELİ bir `Dizi` ise (hesaplanmış dizi: SIRALA, A1:A3*2 …) skalere
+    indirilmeden döner — hücreye taşar. Düz aralık başvurusu (`=A1:A3`) taşmaz, örtük kesişimle tek değer verir
+    (Excel 365'ten bilinçli fark)."""
     if type(d) is Ikili and d.islec in ("+", "-"):
         va, vb = degerlendir(d.a, b), degerlendir(d.b, b)
-        v = skalere(_ogeler(_IKILI[d.islec], va, vb), b.satir, b.sutun)
+        v = _ogeler(_IKILI[d.islec], va, vb)
+        if dizi_koru and _cok_hucreli(v):
+            return v
+        v = skalere(v, b.satir, b.sutun)
         if isinstance(v, float) and v != 0:
             v = _yakin_sifir(v, skalere(va, b.satir, b.sutun), skalere(vb, b.satir, b.sutun))
     else:
-        v = skalere(degerlendir(d, b), b.satir, b.sutun)
+        v = degerlendir(d, b)
+        if dizi_koru and _cok_hucreli(v):
+            return v
+        v = skalere(v, b.satir, b.sutun)
     if v is None or v is BOS_ARG:
         return 0.0
     return v
@@ -272,7 +292,24 @@ def _kesisim(a, b):
 
 
 # --- fonksiyon çağrısı ---
+def _let(d: Cagri, b: Baglam):
+    """LET(ad1, değer1, [ad2, değer2, …], hesaplama): adlar sırayla bağlanır, sonraki değerler öncekileri görür."""
+    n = len(d.argumanlar)
+    if n < 3 or n % 2 == 0:
+        return D.DEGER_HATASI
+    yerel = dict(b.yerel or {})
+    iç = Baglam(b.sayfa, b.satir, b.sutun, b.kitap, b.ad_yigini, yerel)
+    for i in range(0, n - 1, 2):
+        ad = d.argumanlar[i]
+        if type(ad) is not Ad:
+            return D.AD
+        yerel[ad.ad.upper()] = (degerlendir(d.argumanlar[i + 1], iç),)     # demet: değer None olsa da var sayılır
+    return degerlendir(d.argumanlar[-1], iç)
+
+
 def _cagir(d: Cagri, b: Baglam):
+    if d.ad.upper() == "LET":
+        return _let(d, b)
     tanim = fonksiyonlar.bul(d.ad)
     if tanim is None:
         return D.AD

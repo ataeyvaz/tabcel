@@ -737,6 +737,7 @@ def _icerik(kitap: CalismaKitabi, rapor: Rapor) -> str:
     stiller = _Stiller()
     onb = _FormulOnbellek()
     sayfa_xml = []
+    tasan_sayisi = 0
     for sayfa in kitap.sayfalar:
         hucreler = sayfa._hucreler
         stil_haritasi = {k: v for k, v in sayfa._stil.items() if v}
@@ -792,6 +793,9 @@ def _icerik(kitap: CalismaKitabi, rapor: Rapor) -> str:
                     hx.append("<table:covered-table-cell/>")
                     continue
                 h = hucreler.get((r, c))
+                if h is not None and h.formul is not None and (r, c) in sayfa.tasma:   # taşan formül: değer olarak (aksi halde
+                    h = Hucre(sayfa.deger(r, c))                                         # yeniden açınca taşma alanı engellenir)
+                    tasan_sayisi += 1
                 k = stil_haritasi.get((r, c), 0)
                 if h is None and not k and (r, c) not in birlesim_basi:
                     bos_c += 1
@@ -820,6 +824,8 @@ def _icerik(kitap: CalismaKitabi, rapor: Rapor) -> str:
             satirlar_xml.append(f"<table:table-row{ek}>{''.join(hx)}</table:table-row>")
         bos_say = 0                                                # sondaki boş satırlar yazılmaz
         sayfa_xml.append(f'<table:table table:name={quoteattr(sayfa.ad)}>{"".join(sx)}{"".join(satirlar_xml)}</table:table>')
+    if tasan_sayisi:
+        rapor.ekle(f"{tasan_sayisi} dinamik dizi formülü .ods dosyasına değer olarak yazıldı (formül kaybolur).", True)
     for kod in sorted(stiller.uyari_kod):
         rapor.ekle(f"“{kod}” sayı biçimi .ods'ye taşınamadı (Genel olarak yazıldı).")
     ns = " ".join(f'xmlns:{k}="{v}"' for k, v in NS.items())

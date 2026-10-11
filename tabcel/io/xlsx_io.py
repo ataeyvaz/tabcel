@@ -26,6 +26,7 @@ from openpyxl.worksheet.filters import (
     CustomFilter, CustomFilters, DynamicFilter, FilterColumn, Filters, Top10,
 )
 from openpyxl.worksheet.cell_range import CellRange
+from openpyxl.worksheet.formula import ArrayFormula
 from openpyxl.formatting.rule import ColorScale, DataBar, FormatObject, Rule
 from openpyxl.styles.differential import DifferentialStyle
 from openpyxl.styles.colors import Color
@@ -51,7 +52,7 @@ from ..model.dogrulama import Dogrulama
 from ..model.kosullu import KosulluKural
 from ..model.filtre import DegerKosulu, Filtre, IlkKosul, OrtalamaKosulu, OzelKosul, RenkKosulu
 from ..model.notlar import Not
-from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
+from ..model.sayfa import CalismaKitabi, Hucre, Sayfa, TasmaHucre
 from ..model.sayfa_yapisi import SayfaYapisi
 from ..model.stil import Kenarlik, Stil, StilYama
 
@@ -93,7 +94,8 @@ _XLFN = {
 }
 _XLWS = {"SORT", "FILTER"}                      # dosyada `_xlfn._xlws.` önekiyle
 _FN_ADI = re.compile(r"\b([A-Za-z][A-Za-z0-9]*(?:\.[A-Za-z0-9]+)*)\(")
-_XLFN_OKU = re.compile(r"_xlfn\.(?:_xlws\.)?", re.IGNORECASE)
+_XLFN_OKU = re.compile(r"_xlfn\.(?:_xlws\.)?|_xlpm\.", re.IGNORECASE)      # `_xlpm.`: LET/LAMBDA değişken öneki
+_LET_ARA = re.compile(r"(?<![\w.])(?:_xlfn\.)?LET\(", re.IGNORECASE)
 
 # Varsayılan Office teması (belirsiz: yeni Excel 365 teması farklı olabilir — surec.md §8b)
 _TEMA = ["FFFFFF", "000000", "E7E6E6", "44546A", "4472C4", "ED7D31", "A5A5A5", "FFC000", "5B9BD5", "70AD47",
@@ -158,8 +160,7 @@ _TARA = (
 _SAYFA_ISARETLERI = (
     (b"<hyperlinks", "köprü"), (b"outlineLevel=", "satır/sütun gruplama"),
     (b"<headerFooter", "üst/alt bilgi"), (b"<sheetProtection", "sayfa koruması"),
-    (b't="array"', "dizi formülü (normal formüle dönüştürülür)"),
-)
+)                                                       # dizi formülleri (`t="array"`) Faz 8e'den beri desteklenir: taşan formül olur
 
 
 _SEKIL_RE = re.compile(rb"<(?:xdr:)?(?:sp|grpSp|cxnSp)[ >]")
@@ -302,13 +303,54 @@ def _tabcel_ozel_kullanimi(kitap) -> set:
     return {TABCEL_OZEL[a] for a in bulunan}
 
 
+def _let_xlpm_yaz(m: str) -> str:
+    """LET değişken adlarına dosyadaki `_xlpm.` önekini ekler (`LET(x,1,x+1)` → `LET(_xlpm.x,1,_xlpm.x+1)`; Excel öneksiz
+    adı #AD? sayar). İç içe LET'ler de işlenir; çift tırnaklı metin sabitlerine dokunulmaz."""
+    if "LET(" not in m.upper():
+        return m
+    pos = 0
+    while True:
+        mm = _LET_ARA.search(m, pos)
+        if mm is None:
+            return m
+        bas, derinlik, i, arg_basi, in_str, args = mm.end(), 1, mm.end(), mm.end(), False, []
+        while i < len(m):
+            ch = m[i]
+            if ch == '"':
+                in_str = not in_str
+            elif not in_str:
+                if ch == "(":
+                    derinlik += 1
+                elif ch == ")":
+                    derinlik -= 1
+                    if derinlik == 0:
+                        args.append((arg_basi, i))
+                        break
+                elif ch == "," and derinlik == 1:
+                    args.append((arg_basi, i))
+                    arg_basi = i + 1
+            i += 1
+        if len(args) < 3 or len(args) % 2 == 0 or derinlik:
+            pos = mm.end()
+            continue
+        adlar = [m[a:b].strip() for a, b in args[0:-1:2]]
+        adlar = [x for x in adlar if re.fullmatch(r"[A-Za-z_][\w.]*", x)]
+        if adlar:
+            desen = re.compile(r"(?<![\w.!'])(" + "|".join(map(re.escape, adlar)) + r")(?![\w.(!'])", re.IGNORECASE)
+            govde = m[bas:i].split('"')
+            for k in range(0, len(govde), 2):
+                govde[k] = desen.sub(lambda g: "_xlpm." + g.group(1), govde[k])
+            m = m[:bas] + '"'.join(govde) + m[i:]
+        pos = bas
+
+
 def _formul_yaz(formul: str, kitap) -> str:
     """Saklanan formül → dosyadaki metin (İngilizce, sayfa adlı, gerekli `_xlfn.` önekleriyle)."""
     m = ceviri.disa(formul, kitap)
     parcalar = m.split('"')               # çift tırnaklı metin sabitlerine dokunma (çift sayı = dışarıda)
     for i in range(0, len(parcalar), 2):
         parcalar[i] = _FN_ADI.sub(_oneki_ekle, parcalar[i])
-    return '"'.join(parcalar)
+    return _let_xlpm_yaz('"'.join(parcalar))
 
 
 def _formul_oku(metin: str, kitap) -> str:
@@ -538,12 +580,19 @@ def kaydet(kitap: CalismaKitabi, yol: str, parola: Optional[str] = None) -> Rapo
         if sayfa.sekme_rengi:
             ws.sheet_properties.tabColor = sayfa.sekme_rengi[1:]
         for (r, c), h in sayfa._hucreler.items():
+            if type(h) is TasmaHucre:                    # taşma hücreleri türetilmiştir; sahibi dizi formülü olarak yazılır
+                continue
             deger, formul = _hucre_degeri(h, kitap, r, c, formul_onb)
             if deger is None:
                 continue
             deger = _guvenli_deger(deger, rapor, sayac)
             hc = ws.cell(row=r, column=c)
             hc.value = deger
+            alan = sayfa.tasma.get((r, c)) if h.formul is not None else None
+            if alan is not None:                         # dinamik dizi → `<f t="array" ref=…>` (Excel eski tür dizi olarak açar)
+                hc.value = ArrayFormula(f"{get_column_letter(alan.ilk_sutun)}{alan.ilk_satir}:"
+                                        f"{get_column_letter(alan.son_sutun)}{alan.son_satir}", deger)
+                sayac["tasma"] = sayac.get("tasma", 0) + 1
             if isinstance(h.deger, str) and h.formul is None:
                 hc.data_type = "s"           # '=' ile başlayan düz metin formül sanılmasın
         for (r, c), k in sayfa._stil.items():
@@ -605,6 +654,9 @@ def kaydet(kitap: CalismaKitabi, yol: str, parola: Optional[str] = None) -> Rapo
     if ozel:
         rapor.ekle(f"{', '.join(sorted(ozel))} işlev(ler)i yalnızca {APP_NAME}'e özgüdür; Excel ve diğer programlarda "
                    "#AD? verir (değerler dosyada saklanır, formül çalışmaz).", True)
+    if sayac.get("tasma"):
+        rapor.ekle(f"{sayac['tasma']} dinamik dizi formülü Excel'de eski tür dizi formülü ({{=…}}) olarak açılır: alanı sabittir, "
+                   "kaynak veri büyürse kendiliğinden genişlemez.")
     if sayac.get("grafik_yok"):
         rapor.ekle(f"{sayac['grafik_yok']} grafik dosyaya yazılamadı (verisi silinmiş ya da silinen bir sayfaya bağlı); "
                    "kaydedilen dosyada yok.", True)
@@ -1162,10 +1214,23 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
     nesne_toplam = [0, 0, 0]                         # okunan grafik, okunan resim, okunamayan seri
     for ws, s in sayfalar:
         yeni, stiller, notlar = {}, {}, {}
+        kapsanan = set()                              # dizi formülünün (taşmanın) kapsadığı diğer hücreler: yeniden üretilir
+        for (r, c), hc in ws._cells.items():
+            va = hc.value
+            if type(va).__name__ == "ArrayFormula" and va.ref:
+                try:
+                    cr = CellRange(va.ref)
+                except (ValueError, TypeError):
+                    continue
+                if cr.max_row > cr.min_row or cr.max_col > cr.min_col:
+                    for rr in range(cr.min_row, cr.max_row + 1):
+                        for cc in range(cr.min_col, cr.max_col + 1):
+                            if (rr, cc) != (r, c):
+                                kapsanan.add((rr, cc))
         for (r, c), hc in ws._cells.items():          # yalnız var olan hücreler (iter_rows seyrek dosyada tüm kutuyu gezer)
             if type(hc).__name__ == "MergedCell":
                 continue
-            v = hc.value
+            v = None if ((r, c) in kapsanan and hc.data_type != "f") else hc.value
             if v is not None:
                 if hc.data_type == "f" or (isinstance(v, str) and hc.data_type == "f"):
                     metin = v if isinstance(v, str) else getattr(v, "text", None)
