@@ -76,8 +76,9 @@ class EtkilenenFormuller(QDialog):
         self.setMinimumSize(620, 380)
         d = QVBoxLayout(self)
         d.addWidget(QLabel("Maskeleme nedeniyle şu formüllerin sonucu değişiyor ya da hataya dönüyor. Formüller temiz kopyada "
-                           "korunur ve maskeli değerle yeniden hesaplanır. Sonucu kişisel veri içermeyenleri isterseniz "
-                           "özgün sonuçlarıyla değere çevirebilirsiniz."))
+                           "korunur ve maskeli değerle yeniden hesaplanır. İsterseniz özgün sonuçlarıyla değere çevirebilirsiniz; "
+                           "ama sonuç kişisel veriden türetilmişse (örn. kimlik no + 1) yine bilgi taşır — yalnız toplam, "
+                           "uzunluk gibi sonuçlar için işaretleyin."))
         d.itemAt(0).widget().setWordWrap(True)
         self.agac = QTreeWidget()
         self.agac.setHeaderLabels(["Hücre", "Formül", "Özgün sonuç", "Maskeli sonuç"])
