@@ -4,6 +4,7 @@ Excel gibi: sayfalar önce **aşağı**, sonra **sağa** doğru numaralanır; gi
 satırları ilk sayfa dışındaki satır dilimlerinin başına yinelenir; tek bir satır/sütun sayfadan büyükse
 kendi sayfasına tek başına konur (kırpılır). Ölçüler 96 dpi pikseldir (ızgara pikseliyle aynı).
 """
+from bisect import bisect_left
 from dataclasses import dataclass
 from typing import Callable, List, Optional, Tuple
 
@@ -84,6 +85,17 @@ def _bol(boyutlar: List[Tuple[int, float]], sinir: float, ayrilan: float = 0.0,
     return dilimler
 
 
+def _gorunur_kesmeler(kesmeler, olculer) -> frozenset:
+    """Her sayfa sonunu ilk görünür (ölçüsü > 0) satır/sütuna taşır; görünür öğe kalmadıysa düşer."""
+    idx = [i for i, _ in olculer]
+    sonuc = set()
+    for k in kesmeler:
+        j = bisect_left(idx, k)
+        if j < len(idx):
+            sonuc.add(idx[j])
+    return frozenset(sonuc)
+
+
 @dataclass(frozen=True)
 class _Plan:
     alan: Aralik
@@ -91,7 +103,8 @@ class _Plan:
     satir_dilimleri: List[List[int]]
     sutun_dilimleri: List[List[int]]
     baslik: List[int]
-    kesmeler_uygulandi: bool
+    satir_kesmeleri: frozenset            # uygulanan (gizli satıra denk gelenler sonraki görünür satıra taşınmış) sayfa sonları
+    sutun_kesmeleri: frozenset
 
 
 def _plan(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
@@ -99,8 +112,8 @@ def _plan(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
     alan = yazdirma_alani(sayfa, yapi, genislik, yukseklik)
     if alan is None:
         return None
-    sutunlar = [(c, genislik(c)) for c in range(alan.ilk_sutun, alan.son_sutun + 1) if genislik(c) > 0]
-    satirlar = [(r, yukseklik(r)) for r in range(alan.ilk_satir, alan.son_satir + 1) if yukseklik(r) > 0]
+    sutunlar = [(c, g) for c in range(alan.ilk_sutun, alan.son_sutun + 1) if (g := genislik(c)) > 0]
+    satirlar = [(r, h) for r in range(alan.ilk_satir, alan.son_satir + 1) if (h := yukseklik(r)) > 0]   # satır başına TEK sorgu
     if not sutunlar or not satirlar:
         return None
     pg, py = yapi.yazdirilabilir_px()
@@ -125,13 +138,13 @@ def _plan(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
         baslik_yuk = sum(yukseklik(r) for r in baslik)
         if baslik_yuk >= sy:                           # başlık sayfayı doldurur: yinelenmez
             baslik, baslik_yuk = [], 0.0
-    # Excel: "sığdır" seçiliyse el ile sayfa sonları yok sayılır
-    kesme_var = not sigdir and bool(yapi.satir_kesmeleri or yapi.sutun_kesmeleri)
-    satir_k = frozenset(yapi.satir_kesmeleri) if not sigdir else frozenset()
-    sutun_k = frozenset(yapi.sutun_kesmeleri) if not sigdir else frozenset()
+    # Excel: "sığdır" seçiliyse el ile sayfa sonları yok sayılır. Gizli satır/sütuna (filtre dahil) denk gelen sayfa
+    # sonu kaybolmaz: sonraki görünür satır/sütunda başlar (Excel'in bu durumdaki davranışı doğrulanmadı → surec.md §8b)
+    satir_k = _gorunur_kesmeler(yapi.satir_kesmeleri, satirlar) if not sigdir else frozenset()
+    sutun_k = _gorunur_kesmeler(yapi.sutun_kesmeleri, sutunlar) if not sigdir else frozenset()
     # başlık satırları alanın içindeyse ilk dilimde zaten vardır; yinelemede tekrar eklenmez
     return _Plan(alan, olcek, _bol(satirlar, sy, baslik_yuk, satir_k), _bol(sutunlar, sg, 0.0, sutun_k),
-                 baslik, kesme_var)
+                 baslik, satir_k, sutun_k)
 
 
 def sayfala(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
@@ -178,7 +191,6 @@ def sayfa_sinirlari(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], f
     pl = _plan(sayfa, yapi, genislik, yukseklik)
     if pl is None:
         return None
-    sk, uk = set(yapi.satir_kesmeleri), set(yapi.sutun_kesmeleri)
-    sat = tuple((d[0], d[0] in sk and pl.kesmeler_uygulandi) for d in pl.satir_dilimleri[1:])
-    sut = tuple((d[0], d[0] in uk and pl.kesmeler_uygulandi) for d in pl.sutun_dilimleri[1:])
+    sat = tuple((d[0], d[0] in pl.satir_kesmeleri) for d in pl.satir_dilimleri[1:])
+    sut = tuple((d[0], d[0] in pl.sutun_kesmeleri) for d in pl.sutun_dilimleri[1:])
     return SayfaSinirlari(sat, sut, pl.alan)

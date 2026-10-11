@@ -308,15 +308,23 @@ class NesneEtkilesimi:
         return True
 
     def nesne_yapistir(self) -> bool:
-        """Dahili panodaki nesneyi etkin hücreye yapıştırır (kes ise kaynaktan silinir; TEK geri al adımı)."""
+        """Dahili panodaki nesneyi etkin hücreye yapıştırır (kes ise kaynaktan silinir; TEK geri al adımı).
+        Başka bir çalışma kitabına: grafik reddedilir (başvurular kitaba özgü), resim KOPYA olarak yapışır ve
+        kaynak kitaba dokunulmaz (iki geri al yığını karışmasın)."""
         from .grid import Izgara
         pano = Izgara._nesne_panosu
         if pano is None:
             return False
         n, kesilen, kaynak = pano
+        baska_kitap = kaynak.kitap is not self.sayfa.kitap
+        if baska_kitap and isinstance(n, Grafik):
+            # grafik başvuruları kitaba ait sayfa kimlikleriyle tutulur: başka kitapta yanlış veriyi gösterirdi
+            self.uyari.emit("Grafik başka bir çalışma kitabına yapıştırılamaz: veri başvuruları kendi kitabına "
+                            "aittir. Önce verisini de bu kitaba taşıyıp grafiği burada oluşturun.")
+            return False
         yeni = n.degistir(kimlik=0, konum=Konum(self._aktif[0], self._aktif[1]))
         ekle = NesneEkle(self.sayfa, yeni)
-        if kesilen and kaynak.nesne(n.kimlik) is not None:
+        if kesilen and not baska_kitap and kaynak.nesne(n.kimlik) is not None:
             self.yigin.calistir(Grup([NesneSil(kaynak, n.kimlik), ekle]))
             Izgara._nesne_panosu = None
         else:

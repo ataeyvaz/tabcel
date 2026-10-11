@@ -215,3 +215,44 @@ def test_nesne_yoksa_cizim_degismez(app):
     g.sayfa.nesne_ekle(Resim(veri=_png(), konum=Konum(20, 20), boyut=(50, 50)))
     g.sayfa.nesne_sil(g.sayfa.nesneler[0].kimlik)
     assert a == _ciz(c, c.dilimler()[0])
+
+
+def test_nesne_konumu_kumulatif_hesaplanir_dilim_basina_baslan_toplanmaz(app):
+    """Opus bulgusu: `_nesneleri_ciz` her nesne×dilim için çapadan dilim başına tüm satırları topluyordu
+    (30.000 satır/625 dilim: 6 sn). Artık kümülatif liste bir kez kurulur: nesne yüzünden EK ölçü sorgusu
+    en çok satır sayısı kadar (süre değil çağrı sayısı sınanır: zamanlama testleri yükte kırılgan)."""
+    p = _pencere(app, veri=False)
+    g = p.izgara()
+    s = g.sayfa
+    n = 6000
+    for r in range(1, n + 1):
+        s.ata(r, 1, Hucre(float(r)))
+
+    def say(nesneli):
+        for x in list(s.nesneler):
+            s.nesne_sil(x.kimlik)
+        if nesneli:
+            s.nesne_ekle(Resim(veri=_png(), konum=Konum(n - 5, 3), boyut=(60, 40)))
+        cagri = [0]
+
+        def yuk(r):
+            cagri[0] += 1
+            return g.yazdirma_yuksekligi(r)
+        c = yz.SayfaCizici(s, yuk, g.font())
+        dil = c.dilimler()
+        cagri[0] = 0
+        img = QImage(50, 50, QImage.Format_RGB32)
+        pt = QPainter(img)
+        for d in dil:
+            ys, y = {}, 0.0
+            for r in d.satirlar:
+                ys[r] = y
+                y += yuk(r)
+            c._nesneleri_ciz(pt, d, ys, 500.0, y)
+        pt.end()
+        return cagri[0], len(dil)
+
+    temel, dilim_say = say(False)
+    nesneli, _ = say(True)
+    assert dilim_say >= 50                                      # çok dilimli: eski kod burada satır×dilim çağırırdı
+    assert nesneli - temel <= n + 10, (nesneli, temel)

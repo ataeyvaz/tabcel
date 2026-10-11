@@ -305,3 +305,23 @@ def test_ornek_grafikler_xlsx_uyarisiz_ve_kararli(tmp_path):
     k2, rapor2 = xlsx_io.ac(str(tmp_path / "b.xlsx"))
     assert [x.degistir(kimlik=0) for x in k2.sayfalar[0].nesneler] == [x.degistir(kimlik=0) for x in n]
     assert not rapor2.veri_kaybi
+
+
+def test_serisi_kalmayan_grafik_kayit_raporunda_bildirilir(tmp_path):
+    """Opus bulgusu: verisi tamamen silinen grafik dosyaya yazılmıyor ama sessizce düşmesin."""
+    from tabcel.model.grafik import Seri
+    k = CalismaKitabi()
+    s = k.sayfalar[0]
+    s.ata(1, 1, Hucre(1.0))
+    ok = Grafik(seriler=(Seri(deger=Referans(s.kimlik, Aralik(1, 1, 1, 1))),), konum=Konum(3, 3))
+    bos = Grafik(seriler=(), konum=Konum(3, 8))
+    s.nesne_ekle(ok)
+    s.nesne_ekle(bos)
+    rapor = xlsx_io.kaydet(k, str(tmp_path / "s.xlsx"))
+    assert any("1 grafik dosyaya yazılamadı" in u for u in rapor.uyarilar) and rapor.veri_kaybi
+    assert len(xlsx_io.ac(str(tmp_path / "s.xlsx"))[0].sayfalar[0].nesneler) == 1
+    s2 = CalismaKitabi()
+    s2.sayfalar[0].nesne_ekle(ok.degistir(kimlik=0))
+    assert xlsx_io.kaydet(s2, str(tmp_path / "t.xlsx")).uyarilar == []             # normalde uyarı yok
+
+

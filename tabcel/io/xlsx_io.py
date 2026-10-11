@@ -40,7 +40,7 @@ from openpyxl.utils.datetime import to_excel
 
 from .. import APP_NAME
 from ..formul import ceviri
-from . import xlsx_grafik
+from . import xlsx_grafik, xlsx_kayip
 from ..formul.sozcuk import FormulHatasi
 from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
@@ -366,7 +366,7 @@ def _yapi_yaz(ws, y: SayfaYapisi) -> None:
         ws.print_title_rows = f"{y.baslik_satirlari[0]}:{y.baslik_satirlari[1]}"
 
 
-def _yapi_oku(ws) -> SayfaYapisi:
+def _yapi_oku(ws, rapor=None) -> SayfaYapisi:
     ps, m = ws.page_setup, ws.page_margins
     kw = {}
     if ps.orientation == "landscape":
@@ -377,6 +377,9 @@ def _yapi_oku(ws) -> SayfaYapisi:
         g = 1 if ps.fitToWidth is None else int(ps.fitToWidth)
         h = 1 if ps.fitToHeight is None else int(ps.fitToHeight)
         kw["sigdir_genislik"], kw["sigdir_yukseklik"] = g != 0, h != 0
+        if rapor is not None and (g > 1 or h > 1):                  # Tabcel yalnız "tek sayfaya" sığdırır
+            rapor.ekle(f"“{ws.title}” sayfasında yazdırma {g} sayfa genişliğine × {h} sayfa yüksekliğine sığdırılıyor; "
+                       "Tabcel bunu tek sayfaya sığdırma olarak uygular.")
         if g == 0 and h == 0:                           # ikisi de serbest: "sığdır" fiilen kapalı
             kw["sigdir_genislik"] = kw["sigdir_yukseklik"] = False
     elif ps.scale and 10 <= int(ps.scale) <= 400:
@@ -575,10 +578,17 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
         if sayfa.kosullu:
             _kosullulari_yaz(ws, sayfa, kitap, rapor)
         if sayfa.nesneler:
-            xlsx_grafik.nesneleri_yaz(ws, sayfa, kitap)
+            g_yok, r_yok = xlsx_grafik.nesneleri_yaz(ws, sayfa, kitap)
+            sayac["grafik_yok"] = sayac.get("grafik_yok", 0) + g_yok
+            sayac["resim_yok"] = sayac.get("resim_yok", 0) + r_yok
 
     xlsx_grafik.im_yaz(wb)
     _adlari_yaz(wb, kitap)
+    if sayac.get("grafik_yok"):
+        rapor.ekle(f"{sayac['grafik_yok']} grafik dosyaya yazılamadı (verisi silinmiş ya da silinen bir sayfaya bağlı); "
+                   "kaydedilen dosyada yok.", True)
+    if sayac.get("resim_yok"):
+        rapor.ekle(f"{sayac['resim_yok']} resim dosyaya yazılamadı; kaydedilen dosyada yok.", True)
     if sayac.get("karakter"):
         rapor.ekle(f"{sayac['karakter']} hücrede dosyada geçersiz olan denetim karakterleri silindi.")
     if sayac.get("uzun"):
@@ -1058,6 +1068,9 @@ def _nesne_uyarilari(yol: str, rapor: Rapor, grafik: int, resim: int, atlanan_se
         ne = "grafikler ve resimler" if grafik and resim else ("grafikler" if grafik else "resimler")
         rapor.ekle(f"Bu dosyadaki {ne} {APP_NAME}'e uyarlandı; 3B, eğilim çizgisi, ikincil eksen, gradyan gibi "
                    "Excel'e özgü biçimler kaydedince kaybolabilir.", True)
+    if zip_grafik:                                       # T10: Excel'de eklenen eğilim çizgisi/ikincil eksen/gradyan… (im varsa da)
+        for metin in xlsx_kayip.kayip_uyarilari(yol, im):
+            rapor.ekle(metin, True)
 
 
 def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
@@ -1199,7 +1212,7 @@ def ac(yol: str) -> "tuple[CalismaKitabi, Rapor]":
             except Exception:
                 dondur = None
         s.gorunum_yaz(dondur=dondur, kilavuz=bool(ws.sheet_view.showGridLines is not False))
-        s.sayfa_yapisi = _yapi_oku(ws)
+        s.sayfa_yapisi = _yapi_oku(ws, rapor)
         _filtre_oku(ws, s, rapor)
         _dogrulamalari_oku(ws, s, kitap, rapor)
         _kosullulari_oku(ws, s, kitap, tema, rapor)

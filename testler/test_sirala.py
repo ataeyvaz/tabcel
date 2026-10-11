@@ -236,11 +236,11 @@ class TestKomut:
             for c in range(1, 6):
                 veri[(r, c)] = Hucre(float(rnd.randint(0, 10 ** 6)) if c == 1 else f"m{r}-{c}")
         sayfa.toplu_yaz(veri)
-        t = time.perf_counter()
+        t = time.process_time()                                           # CPU süresi: paralel yük/RAM baskısı duvar saatini şişirir
         plan = siralama_plani(sayfa, Aralik(1, 1, 100_000, 5), [K(1)])
         k = Sirala(sayfa, Aralik(1, 1, 100_000, 5), plan)
         k.yap()
-        gecen = time.perf_counter() - t
+        gecen = time.process_time() - t
         degerler = [sayfa.deger(r, 1) for r in range(1, 100_001)]
         assert degerler == sorted(degerler)
         assert gecen < 6.0, f"{gecen:.2f} sn"                          # HEDEF ≤ 2 sn: şu an ~3,8 sn (surec.md 5c notu); gevşek sınır yalnız gerilemeyi yakalar

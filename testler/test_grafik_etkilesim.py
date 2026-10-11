@@ -258,10 +258,18 @@ def test_boyutlandirmada_onizleme_gerilir_sonra_gercek_boyut(ig):
     QTest.mousePress(ig.viewport(), Qt.LeftButton, Qt.NoModifier, p)
     QTest.mouseMove(ig.viewport(), p + QPoint(80, 60))
     assert ig._nesne_onizleme[1].size().width() == 380 and ig._onizleme_gercek_boyut is None
-    QTest.qWait(120)                                                          # 60 ms durulunca gerçek boyut
+    bekle_kosul(lambda: ig._onizleme_gercek_boyut == ig._nesne_onizleme[1].size())      # 60 ms durulunca gerçek boyut
     assert ig._onizleme_gercek_boyut == ig._nesne_onizleme[1].size()
     QTest.mouseRelease(ig.viewport(), Qt.LeftButton, Qt.NoModifier, p + QPoint(80, 60))
     assert ig.sayfa.nesne(ig.n.kimlik).boyut == (380, 260)
+
+
+def bekle_kosul(kosul, en_cok_ms: int = 3000) -> None:
+    """Sabit `qWait` yerine koşul gerçekleşene dek (en çok `en_cok_ms`) bekler: yükte boyama zamanlayıcıyı geciktirir."""
+    import time
+    bitis = time.monotonic() + en_cok_ms / 1000
+    while not kosul() and time.monotonic() < bitis:
+        QTest.qWait(10)
 
 
 # ------------------------------------------------------------------ klavye

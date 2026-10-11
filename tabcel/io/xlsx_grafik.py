@@ -231,12 +231,16 @@ def resim_yaz(ws, r: Resim) -> bool:
     return True
 
 
-def nesneleri_yaz(ws, sayfa, kitap) -> None:
+def nesneleri_yaz(ws, sayfa, kitap) -> Tuple[int, int]:
+    """Sayfanın nesnelerini yazar. Döner: `(yazılamayan grafik, yazılamayan resim)` — grafik yazılamaz: hiç yazılabilir
+    serisi kalmadı (verisi silindi / silinen sayfaya bağlı); resim yazılamaz: bozuk. Kayıt raporu bunları bildirir."""
+    grafik_yok = resim_yok = 0
     for n in sayfa.nesneler:
         if isinstance(n, Grafik):
-            grafik_yaz(ws, n, kitap)
+            grafik_yok += 0 if grafik_yaz(ws, n, kitap) else 1
         elif isinstance(n, Resim):
-            resim_yaz(ws, n)
+            resim_yok += 0 if resim_yaz(ws, n) else 1
+    return grafik_yok, resim_yok
 
 
 # ------------------------------------------------------------------ okuma

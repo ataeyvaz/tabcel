@@ -473,7 +473,11 @@ class DosyaIslemleri:
         if not kw:
             return False
         g.sayfa.gorunum_yaz(sayfa_sonlari=True)               # ekleyince çizgiler görünsün
-        return self.sayfa_yapisi_degistir(**kw)
+        ok = self.sayfa_yapisi_degistir(**kw)
+        if ok and (y.sigdir_genislik or y.sigdir_yukseklik):
+            self.statusBar().showMessage("Sığdır seçeneği açıkken sayfa sonları yok sayılır (Excel gibi); "
+                                         "yazdırmada ve sayfa sınırı çizgilerinde görünmez.", 8000)
+        return ok
 
     def sayfa_sonu_kaldir(self) -> bool:
         g = self.izgara()

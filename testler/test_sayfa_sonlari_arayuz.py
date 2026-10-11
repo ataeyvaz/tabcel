@@ -207,3 +207,55 @@ def test_pdf_kesmeyi_uygular(pencere, tmp_path):
     sonra = yz.SayfaCizici(g.sayfa, g.yazdirma_yuksekligi, g.font()).dilimler()
     assert len(sonra) == len(onceki) + 1 and sonra[0].satirlar == (1, 2)
     assert yz.pdf_yaz([g], str(tmp_path / "k.pdf")) is True
+
+
+# ---------------------------------------------------------------- Opus bulguları (performans / çizim)
+def test_baska_sayfanin_olayi_sinirlari_dusurmez(pencere):
+    g = pencere.izgara()
+    g.sayfa_sonlari_goster(True)
+    ilk = g.sayfa_sinirlari_ver()
+    pencere.kitap.sayfa_ekle()
+    diger = pencere.kitap.sayfalar[-1]
+    diger.ata(1, 1, Hucre("x"))                                 # başka sayfada düzenleme
+    assert g._sb is not None and g.sayfa_sinirlari_ver() is ilk
+
+
+def test_hucre_duzenleme_sinirlari_ertelenmis_yeniler(pencere):
+    from PySide6.QtTest import QTest
+    g = pencere.izgara()
+    g.sayfa_sonlari_goster(True)
+    g.sayfa_sinirlari_ver()
+    onceki = g._sb
+    g.hucre_gir(2, 1, "yeni")                                   # yazarken her tuşta hesap yok: eski değer kalır
+    assert g._sb is onceki and g._sb_zamanlayici.isActive()
+    QTest.qWait(g._SB_ERTELEME_MS + 150)
+    assert g._sb is None or g._sb is not onceki                 # boşta kalınca yenilendi (ya da yeniden istenene dek düşmüş)
+    g.sayfa_sinirlari_ver()
+    assert g._sb is not None
+
+
+def test_sayfa_sonlari_kapaliyken_hucre_olayi_zamanlayici_baslatmaz(pencere):
+    g = pencere.izgara()
+    g.hucre_gir(2, 1, "x")
+    assert not g._sb_zamanlayici.isActive()
+
+
+def test_cizgi_birlesik_hucrenin_ustunden_gecer(pencere):
+    g = pencere.izgara()
+    g.kilavuz_goster(False)
+    g.sec((10, 1), (11, 2))                                    # 10-11. satır × A-B birleşimi; sayfa sonu 11. satırın önünde
+    assert g.birlestir("birlestir", onayli=True)
+    _git(pencere, 11, 3)
+    pencere.eylemler["sayfa_sonu_ekle"].trigger()
+    _git(pencere, 3, 3)                                         # etkin hücre çerçevesi çizgiyi örtmesin, kaydırma olmasın
+    ust11 = g.hucre_dikdortgeni(12, 1).y() - g._yuk(11)         # 11. satırın üst kenarı (birleşimin içinde)
+    x = g.hucre_dikdortgeni(10, 1).x() + 10
+    assert _resim(g).pixelColor(x, ust11 - 1) == QColor("#404040")
+
+
+def test_sigdir_acikken_sayfa_sonu_eklenince_durum_cubugunda_bilgi(pencere):
+    pencere.sayfa_yapisi_degistir(sigdir_yukseklik=True)
+    _git(pencere, 11, 1)
+    pencere.eylemler["sayfa_sonu_ekle"].trigger()
+    assert _kesme(pencere) == ((11,), ())                         # eklenir ama
+    assert "yok sayılır" in pencere.statusBar().currentMessage()  # kullanıcı bilgilendirilir

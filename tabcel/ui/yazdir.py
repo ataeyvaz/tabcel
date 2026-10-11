@@ -47,6 +47,7 @@ class SayfaCizici:
         self.taban = taban_yazi_tipi
         self.yapi = sayfa.sayfa_yapisi
         self._yazi_onb = {}
+        self._onek = ([0.0, 0.0], [0.0, 0.0])      # (satır, sütun) kümülatif ölçüler: onek[i] = 1..i-1 toplamı
         self._kosullu = KosulluHesap(sayfa) if sayfa.kosullu else None   # koşullu biçim çıktıda da görünür (Excel)
 
     def _stil(self, r: int, c: int):
@@ -156,13 +157,13 @@ class SayfaCizici:
             k = n.konum
             if k.sutun > son_c:
                 continue
-            x = self._aralik_toplami(ilk_c, k.sutun, self.genislik) + k.dx
+            x = self._konum(1, k.sutun) - self._konum(1, ilk_c) + k.dx
             if k.satir in baslik_satirlar:
                 y, kes_ust, kes_alt = ys[k.satir] + k.dy, 0.0, baslik_y
             else:
                 if k.satir > son_r:
                     continue
-                y = ys[ilk_r] + self._aralik_toplami(ilk_r, k.satir, self.yukseklik) + k.dy
+                y = ys[ilk_r] + self._konum(0, k.satir) - self._konum(0, ilk_r) + k.dy
                 kes_ust, kes_alt = baslik_y, toplam_y
             w, h = n.boyut
             kes = QRectF(0, kes_ust, toplam_g, kes_alt - kes_ust).intersected(QRectF(x, y, w, h))
@@ -183,12 +184,15 @@ class SayfaCizici:
             finally:
                 p.restore()
 
-    @staticmethod
-    def _aralik_toplami(bas: int, son: int, olcu: Callable[[int], float]) -> float:
-        """`bas`'tan `son`'a ölçülerin işaretli toplamı: son < bas ise negatif (önceki dilimde başlayan nesne)."""
-        if son >= bas:
-            return sum(olcu(i) for i in range(bas, son))
-        return -sum(olcu(i) for i in range(son, bas))
+    def _konum(self, eksen: int, indeks: int) -> float:
+        """Sayfa başından `indeks`. satır (eksen 0) / sütun (eksen 1) başlangıcına kadar 100% piksel toplamı.
+        Kümülatif liste ilk istekte gereken yere kadar kurulur ve dilimler/nesneler arasında paylaşılır (eskiden her
+        nesne×dilim için baştan toplanıyordu: 30.000 satırda 6 sn)."""
+        liste = self._onek[eksen]
+        olcu = self.yukseklik if eksen == 0 else self.genislik
+        while len(liste) <= indeks:
+            liste.append(liste[-1] + olcu(len(liste) - 1))
+        return liste[indeks]
 
     # ------------------------------------------------------------------ hücre
     def _yazi_tipi(self, st) -> QFont:

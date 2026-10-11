@@ -224,3 +224,44 @@ def test_xlsx_baska_programin_sigdir_dosyasi(tmp_path):
     wb.save(tmp_path / "g.xlsx")
     y = xlsx_io.ac(str(tmp_path / "g.xlsx"))[0].sayfalar[0].sayfa_yapisi
     assert y.sigdir_genislik and not y.sigdir_yukseklik
+
+
+# ---------------------------------------------------------------- Opus bulguları (küçük)
+def test_gizli_satira_denk_gelen_sayfa_sonu_sonraki_gorunur_satira_tasinir():
+    s = _s(30)
+    s.gizli_satir.add(10)                                         # sayfa sonu 10. satırda ama satır gizli (ör. filtre)
+    y = SayfaYapisi(satir_kesmeleri=(10,))
+    p = sayfala(s, y, *_olcu(s))
+    assert [d.satirlar[0] for d in p] == [1, 11] and p[0].satirlar[-1] == 9
+    sn = sayfa_sinirlari(s, y, *_olcu(s))
+    assert sn.satirlar == ((11, True),)                           # çizgi 11'in önünde, el ile işaretli
+
+
+def test_gizli_sutuna_denk_gelen_sutun_sonu_tasinir_ve_gorunur_olmayan_son_dusur():
+    s = _s(5, 6)
+    s.gizli_sutun.add(3)
+    p = sayfala(s, SayfaYapisi(sutun_kesmeleri=(3,)), *_olcu(s))
+    assert [d.sutunlar for d in p] == [(1, 2), (4, 5, 6)]
+    s.gizli_sutun.update({4, 5, 6})                               # sonrasında görünür sütun kalmadı: sonu düşer
+    assert len(sayfala(s, SayfaYapisi(sutun_kesmeleri=(3,)), *_olcu(s))) == 1
+
+
+def test_xlsx_fit_n_sayfa_uyari_verir(tmp_path):
+    from openpyxl import Workbook
+    wb = Workbook()
+    ws = wb.active
+    ws["A1"] = 1
+    ws.sheet_properties.pageSetUpPr.fitToPage = True
+    ws.page_setup.fitToWidth = 2
+    ws.page_setup.fitToHeight = 3
+    wb.save(tmp_path / "n.xlsx")
+    k, rapor = xlsx_io.ac(str(tmp_path / "n.xlsx"))
+    y = k.sayfalar[0].sayfa_yapisi
+    assert y.sigdir_genislik and y.sigdir_yukseklik
+    assert any("2 sayfa genişliğine" in u and "3 sayfa yüksekliğine" in u for u in rapor.uyarilar)
+    assert not rapor.veri_kaybi                                   # yalnız bilgi: veri kaybı değil
+    wb2 = Workbook()
+    wb2.active["A1"] = 1
+    wb2.active.sheet_properties.pageSetUpPr.fitToPage = True      # 1×1: uyarı yok
+    wb2.save(tmp_path / "b.xlsx")
+    assert xlsx_io.ac(str(tmp_path / "b.xlsx"))[1].uyarilar == []

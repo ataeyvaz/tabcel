@@ -5,6 +5,7 @@ Kaydırma çubukları hücre sırasıyla çalışır (değer = ilk görünen sat
 """
 import math
 import uuid
+from bisect import bisect_left, bisect_right
 from typing import Dict, Iterator, List, Optional, Tuple
 
 from PySide6.QtCore import QEvent, QMimeData, QPoint, QPointF, QRect, Qt, QTimer, Signal
@@ -556,20 +557,39 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             self.viewport().update()
 
     # --- sayfa sınırı çizgileri (T9, t9_tasarim.md §4) ---
-    _SB_OLAYLARI = ("hucre", "sonuc", "yapi", "boyut", "bicim", "nesne", "sayfa", "yazdirma")
+    _SB_ANINDA = ("yapi", "boyut", "bicim", "nesne", "sayfa", "yazdirma")   # yerleşimi hemen değiştirir
+    _SB_ERTELI = ("hucre", "sonuc")                                         # yazarken: boşta kalınca yenilenir
+    _SB_ERTELEME_MS = 300
 
     def _sayfa_sonlari_kur(self) -> None:
         self._sb = None                                      # (anahtar, SayfaSinirlari): olay gelince düşer
+        self._sb_zamanlayici = QTimer(self)
+        self._sb_zamanlayici.setSingleShot(True)
+        self._sb_zamanlayici.setInterval(self._SB_ERTELEME_MS)
+        self._sb_zamanlayici.timeout.connect(self._sb_yenile)
         kitap = self.sayfa.kitap
         if kitap is not None:
             birak = kitap.dinle(self._sb_olayi)
             self.destroyed.connect(lambda *_: birak())
 
     def _sb_olayi(self, olay) -> None:
-        if olay.tur in self._SB_OLAYLARI:
+        """Yalnız KENDİ sayfamızın olayları (başka sayfadaki düzenleme bu sayfanın sayfa yerleşimini değiştirmez;
+        Opus bulgusu: eskiden her olay 100.000 satırda 0,18 sn'lik yeniden hesap başlatıyordu)."""
+        if olay.sayfa is not self.sayfa:
+            return
+        if olay.tur in self._SB_ANINDA:
             self._sb = None
-            if olay.tur == "yazdirma" and olay.sayfa is self.sayfa and self.sayfa.sayfa_sonlari:
+            if self.sayfa.sayfa_sonlari:
                 self.viewport().update()
+        elif olay.tur in self._SB_ERTELI:
+            if self.sayfa.sayfa_sonlari:
+                self._sb_zamanlayici.start()                 # eski sınırlar boşta kalınca (300 ms) yenilenir
+            else:
+                self._sb = None
+
+    def _sb_yenile(self) -> None:
+        self._sb = None
+        self.viewport().update()
 
     def sayfa_sonlari_goster(self, goster: bool) -> None:
         if self.sayfa.gorunum_yaz(sayfa_sonlari=goster):
@@ -595,10 +615,14 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         alan = sn.alan
         xs = {c: (x, g) for c, x, g in sutunlar}
         ys = {r: (y, h) for r, y, h in satirlar}
-        sol = next((xs[c][0] for c in range(alan.ilk_sutun, alan.son_sutun + 1) if c in xs), None)
-        sag = next((xs[c][0] + xs[c][1] for c in range(alan.son_sutun, alan.ilk_sutun - 1, -1) if c in xs), None)
-        ust = next((ys[r][0] for r in range(alan.ilk_satir, alan.son_satir + 1) if r in ys), None)
-        alt = next((ys[r][0] + ys[r][1] for r in range(alan.son_satir, alan.ilk_satir - 1, -1) if r in ys), None)
+        sol = sag = ust = alt = None
+        gc, gr = sorted(xs), sorted(ys)                      # görünen sütun/satırlar: ikili aramayla alanın uçları
+        i, j = bisect_left(gc, alan.ilk_sutun), bisect_right(gc, alan.son_sutun) - 1
+        if i <= j:
+            sol, sag = xs[gc[i]][0], xs[gc[j]][0] + xs[gc[j]][1]
+        i, j = bisect_left(gr, alan.ilk_satir), bisect_right(gr, alan.son_satir) - 1
+        if i <= j:
+            ust, alt = ys[gr[i]][0], ys[gr[j]][0] + ys[gr[j]][1]
         p.save()
         p.setClipRect(kirp)
         for r, el_ile in sn.satirlar:
@@ -1174,10 +1198,10 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             self._kenar_ciz(p, self._stilli, kirp)
 
         self._metinleri_ciz(p, metinler, kirp)
-        if self.sayfa.sayfa_sonlari and sutunlar and tum_satirlar:
-            self._sayfa_sonlarini_ciz(p, sutunlar, tum_satirlar, kirp)
         if self.sayfa.birlesimler:
             self._birlesimleri_ciz(p, kirp, pad)
+        if self.sayfa.sayfa_sonlari and sutunlar and tum_satirlar:      # birleşimin zemininin ÜSTÜNDE görünsün
+            self._sayfa_sonlarini_ciz(p, sutunlar, tum_satirlar, kirp)
         if self.sayfa.notlar:
             self._not_uclari_ciz(p, sutunlar_k, satirlar)
         if self.sayfa.filtre is not None:

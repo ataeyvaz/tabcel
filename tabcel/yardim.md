@@ -187,6 +187,10 @@ Grafik görünen alanın ortasına yerleşir. {APP_NAME} seçimden **serileri ke
 
 **Ekle → Resim…** ile bir resim dosyası (PNG, JPEG, GIF, BMP; en çok 25 MB) seçin. Resim görünen alanın ortasına, doğal boyutunda (en çok 600 piksel genişlik) eklenir. Grafiklerdeki gibi taşınır, boyutlandırılır (köşeden sürüklerken oran korunur, `Shift` oranı serbest bırakır), `Delete` ile silinir, kopyalanıp yapıştırılır ve sağ tık menüsüyle öne/arkaya getirilir. Resim kırpma, döndürme ve parlaklık ayarı yoktur.
 
+**Excel'de değiştirilmiş grafikler:** Excel'de bir grafiğe eğilim çizgisi, ikincil eksen, birleşik grafik, gradyan/desen dolgusu, hata çubukları, logaritmik eksen, veri etiketi ayrıntıları, düzgünleştirilmiş çizgi gibi {APP_NAME}'in desteklemediği öğeler eklenmişse, dosyayı açarken **hangi grafikte (ve hangi sayfada) hangi öğelerin olduğu** uyarı çubuğunda yazılır ve kaydederken ayrıca sorulur; kaydederseniz bu öğeler dosyadan çıkar. Dosyayı daha önce {APP_NAME} kaydetmişse yazı boyutu, tema rengi, çubuk aralığı gibi **biçim** değişiklikleri de aynı şekilde bildirilir. Excel'de hiçbir şey değiştirmeden aç-kaydet yapılmış dosyada uyarı çıkmaz.
+
+**Başka çalışma kitabına kopyalama:** grafik ve resim aynı kitabın başka sayfasına kopyalanıp kesilip yapıştırılabilir. **Başka bir kitaba** yalnız **resim** yapıştırılır (kopya olarak; "kes" bile kaynağı silmez). Grafik başka kitaba yapıştırılamaz, çünkü verisi kendi kitabındaki sayfalara bağlıdır; önce verisini o kitaba taşıyıp grafiği orada oluşturun.
+
 ## Grafik sekmesi
 
 Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme, başlık / gösterge / eksen başlıkları / veri etiketleri açma-kapama, renk şemaları ve öne/arkaya getirme bulunur. Çift tıklama ya da **Grafik Ayarları** ayrıntılı pencereyi açar (başlıklar, eksen en küçük/en büyük değerleri, her serinin adı, değer aralığı, kategorisi ve rengi). Aralıklar `Sayfa1!$B$2:$B$5` biçiminde yazılır.
@@ -216,6 +220,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - **Görünüm → Sayfa Sonlarını Göster** ekranda sayfaların nerede bölüneceğini gösterir: **kesikli gri çizgi** otomatik sayfa sınırı, **düz koyu çizgi** sizin eklediğiniz sayfa sonudur. Çizgiler yazdırma alanı boyunca uzanır; sayfa boyutunu, kenar boşluklarını, ölçeği ya da satır/sütun boyutunu değiştirince kendiliğinden yenilenir.
 - **Sayfa Düzeni → Kesmeler → Sayfa Sonu Ekle:** etkin hücrenin **üstüne ve soluna** sayfa sonu koyar (A sütunundaysanız yalnız yatay, 1. satırdaysanız yalnız dikey; A1'de eklenemez). **Sayfa Sonunu Kaldır** etkin hücrenin üstündeki/solundaki sonu kaldırır, **Tüm Sayfa Sonlarını Sıfırla** hepsini siler. Hepsi `Ctrl+Z` ile geri alınır.
 - Satır/sütun ekleyip sildiğinizde sayfa sonları, yazdırma alanı ve yinelenen başlık satırları birlikte kayar.
+- Bir sayfa sonu gizli bir satır/sütuna (ör. filtre yüzünden) denk gelirse, sonraki **görünür** satır/sütunda başlar.
 - **Sığdır** seçeneklerinden biri açıkken el ile sayfa sonları yok sayılır (Excel gibi); çizgiler de gösterilmez.
 - **Sayfa Düzeni → Sığdır:** *Genişliği tek sayfaya sığdır* ve *Yüksekliği tek sayfaya sığdır* ayrı ayrı ya da birlikte işaretlenebilir (ölçek gerektiği kadar küçülür). **Sayfa Sırası** çok sayfalı çıktıda önce aşağı mı önce sağa mı gidileceğini belirler; Sayfa Yapısı penceresinde de vardır.
 - Sayfa sonları ve sığdır ayarları `.xlsx` dosyasına yazılır; Excel'de hazırlanmış dosyadaki el ile sayfa sonları okunur.
@@ -272,12 +277,15 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 - **Dizi taşması yok:** çok hücreli bir formül sonucu tek değere indirilir (Excel 365 komşu hücrelere taşırır). Dinamik dizi fonksiyonları sonraki sürümdedir.
 - **Pivot tablo, Tablo nesnesi, makro (VBA), Solver, .xls ve .ods** henüz desteklenmez.
+- **Excel'de eklenen eğilim çizgisi, ikincil eksen vb. korunmaz** (açılışta hangi grafikte olduğu bildirilir, kaydederken sorulur).
+- **Grafik başka çalışma kitabına yapıştırılamaz** (Excel yapıştırıp özgün kitaba bağlı kalır); resim yapıştırılır.
 - **Grafikler:** yalnız 7 temel tür vardır; ikincil eksen, eğilim çizgisi, hata çubukları ve 3B yoktur. Grafikler ve resimler dosyada ayrı katmanlarda saklandığından, karışık üst üste sıralama (bir resmin grafiğin üstünde olması gibi) kaydedip açınca grafikler altta, resimler üstte olacak biçimde yeniden dizilebilir.
 - **Bölmeleri Dondur** sayfanın başından dondurur (Excel kaydırılmış pencerenin üstünden dondurur).
 - Var olmayan sayfaya başvuran formül reddedilir ve düzenleme açık kalır.
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
 - Dışarıdan yapıştırılan metindeki tarihler tarih olarak anlaşılmaz (elle yazarken anlaşılır).
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
+- Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 

@@ -248,7 +248,10 @@ def test_buyuk_secimde_ozet_ertelenir_kucukte_aninda(app):
     assert "Toplam: 9" in p.ozet_etiketi.text()                       # küçük: hemen
     g.sec((1, 1), (100, 80))                                          # 8000 hücre > eşik
     assert "Toplam: 9" in p.ozet_etiketi.text()                       # henüz eski metin
-    QTest.qWait(120)
+    import time
+    bitis = time.monotonic() + 3.0                                    # sabit qWait yerine koşul: yükte boyama zamanlayıcıyı geciktirir
+    while "Toplam: 8000" not in p.ozet_etiketi.text() and time.monotonic() < bitis:
+        QTest.qWait(10)
     assert "Toplam: 8000" in p.ozet_etiketi.text()
 
 
