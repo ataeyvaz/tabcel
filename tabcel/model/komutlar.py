@@ -703,6 +703,8 @@ def ana_sayfa(komut, geri_al: bool = False):
     Taşımada geri alırken kaynak, yinelerken hedef sayfa."""
     if isinstance(komut, HucreTasi):
         return komut.kaynak if geri_al else komut.hedef
+    if hasattr(komut, "ana_sayfa_ver"):                    # kendi geçiş sayfasını bilen komutlar (Özet Tablo vb.)
+        return komut.ana_sayfa_ver(geri_al)
     if isinstance(komut, Grup):
         for k in komut.komutlar:
             s = ana_sayfa(k, geri_al)

@@ -10,7 +10,7 @@ Her şey **bilgisayarda** çalışır: çalışma kitaplarınız hiçbir sunucuy
 
 - **Izgara ve formüller:** kendi çizdiğimiz ızgara, 100'den fazla işlev (Türkçe adlarıyla: `TOPLA`, `EĞER`, `DÜŞEYARA`…; ayırıcı `;`, ondalık `,`), Excel 365 dizi semantiği, döngü uyarısı, hata değerleri için Türkçe açıklama
 - **Biçimlendirme:** yazı tipi, kenarlık, dolgu, sayı biçimleri (Türkçe bölgesel), birleştirme, metni kaydır, dondurma, biçim boyacısı, doldurma/seriler
-- **Veri araçları:** sırala (Türkçe harf kurallarıyla), filtre, bul/değiştir, veri doğrulama, koşullu biçim, adlandırılmış aralıklar, notlar
+- **Veri araçları:** sırala (Türkçe harf kurallarıyla), filtre, bul/değiştir, **Özet Tablo** (anlık görüntü), veri doğrulama, koşullu biçim, adlandırılmış aralıklar, notlar
 - **Grafikler ve resimler:** sütun, çubuk, çizgi, pasta, halka, alan, dağılım; .xlsx'e yazma ve okuma
 - **Dosyalar:** .xlsx (asıl biçim; **parolalı** açma/kaydetme), .ods (aç/kaydet), .xls (yalnız okuma), .csv (kodlama/ayraç tanıma, kimlik koruması), PDF dışa aktarma, yazdırma, sayfa sonları, otomatik kayıt + çökme kurtarma
 - **Google Drive / OneDrive:** eşitleme klasöründeki dosyalarda canlı kayıt, dışarıdan değişikliği fark etme (API yok, hesaba dokunulmaz)

@@ -358,6 +358,36 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         QShortcut(QKeySequence("F1"), self, activated=lambda: self.yardim_ac(None))
         QShortcut(QKeySequence("F7"), self, activated=lambda: self.yazim_denetle(), context=Qt.WindowShortcut)
 
+    # --- Ekle: Özet Tablo (Faz 8d) ---
+    def ozet_tablo_ekle(self) -> bool:
+        """Seçimden (tek hücre → çevresindeki veri bölgesi) Özet Tablo oluşturur; yeni sayfaya ya da bu sayfada bir hücreye
+        yazılır; tek geri al adımı. Sonuç anlık görüntüdür."""
+        from ..model.adres import bitisik_bolge
+        from ..model.ozet import OzetEkle, OzetHatasi
+        from .ozet_penceresi import OzetPenceresi
+        g = self.izgara()
+        sec = g.secim
+        tek = (sec.ilk_satir, sec.ilk_sutun) == (sec.son_satir, sec.son_sutun)
+        kaynak = bitisik_bolge(g.sayfa, sec.ilk_satir, sec.ilk_sutun) if tek else sec
+        d = OzetPenceresi(g.sayfa, kaynak, self)
+        if d.exec() != QDialog.Accepted:
+            return False
+        yeni_sayfa, hucre = d.hedef()
+        ad = None
+        if yeni_sayfa:
+            ad, n = "Özet Tablo", 1
+            while self.kitap.ad_var_mi(ad):
+                n += 1
+                ad = f"Özet Tablo{n}"
+        try:
+            kmt = OzetEkle(self.kitap, g.sayfa, d.kaynak(), d.tanim(), None if yeni_sayfa else g.sayfa,
+                           hucre or (1, 1), ad)
+        except (OzetHatasi, ValueError) as e:
+            QMessageBox.warning(self, APP_NAME, str(e))
+            return False
+        self.yigin.calistir(kmt)
+        return True
+
     # --- Gözden Geçir: Yazım Denetimi (Faz 7c) ---
     def _yazim_motoru(self):
         """Windows Yazım Denetimi API'si; kullanılamıyorsa None ve ileti. Testlerde yamalanır."""
@@ -513,6 +543,7 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
+        e("ozet_tablo", "Özet Tablo…", lambda: self.ozet_tablo_ekle(), "", "pivot32")
         e("yazim", "Yazım Denetimi…", lambda: self.yazim_denetle(), "F7", "spell32")
         e("yeni_not", "Yeni Not", lambda: g().not_duzenle(), "Shift+F2", "note32")
         e("notu_sil", "Notu Sil", lambda: g().notu_sil(), "", "note_delete")

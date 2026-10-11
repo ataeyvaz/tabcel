@@ -14,6 +14,9 @@ class EkleSayfasi(SeritSayfasi):
     def __init__(self, pencere):
         super().__init__()
         m = pencere._menu
+        t = SeritGrubu("Tablolar", 6, "pivot32")
+        t.buyuk(pencere.eylemler["ozet_tablo"], ikon="pivot32", metin="Özet\nTablo")
+        self.grup_ekle(t)
         g = SeritGrubu("Grafikler", 5, "chart32")
         for tur, metin, ikon in (("sutun", "Sütun", "chart_sutun32"), ("cubuk", "Çubuk", "chart_cubuk32"),
                                  ("cizgi", "Çizgi", "chart_cizgi32")):

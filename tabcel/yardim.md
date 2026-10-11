@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Özet Tablo:** Ekle sekmesinden satır/sütun/değer alanlarıyla özet tablo oluşturulur (anlık görüntü). Bkz. [Sırala, Filtre, Bul ve Değiştir](konu:siralafiltre).
 - **.ods (OpenDocument Hesap Tablosu):** açılır ve kaydedilir; Excel ve LibreOffice ile uyumludur. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 - **Parolalı çalışma kitabı:** Dosya → *Parola Belirle…*; parolalı .xlsx açılırken parola sorulur. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 - **.xls açma:** eski Excel dosyaları artık açılır (yalnız okuma; formüller değer olarak gelir). Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
@@ -178,6 +179,18 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 ## Bul ve Değiştir
 
 `Ctrl+F` bulur, `Ctrl+H` değiştirir. `Shift+F4` sonrakini, `Ctrl+Shift+F4` öncekini bulur (pencere kapalıyken de). Arama Türkçe büyük/küçük harf kurallarını bilir (`I`/`ı`, `İ`/`i`).
+
+## Özet Tablo
+
+**Ekle → Tablolar → Özet Tablo** büyük bir listeyi satır/sütun başına özetler (ör. bölgeye göre toplam satış).
+
+1. Başlıklı veri aralığını seçin (tek hücre seçerseniz çevresindeki veri bloğu alınır) ve Özet Tablo'ya tıklayın.
+2. **Satırlar** ve isteğe bağlı **Sütunlar** alanını, en çok üç **Değer** alanını ve işlevini seçin: *Toplam*, *Sayı*, *Ortalama*, *Maks*, *Min*.
+3. Hedef: yeni sayfa ya da bu sayfada bir hücre. *Genel Toplam* satırı/sütunu isteğe bağlıdır.
+
+Gruplama Türkçe harf kurallarıyla büyük/küçük harfe duyarsızdır (`Çay` = `ÇAY`); boş değerler `(boş)` olarak gruplanır. Toplam/Ortalama/Maks/Min yalnız sayıları katar, Sayı boş olmayanları sayar; kaynakta hata değeri varsa o hücrenin sonucu o hatadır. İşlem tek geri al adımıdır.
+
+**Önemli:** Özet tablo bir **anlık görüntüdür** — kaynak veri değişince kendiliğinden güncellenmez (yeniden oluşturun) ve .xlsx'e düz değerler olarak kaydedilir.
 
 <!-- konu: veriaraclari | Veri Doğrulama, Koşullu Biçim, Notlar -->
 # Veri Doğrulama, Koşullu Biçim ve Notlar
@@ -322,6 +335,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
 - Dışarıdan yapıştırılan metindeki tarihler tarih olarak anlaşılmaz (elle yazarken anlaşılır).
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
+- **Özet Tablo** canlı değildir: bir **anlık görüntü** olarak düz hücrelere yazılır (kaynak değişince yenilenmez, Excel'e Özet Tablo nesnesi olarak kaydedilmez); filtre/dilimleyici, hesaplanmış alan, gruplama (tarih/aralık) ve tek değer alanından fazla işlev yoktur.
 - **.xls** yalnız okunur ve formüller değere döner (xlrd formül metnini vermez); .xls olarak kaydedilemez, `.xlsx` önerilir. Pivot tablo sonraki sürümdedir. **.ods** dosyasında sayı biçimlerinin yalnız temel kodları taşınır (renkli/koşullu bölümlü kodlar Genel olur; kaydederken uyarılır); parola .ods'de desteklenmez.
 - **Yazım denetimi** sayfanın başından başlar (Excel etkin hücreden başlar, sonda baştan devam edilsin mi diye sorar); yalnız sabit metin hücreleri denetlenir, özel sözlüğe ekleme ve otomatik düzeltme yoktur.
 - Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
