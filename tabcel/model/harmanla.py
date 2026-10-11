@@ -10,16 +10,12 @@
 import unicodedata
 from typing import Any, Tuple
 
+from ..metin_tr import tr_buyuk, tr_kucuk  # noqa: F401  (tek kaynak; eski içe aktarma yolu korunur)
 from .deger import Hata
 
 _ALFABE = "abcçdefgğhıijklmnoöpqrsştuüvwxyz"
 _SIRA = {h: i for i, h in enumerate(_ALFABE)}
 _YOK_SAYILAN = "-'’‘‐‑"          # birincil düzeyde atlanan karakterler
-
-
-def tr_kucuk(metin: str) -> str:
-    """Türkçe küçük harf (İ→i, I→ı)."""
-    return metin.replace("I", "ı").replace("İ", "i").lower()
 
 
 def _taban(c: str) -> Tuple[str, bool]:

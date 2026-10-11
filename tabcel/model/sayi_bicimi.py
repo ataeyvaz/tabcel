@@ -25,6 +25,7 @@ from fractions import Fraction
 from functools import lru_cache
 from typing import List, NamedTuple, Optional, Tuple
 
+from ..metin_tr import kucuk
 from .deger import Hata
 from .gosterim import goster, sayiyi_sigdir
 from .tarihseri import MAKS_SERI, haftanin_gunu0, seri_ymd
@@ -56,8 +57,7 @@ _RENKLER = (  # (kanonik, Türkçe, #rrggbb)
 )
 
 
-def _tr_kucuk(s: str) -> str:
-    return s.replace("I", "ı").replace("İ", "i").lower()
+_tr_kucuk = kucuk                                   # tek kaynak: tabcel/metin_tr.py (girdi.py da bu adla içe aktarır)
 
 
 _RENK_ADI = {}

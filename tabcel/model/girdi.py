@@ -19,6 +19,7 @@ import re
 from decimal import Decimal as _Ondalik, InvalidOperation as _Ondalik_Hata
 from typing import Optional, Tuple
 
+from ..metin_tr import tr_buyuk
 from .sayfa import Hucre
 from .sayi_bicimi import AY_KISA, AYLAR, _tr_kucuk
 from .tarihseri import ay_gun_sayisi, ymd_seri
@@ -41,9 +42,7 @@ def sayi_coz(metin: str) -> Optional[float]:
 
 
 def _mantiksal_coz(metin: str) -> Optional[bool]:
-    m = metin.strip()
-    # Türkçe büyük harf: 'i' → 'İ' için önce kendi dönüşümümüzü yapıyoruz
-    return _MANTIKSAL.get(m.replace("i", "İ").replace("ı", "I").upper())
+    return _MANTIKSAL.get(tr_buyuk(metin.strip()))
 
 
 def girdi_coz(metin: str) -> Optional[Hucre]:

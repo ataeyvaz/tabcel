@@ -36,6 +36,8 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Türkiye'ye özel işlevler:** `YAZIYLA(sayı)` sayıyı yazıya çevirir (125 → *yüz yirmi beş*), `TCKİMLİKDOĞRULA(no)` T.C. kimlik numarasının sağlama kuralına uyup uymadığını söyler. Bkz. [Formüller](konu:formuller).
+
 - **Sayfa sınırı çizgileri ve el ile sayfa sonu:** Görünüm → Sayfa Sonlarını Göster; Sayfa Düzeni → Kesmeler. Ayrıca *yüksekliği tek sayfaya sığdır* ve *sayfa sırası* seçenekleri. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 
 - **Grafik ve resim yazdırma:** grafikler ve resimler artık yazdırılır ve PDF'e aktarılır. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
@@ -107,6 +109,12 @@ Formül `=` ile başlar. Fonksiyon adları **Türkçe**, bağımsız değişken 
 | `####` | sütun sayıyı göstermeye yetmeyecek kadar dar; genişletin |
 
 Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "Döngüsel Başvurular" olarak bildirilir.
+
+## Türkiye'ye özel işlevler
+
+- **YAZIYLA(sayı):** sayıyı Türkçe yazıya çevirir. `=YAZIYLA(125)` → *yüz yirmi beş*, `=YAZIYLA(-3)` → *eksi üç*, `=YAZIYLA(2,05)` → *iki virgül sıfır beş*. Mutlak değeri katrilyonun (10^15) altında olmalı, yoksa `#SAYI!` verir.
+- **TCKİMLİKDOĞRULA(no):** 11 haneli T.C. kimlik numarası sağlama kurallarına uyuyorsa DOĞRU, uymuyorsa YANLIŞ verir. Sayı ya da metin kabul eder (baştaki sıfır kaybolmasın diye metin yazabilirsiniz). Kişinin gerçekten var olup olmadığını denetlemez.
+- Bu iki işlev **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
 
 ## Adlandırılmış aralıklar
 
@@ -201,7 +209,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 ## Açma ve kaydetme
 
 - `Ctrl+N` yeni, `Ctrl+O` aç, `Ctrl+S` kaydet, `Ctrl+Shift+S` ya da `F12` farklı kaydet. Dosyayı komut satırından ya da Dosya Gezgini'nden de açabilirsiniz.
-- Biçimler: **.xlsx** (asıl biçim) ve **.csv**. CSV açarken kodlama (UTF-8 / Windows-1254) ve ayırıcı otomatik tanınır, bir **önizleme** penceresi görürsünüz; "metin olarak aç" seçeneği vardır.
+- Biçimler: **.xlsx** (asıl biçim) ve **.csv**. CSV açarken kodlama (UTF-8 / Windows-1254) ve ayırıcı otomatik tanınır, bir **önizleme** penceresi görürsünüz; "metin olarak aç" seçeneği vardır. Bilgi kaybettirecek alanlar **otomatik metin kalır**: baştaki sıfırlı sayılar (`00123`), 11 haneli (TC kimlik no) ve 15 haneden uzun sayılar, IBAN, `1-2` / `3/4` gibi tarihe benzeyen kodlar. Tam tarihler (`01/02/2024`) ve normal sayılar çevrilmeye devam eder. Önizleme penceresinde ayrıca **sütun türü** (Genel / Metin / Sayı-tarih çevir), **ondalık ayırıcı** (Türkçe virgül ya da İngilizce nokta) seçebilir ve otomatik korumayı kapatabilirsiniz.
 - Kayıt güvenlidir: önce geçici dosyaya yazılır, sonra yerine konur; kayıt yarıda kesilirse özgün dosya bozulmaz.
 - **Grafikler ve resimler** .xlsx dosyasına kaydedilir ve Excel'de açıldığında grafik/resim olarak görünür. Excel'de hazırlanmış dosyalarda sütun, çubuk, çizgi, pasta, halka, alan ve dağılım grafikleri okunur; **3B, radar, borsa, kabarcık** gibi türler, ikincil eksenler ve birleşik grafikler desteklenmez.
 - Açılan dosyada {APP_NAME}'in korumadığı bir öğe varsa (ör. pivot tablo, şekil, makro, desteklenmeyen grafik türü) pencerenin üstünde **uyarı çubuğu** çıkar ve kaydederken ayrıca sorulur; böylece sessizce veri kaybetmezsiniz. Excel'de hazırlanmış grafikli dosyalarda "grafikler uyarlandı" bilgisi görürsünüz: grafik açılır, ancak Excel'e özgü süslemeler (gradyan, eğilim çizgisi vb.) kaydedince kaybolabilir.
@@ -280,6 +288,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - **Excel'de eklenen eğilim çizgisi, ikincil eksen vb. korunmaz** (açılışta hangi grafikte olduğu bildirilir, kaydederken sorulur).
 - **Grafik başka çalışma kitabına yapıştırılamaz** (Excel yapıştırıp özgün kitaba bağlı kalır); resim yapıştırılır.
 - **Grafikler:** yalnız 7 temel tür vardır; ikincil eksen, eğilim çizgisi, hata çubukları ve 3B yoktur. Grafikler ve resimler dosyada ayrı katmanlarda saklandığından, karışık üst üste sıralama (bir resmin grafiğin üstünde olması gibi) kaydedip açınca grafikler altta, resimler üstte olacak biçimde yeniden dizilebilir.
+- **Seçimde etkin hücre:** {APP_NAME}'de etkin hücre her zaman seçimin ilk hücresidir. Bu yüzden çok hücreli seçimde `Enter`/`Tab` seçimin içinde dolaşmaz (seçimi kaldırıp bir hücre ilerler), `Ctrl+Boşluk`/`Shift+Boşluk` etkin hücreyi sütunun/satırın başına taşır ve Ctrl+A (tümünü seç) veri bölgesini atlayıp doğrudan tüm sayfayı seçer.
 - **Bölmeleri Dondur** sayfanın başından dondurur (Excel kaydırılmış pencerenin üstünden dondurur).
 - Var olmayan sayfaya başvuran formül reddedilir ve düzenleme açık kalır.
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
@@ -287,6 +296,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
 - Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
+- `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok).
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 
 <!-- konu: sorunlar | Sık Sorulanlar ve Sorun Giderme -->
@@ -298,7 +308,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 **Yazdığım sayı metin gibi sola yaslanıyor.** Hücre Metin biçimindedir ya da girdi sayı olarak anlaşılamamıştır (ör. `1,234.5` yerine `1.234,5` yazın). Biçimi Genel yapıp yeniden girin.
 
-**Baştaki sıfırlar (`00123`) kayboluyor.** Hücreyi önce **Metin** biçimine alın, sonra yazın. CSV dosyalarında bu sütunun metin olarak açılması için "metin olarak aç" seçeneğini kullanın.
+**Baştaki sıfırlar (`00123`) kayboluyor.** Hücreyi önce **Metin** biçimine alın, sonra yazın. CSV dosyalarında baştaki sıfırlı alanlar zaten metin kalır; başka bir sütunu metin açmak için "metin olarak aç" seçeneğini kullanın.
 
 **Grafik oluşmadı.** Seçimde en az bir sayısal sütun/satır olmalı. Başlıklarla birlikte seçmeyi deneyin.
 

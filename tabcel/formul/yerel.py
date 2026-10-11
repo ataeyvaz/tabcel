@@ -44,10 +44,5 @@ TR = Yerel(";", ",", "\\", ";", "DOĞRU", "YANLIŞ",
            {k: HATA_TR.get(k, k) for k in _KANONIK_HATALAR})
 
 
-def tr_buyuk(metin: str) -> str:
-    """Türkçe büyük harf: i → İ, ı → I."""
-    return metin.replace("i", "İ").replace("ı", "I").upper()
-
-
-def tr_kucuk(metin: str) -> str:
-    return metin.replace("I", "ı").replace("İ", "i").lower()
+# `tr_buyuk` / `tr_kucuk`: tek kaynak `tabcel/metin_tr.py` (eski içe aktarma yolu burada da çalışır)
+from ..metin_tr import tr_buyuk, tr_kucuk  # noqa: E402,F401

@@ -12,6 +12,7 @@ döngüsel; metin + sayı (`Ürün 1`) → sayı artar; diğer → desen yinelen
 import math
 from typing import Dict, List, Optional, Tuple
 
+from ..metin_tr import buyuk, kucuk
 from .adres import Aralik
 from .sayfa import Anahtar, Hucre, Sayfa
 from .sayi_bicimi import AY_KISA, AYLAR, GUN_KISA, GUNLER, BicimHatasi, kod_coz
@@ -23,12 +24,7 @@ _SAYILI_METIN = re.compile(r"^(.*?)(\d+)(\D*)$", re.DOTALL)
 _ADLAR = (AYLAR, AY_KISA, GUNLER, GUN_KISA)
 
 
-def _tr_kucuk(s: str) -> str:
-    return s.replace("I", "ı").replace("İ", "i").lower()
-
-
-def _tr_buyuk(s: str) -> str:
-    return s.replace("i", "İ").replace("ı", "I").upper()
+_tr_kucuk, _tr_buyuk = kucuk, buyuk                 # tek kaynak: tabcel/metin_tr.py
 
 
 def _temiz(v: float) -> float:

@@ -5,6 +5,7 @@ hücreye elle yazılmış gibi çözülür (sayı, yüzde, tarih, formül — T�
 hepsi metin kalır. Yazma: etkin sayfa, hücrelerin **görünen** metni (Excel gibi), varsayılan `;` ve UTF-8 BOM
 (Türkçe Excel'in doğrudan açtığı biçim).
 """
+import re
 import csv
 import io
 from typing import Iterable, List, Optional, Tuple
@@ -172,9 +173,40 @@ def sayfa_adi_uret(yol: str) -> str:
     return ad
 
 
-def kitap_olustur(satirlar: Iterable[List[str]], ad: str = "Sayfa1", metin_olarak: bool = False
-                  ) -> Tuple[CalismaKitabi, List[str]]:
+_KORU_SIFIR = re.compile(r"0\d+")                          # 00123 (baştaki sıfır)
+_KORU_RAKAM = re.compile(r"\d+")
+_KORU_IBAN = re.compile(r"[A-Z]{2}\d{2}(?: ?[A-Z0-9]){11,30}")
+_KORU_TARIH_BENZERI = re.compile(r"\d{1,2}[-/]\d{1,2}")      # 1-2, 3/4: Excel tarihe çevirirdi (banka kodu, bölüm no…)
+
+
+def korunmali_mi(alan: str) -> bool:
+    """T6: CSV'de sayıya/tarihe çevrilirse bilgi kaybeden alanlar metin kalır: baştaki sıfır (00123), 15 haneden uzun
+    tam sayı (duyarlık kaybı), 11 haneli sayı (TC kimlik no), IBAN, `1-2` / `3/4` biçimi. Tam tarihler (01/02/2024) etkilenmez."""
+    a = alan.strip()
+    if _KORU_RAKAM.fullmatch(a):
+        return bool(_KORU_SIFIR.fullmatch(a)) or len(a) > 15 or len(a) == 11
+    return bool(_KORU_IBAN.fullmatch(a) or _KORU_TARIH_BENZERI.fullmatch(a))
+
+
+SUTUN_TURLERI = ("genel", "metin", "cevir")        # genel: koruma kuralı · metin: hep metin · cevir: koruma yok, sayı/tarih çevrilir
+_NOKTALI_SAYI = re.compile(r"[-+]?\d{1,3}(?:,\d{3})*\.\d+|[-+]?\d+\.\d+")
+
+
+def ondalik_noktali_cevir(alan: str) -> str:
+    """Ondalık ayırıcı "nokta" seçildiğinde `1,234.56` / `3.14` → Türkçe `1234,56` / `3,14` (binlik virgülü atılır).
+    Sayıya benzemeyen alana (sürüm no `1.2.3`, tarih `01.02.2024`) dokunmaz."""
+    a = alan.strip()
+    if _NOKTALI_SAYI.fullmatch(a):
+        return a.replace(",", "").replace(".", ",")
+    return alan
+
+
+def kitap_olustur(satirlar: Iterable[List[str]], ad: str = "Sayfa1", metin_olarak: bool = False,
+                  koru: bool = True,
+                  sutun_turleri: Optional[dict] = None, ondalik: str = "otomatik") -> Tuple[CalismaKitabi, List[str]]:
     """Satırlardan tek sayfalı kitap. `metin_olarak=True`: hiçbir alan sayıya/tarihe çevrilmez.
+    `sutun_turleri`: {sütun no (1'den): 'genel'|'metin'|'cevir'}; `ondalik='nokta'`: noktalı ondalıklar çevrilir.
+    `koru=True`: `korunmali_mi` alanları (00123, TC, IBAN, 1-2…) otomatik metin kalır.
     Dönen liste kullanıcıya bildirilecek uyarılar (kırpılan sütunlar vb.)."""
     kitap = CalismaKitabi()
     sayfa = kitap.sayfalar[0]
@@ -197,9 +229,12 @@ def kitap_olustur(satirlar: Iterable[List[str]], ad: str = "Sayfa1", metin_olara
         for c, a in enumerate(alanlar, start=1):
             if a == "":
                 continue
-            if metin_olarak:
+            tur = (sutun_turleri or {}).get(c, "genel")
+            if metin_olarak or tur == "metin" or (tur == "genel" and koru and korunmali_mi(a)):
                 yeni[(r, c)] = Hucre(a)
                 continue
+            if ondalik == "nokta":
+                a = ondalik_noktali_cevir(a)
             try:
                 h, kod = ceviri.hucre_girdisi_akilli(a, kitap)
             except FormulHatasi:

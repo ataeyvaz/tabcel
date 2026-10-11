@@ -286,6 +286,22 @@ def _oneki_ekle(g) -> str:
     return g.group(0)
 
 
+def _tabcel_ozel_kullanimi(kitap) -> set:
+    """Kitapta kullanılan Tabcel'e özgü (Excel'de olmayan) işlevlerin adları (T7)."""
+    from ..formul.adlar import TABCEL_OZEL
+    bulunan = set()
+    for sayfa in kitap.sayfalar:
+        for _, _, h in sayfa.dolu_hucreler(False):
+            f = h.formul
+            if f is not None:
+                for ad in TABCEL_OZEL:
+                    if ad not in bulunan and ad + "(" in f.upper():
+                        bulunan.add(ad)
+        if len(bulunan) == len(TABCEL_OZEL):
+            break
+    return {TABCEL_OZEL[a] for a in bulunan}
+
+
 def _formul_yaz(formul: str, kitap) -> str:
     """Saklanan formül → dosyadaki metin (İngilizce, sayfa adlı, gerekli `_xlfn.` önekleriyle)."""
     m = ceviri.disa(formul, kitap)
@@ -584,6 +600,10 @@ def kaydet(kitap: CalismaKitabi, yol: str) -> Rapor:
 
     xlsx_grafik.im_yaz(wb)
     _adlari_yaz(wb, kitap)
+    ozel = _tabcel_ozel_kullanimi(kitap)
+    if ozel:
+        rapor.ekle(f"{', '.join(sorted(ozel))} işlev(ler)i yalnızca {APP_NAME}'e özgüdür; Excel ve diğer programlarda "
+                   "#AD? verir (değerler dosyada saklanır, formül çalışmaz).", True)
     if sayac.get("grafik_yok"):
         rapor.ekle(f"{sayac['grafik_yok']} grafik dosyaya yazılamadı (verisi silinmiş ya da silinen bir sayfaya bağlı); "
                    "kaydedilen dosyada yok.", True)

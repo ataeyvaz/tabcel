@@ -1,6 +1,7 @@
 """Pencerenin dosya işlemleri (Faz 4 / 4b): Yeni, Aç, Kaydet, Farklı Kaydet, kapatırken sorma, veri kaybı
 uyarısı, son dosyalar. `Pencere` bu karışımı miras alır; her dosya bir pencerede açılır (Excel gibi),
 boş ve değişmemiş pencere yerine yenisi açılırsa o pencere kapanır."""
+import time
 import os
 import weakref
 from typing import List, Optional
@@ -220,7 +221,7 @@ class DosyaIslemleri:
         return p
 
     def _csv_ayarlari(self, yol: str):
-        """(satırlar, metin_olarak) | None (iptal). Testlerde yamalanır."""
+        """(satırlar, metin_olarak[, koru, sütun_türleri, ondalık]) | None (iptal). Testlerde yamalanır."""
         from .csv_penceresi import csv_ayarlari_sor
         return csv_ayarlari_sor(yol, self)
 
@@ -228,9 +229,10 @@ class DosyaIslemleri:
         a = self._csv_ayarlari(yol)
         if a is None:
             return None
-        satirlar, metin_olarak = a
+        satirlar, metin_olarak, *ek = a                       # ek: (koru, sütun türleri, ondalık); eski 2'liler de geçer
+        koru, turler, ondalik = ek if len(ek) == 3 else (True, None, "otomatik")
         kitap, uyarilar = arka_planda(self, "CSV içe aktarılıyor…", lambda: csv_io.kitap_olustur(
-            satirlar, csv_io.sayfa_adi_uret(yol), metin_olarak))
+            satirlar, csv_io.sayfa_adi_uret(yol), metin_olarak, koru, turler, ondalik))
         r = Rapor()
         for u in uyarilar:
             r.ekle(u)
@@ -367,11 +369,15 @@ class DosyaIslemleri:
         if self._son_otokayit is not None and self.yigin.damga_esit(damga[0], self._son_otokayit[0]) \
                 and damga[1] == self._son_otokayit[1]:
             return False
+        t0 = time.perf_counter()
         try:
             kurtarma.kopya_yaz(self.kitap, self.kurtarma_kimligi, self.belge_adi, self.yol or self.kaynak_yol,
                                self.rapor)
         except Exception:                                    # otomatik işlem hiçbir koşulda kullanıcıyı bölmez
             return False
+        # T4: yazma ana iş parçacığında olduğundan büyük kitapta donma payı ≤ ~%3 kalsın (süre × 30); küçük kitapta 2 dk
+        sure_ms = (time.perf_counter() - t0) * 1000
+        self._otokayit_zamanlayici.setInterval(max(self.OTOKAYIT_MS, int(sure_ms * 30)))
         self._son_otokayit = damga
         return True
 
