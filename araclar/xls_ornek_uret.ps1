@@ -23,6 +23,9 @@ try {
     $ws2 = $wb.Worksheets.Add([Type]::Missing, $wb.Worksheets.Item(1)); $ws2.Name = "İkinci"
     $ws2.Range("A1").Value2 = "metin"; $ws2.Range("A1").Font.Italic = $true; $ws2.Range("A1").Font.Color = 0x0000FF
     $ws2.Range("A2").Value2 = 0.15; $ws2.Range("A2").Style = "Percent"
-    $wb.SaveAs($Cikti, 56)       # xlExcel8 (.xls)
+    $ws.Range("C5").Formula = "=SUM(B2:B3)+'İkinci'!A2*0"
+    $ws.Range("D5").Formula = '=IF(B2>1,"çok","az")'
+    $bicim = 56; if ($Cikti.ToLower().EndsWith('.ods')) { $bicim = 60 }   # 56 xlExcel8 (.xls), 60 OpenDocument (.ods)
+    $wb.SaveAs($Cikti, $bicim)
     $wb.Close($false)
 } finally { $xl.Quit() }

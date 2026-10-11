@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 
 from .. import APP_NAME
 from .arka_plan import arka_planda
-from ..io import csv_io, kurtarma, sifreleme, son_dosyalar, xls_io, xlsx_io
+from ..io import csv_io, kurtarma, ods_io, sifreleme, son_dosyalar, xls_io, xlsx_io
 from ..io.xlsx_io import Rapor, XlsxHatasi
 from ..model.anlik import kitap_anligi
 from ..model.komutlar import SayfaYapisiDegis
@@ -22,10 +22,11 @@ from ..model.sayfa import CalismaKitabi
 
 XLSX_FILTRESI = "Excel Çalışma Kitabı (*.xlsx)"
 CSV_FILTRESI = "CSV (Noktalı virgülle ayrılmış) (*.csv)"
-KAYDET_FILTRESI = XLSX_FILTRESI + ";;" + CSV_FILTRESI
+ODS_FILTRESI = "OpenDocument Hesap Tablosu (*.ods)"
+KAYDET_FILTRESI = XLSX_FILTRESI + ";;" + ODS_FILTRESI + ";;" + CSV_FILTRESI
 PDF_FILTRESI = "PDF (*.pdf)"
 XLS_FILTRESI = "Eski Excel Çalışma Kitabı (*.xls)"
-ACMA_FILTRESI = ("Excel ve CSV (*.xlsx *.xls *.csv);;" + XLSX_FILTRESI + ";;" + XLS_FILTRESI
+ACMA_FILTRESI = ("Excel, ODS ve CSV (*.xlsx *.xls *.ods *.csv);;" + XLSX_FILTRESI + ";;" + XLS_FILTRESI + ";;" + ODS_FILTRESI
                  + ";;CSV (*.csv);;Tüm Dosyalar (*.*)")
 
 
@@ -287,8 +288,11 @@ class DosyaIslemleri:
         if not os.path.exists(yol):
             raise XlsxHatasi(f"Dosya bulunamadı: {yol}")
         self._okunan_parola = None
-        if os.path.splitext(yol)[1].lower() == ".xls":
+        uzanti = os.path.splitext(yol)[1].lower()
+        if uzanti == ".xls":
             return arka_planda(self, "Dosya açılıyor…", lambda: xls_io.ac(yol))
+        if uzanti == ".ods":
+            return arka_planda(self, "Dosya açılıyor…", lambda: ods_io.ac(yol))
         sifreli = sifreleme.sifreli_mi(yol)
         yanlis = False
         while True:
@@ -340,7 +344,7 @@ class DosyaIslemleri:
         if not yol:
             return False
         if not os.path.splitext(yol)[1]:
-            yol += ".csv" if "csv" in (filtre or "").lower() else ".xlsx"
+            yol += ".csv" if "csv" in (filtre or "").lower() else ".ods" if "ods" in (filtre or "").lower() else ".xlsx"
         hedef_eski = self.yol or self.kaynak_yol
         if self.rapor.veri_kaybi and _ayni_yol(yol, hedef_eski) and os.path.exists(yol):
             if self._veri_kaybi_sorusu() != "kaydet":        # özgün (grafikli vb.) dosyanın üzerine yazılıyor
@@ -380,6 +384,16 @@ class DosyaIslemleri:
                                      else "Parola kaldırıldı; kaydedince uygulanır.", 6000)
         return True
 
+    def _parolasiz_kayit_sorusu(self) -> bool:
+        """Parolalı belge .csv/.ods olarak kaydedilirken: bu biçimler parola desteklemez. Evet → parola kalkar."""
+        c = QMessageBox.warning(
+            self, APP_NAME, "Bu biçim parola ile korumayı desteklemez; dosya parolasız kaydedilir ve parola kalkar. "
+            "Devam edilsin mi?", QMessageBox.Yes | QMessageBox.Cancel, QMessageBox.Cancel)
+        if c != QMessageBox.Yes:
+            return False
+        self.parola = None
+        return True
+
     def _csv_cok_sayfa_sorusu(self) -> bool:
         """Birden çok sayfalı kitap CSV'ye yazılırken yalnız etkin sayfa kaydedilir: devam edilsin mi?"""
         c = QMessageBox.question(
@@ -390,12 +404,17 @@ class DosyaIslemleri:
     def _kaydet_yola(self, yol: str) -> bool:
         csv_mi = os.path.splitext(yol)[1].lower() == ".csv"
         kayit_raporu = None
+        if self.parola and os.path.splitext(yol)[1].lower() in (".csv", ".ods") and not self._parolasiz_kayit_sorusu():
+            return False
         try:
             if csv_mi:
                 if len(self.kitap.sayfalar) > 1 and not self._csv_cok_sayfa_sorusu():
                     return False
                 sayfa = self.izgara().sayfa
                 arka_planda(self, "Kaydediliyor…", lambda: csv_io.dosya_yaz(sayfa, yol))
+            elif os.path.splitext(yol)[1].lower() == ".ods":
+                self.otokayit_bekle()
+                kayit_raporu = arka_planda(self, "Kaydediliyor…", lambda: ods_io.kaydet(self.kitap, yol))
             else:
                 self.otokayit_bekle()                         # iki yazım aynı anda belleği ikiye katlamasın
                 parola = self.parola

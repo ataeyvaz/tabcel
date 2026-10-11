@@ -52,7 +52,10 @@ class _SagTikSuzgeci(QObject):
     def eventFilter(self, nesne, olay):
         if olay.type() != QEvent.ContextMenu or not isinstance(nesne, QToolButton):
             return False
-        pencere = nesne.window()
+        try:
+            pencere = nesne.window()
+        except RuntimeError:                                  # C++ nesnesi silinmiş
+            return False
         islev = getattr(pencere, "hizli_erisim_menusu", None)
         return bool(islev and islev(nesne, olay.globalPos()))
 
@@ -67,7 +70,9 @@ class HizliErisim:
         global _suzgec
         if _suzgec is None:
             _suzgec = _SagTikSuzgeci()
-            QApplication.instance().installEventFilter(_suzgec)
+            uygulama = QApplication.instance()
+            uygulama.installEventFilter(_suzgec)
+            uygulama.aboutToQuit.connect(lambda: uygulama.removeEventFilter(_suzgec))   # çıkışta yarı yıkılmış nesnelere dokunma
         self._hizli_liste = [o for o in oku() if o["eylem"] in self.eylemler]
         self._hizli_diz()
 
