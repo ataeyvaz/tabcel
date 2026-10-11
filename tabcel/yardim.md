@@ -173,7 +173,7 @@ Bir bulguya **tıklayınca** ızgarada ilgili hücreye gidilir; altında sade bi
 - **Nerelere bakar:** tüm sayfalar, **gizli satır/sütun/sayfa**, hücre notları ve not yazarları, formüllerin içindeki metinler, tanımlı adlar, sayfa adları, grafik başlıkları ve seri adları, veri doğrulama listeleri ve iletileri. Gizli yerdekiler kırmızı *gizli …* notuyla belirtilir. **Resimlerin içeriği taranamaz**; resim varsa uyarılır, elle bakmanız gerekir.
 - **Ne yapar:** her veri türü için *Maskele* (örn. `12*******34`), *Sil* ya da *Bırak* seçersiniz; **Maske…** ile açık kalacak karakter sayısını değiştirirsiniz. Listede tek tek kutuyu kaldırarak bir bulguyu dışarıda bırakabilir, tıklayarak hücreye gidebilirsiniz.
 - **Özgün dosya değişmez.** **Temiz kopya oluştur…** yeni bir dosyaya yazar; özgün dosyanın üzerine yazmaya izin vermez. Temiz kopyada özgün dosyanın yazar/son kaydeden gibi meta verisi, üst-alt bilgisi, geri al geçmişi ve kurtarma kopyası bulunmaz. Yazdıktan sonra dosyanın tüm parçalarında özgün değerin kalmadığı **otomatik doğrulanır**; bulunursa dosya silinir ve uyarılır.
-- **Formüller:** maskelenen hücreye bağlı formüller korunur ve maskeli değerle yeniden hesaplanır. Sonucu değişen ya da hataya dönen formüller kaydetmeden önce listelenir; sonucu kişisel veri içermeyenleri isterseniz özgün sonuçlarıyla *değere çevirebilirsiniz*.
+- **Formüller:** maskelenen hücreye bağlı formüller korunur ve maskeli değerle yeniden hesaplanır. Sonucu değişen ya da hataya dönen formüller kaydetmeden önce listelenir; isterseniz özgün sonuçlarıyla *değere çevirebilirsiniz*; ancak sonuç kişisel veriden türetilmişse (kimlik no + 1 gibi) yine bilgi taşır, yalnız toplam/uzunluk gibi sonuçlar için işaretleyin.
 
 ## Ne yapmak istiyorsun? (Asistan)
 
