@@ -257,6 +257,17 @@ class Hesaplayici:
         self._grafigi_kur()
         self._hesapla(set(self._kayit))
 
+    # ------------------------------------------------------------------ salt okunur bağımlılık API'si (Faz 9a: Hesap İzleme Paneli)
+    def onculler(self, anahtar: Anahtar) -> Tuple[List[Anahtar], List[Tuple[int, Kutu]]]:
+        """Formül hücresinin DOĞRUDAN öncülleri: ([tek hücre], [(sayfa kimliği, (r1, c1, r2, c2))]); tanımlı adlar açılmış.
+        Formül olmayan / bilinmeyen hücre için boş."""
+        k = self._kayit.get(anahtar)
+        return (list(k.hucreler), list(k.araliklar)) if k is not None else ([], [])
+
+    def bagimlilar(self, anahtar: Anahtar) -> Set[Anahtar]:
+        """`anahtar` hücresini (tek hücre ya da kapsayan aralık başvurusu üzerinden) DOĞRUDAN okuyan formül hücreleri."""
+        return self._bagimlilar({anahtar}, set())
+
     def _tasma_etkilenenler(self, kimlik: int, degisen_hucreler) -> List[Anahtar]:
         """Değişen hücrelerden biri bir taşma alanına (istenen alan; engelli olanlar dahil) düşüyorsa o taşmayı üreten formül
         hücresi yeniden hesaplanmalı (alan doldu → #TAŞMA!, boşaldı → yeniden taşar)."""

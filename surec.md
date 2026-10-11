@@ -1081,3 +1081,11 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Bilinçli sınırlar:** yalnız yukarıdaki kalıplar (serbest cümle anlamaz); tek tablo, tek öneri (belirsizlikte soru sorar); tarih/ay gruplama, birden çok koşul türü (VEYA), “ile … arasında”, yüzde literalleri, hesaplanmış alan yok; İngilizce cümle yok.
 - Testler: `testler/test_asistan.py` 39 (cümle→formül ve motorla hesaplanan değer, Özet Tablo, yeni sütun, hedef seçimi, Türkçe harf toleransı, anlaşılmayanlar, örnek cümlelerin hepsi, arayüz).
 
+### Faz 9a — Ortak altyapı (2026-10-11, Sonnet 5.5; plan ve kararlar  Faz 9; CLAUDE.md kural 17–20 eklendi)
+- **Plan onayı (kullanıcı):** Faz 9 sırası 9a→9b→9c→9d; kararlar: formül stratejisi (KVKK), /, gizli sayfa korunması, yoksayma kaydı yalnız adres+kural. Kural 17–20 'ye yazıldı.
+- **** (Qt'siz, TEK kaynak — kural 18): , ,  (TR 26 karakter + mod-97; boşluklu/tireli;  diğer ülkeler),  (13–19 hane + kart ön eki [Visa, Mastercard, Amex, Troy, Discover, Diners, JCB] + Luhn),  (+90, 0090, 0 …, parantez/tire/boşluk; cep 5xx, sabit 2xx/3xx/4xx, 850), ;  (metin içinde doğrulanmış bulgular; çakışmada öncelik e-posta > IBAN > kart > telefon > TC > vergi no; **güven düzeyi** KESIN/BICIM/BELIRSIZ — çıplak 10 haneli sayı telefon/vergi no olarak BELIRSIZ), ,  +  (varsayılanlar kullanıcının örnekleriyle birebir: TC , IBAN , telefon , e-posta , kart son 4, ad ).  artık takma ad (algoritma tek kaynakta).
+- **İşlevler:**  = ,  =  (kural 16; .xlsx'te  uyarısı mevcut mekanizmayla). Not: sayı olarak yazılan vergi no baştaki sıfırı kaybeder → metin yazılmalı (yardımda yazıldı).
+- **Motor API'si (salt okunur):**  → ([tek hücre], [(sayfa kimliği, kutu)]) (tanımlı adlar açılmış),  → doğrudan okuyan formül hücreleri (aralık üzerinden dahil).
+- **Doğrulama (9c için):** formül metnini token düzeyinde yeniden yazan  zaten var → eksik aralık genişletme düzeltmesi için ağaçtan metne çeviriciye gerek yok.
+- **Sentetik veri:**  (geçerli ama rastgele TC/VKN/IBAN/kart üreticileri; kural 19).  ~70 vaka (geçerli/geçersiz/benzer, yanlış alarm, maske örnekleri, işlev 4 vaka, motor API). **Kural 12 bildirimi:**  Tabcel'e özel işlev kümesini sabitlemişti; VKN/IBAN eklendiği için küme genişletildi.
+

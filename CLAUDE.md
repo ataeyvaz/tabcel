@@ -23,6 +23,11 @@ Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü he
 15. **İçe aktarmada kimlik koruması:** CSV/dışarıdan gelen veride baştaki sıfırlı, 11 haneli (TC), 15 haneden uzun sayılar, IBAN ve `1-2`/`3/4` biçimli alanlar varsayılan olarak metin kalır (`csv_io.korunmali_mi`); kullanıcı sütun türüyle değiştirebilir.
 16. **Tabcel'e özel işlevler** (Excel'de olmayan): kanonik adı İngilizce/ASCII `TR_` önekli (`TR_NUMBERTOWORDS`), Türkçe görünümü `adlar.TABCEL_OZEL`'de; `.xlsx`e kaydederken uyarı verilir.
 
+17. **Denetim/temizleme araçları (Faz 9):** Sağlık Kontrolü ve KVKK Temizleyici kullanıcı onayı olmadan hiçbir hücreyi değiştirmez; özgün dosyanın üzerine yazmaz (temizlenmiş sonuç her zaman yeni dosya). Her düzeltme geri al yığınına girer.
+18. **Kişisel veri doğrulayıcıları tek yerde:** TC kimlik no, vergi no, IBAN, kart, telefon, e-posta algoritmaları yalnız `model/kimlik.py`'de; başka modül kendi kopyasını yazmaz.
+19. **Testlerde kişisel veri yalnız sentetiktir:** algoritmaya göre geçerli ama rastgele üretilmiş; gerçek kişiye ait veri kullanılmaz (test, örnek dosya, belge).
+20. **Hukuki iddia yok:** arayüz ve belgelerde "KVKK'ya uygunluğu garanti eder" gibi ifadeler kullanılmaz; araç "yardımcı" olarak sunulur; "Verileriniz bilgisayarınızdan çıkmaz" belirtilir.
+
 ## Dosya yapısı
 ```
 main.py              giriş noktası (komut satırından dosya açma)

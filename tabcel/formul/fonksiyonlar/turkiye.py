@@ -10,6 +10,7 @@ uyarı gösterilir (`xlsx_io.TABCEL_OZEL`).
   gerçekten var mı denetlenmez). Sayı ya da metin kabul eder (baştaki sıfır korunmuş metin).
 """
 from ...model import deger as D
+from ...model import kimlik
 from . import fonksiyon  # noqa: F401
 from .ortak import skaler
 
@@ -69,15 +70,21 @@ def _yaziyla(b, x):
     return sayi_yazi(x)
 
 
-def tc_kimlik_gecerli_mi(no: str) -> bool:
-    if len(no) != 11 or not no.isdigit() or no[0] == "0":
-        return False
-    d = [int(k) for k in no]
-    if (sum(d[0:9:2]) * 7 - sum(d[1:8:2])) % 10 != d[9]:
-        return False
-    return sum(d[:10]) % 10 == d[10]
+tc_kimlik_gecerli_mi = kimlik.tc_gecerli                  # algoritma tek kaynakta (kural 18); eski ad korunur
 
 
 @skaler("TR_VALIDATE_TCKN", "m")
 def _tc_dogrula(b, no):
     return tc_kimlik_gecerli_mi(no.strip())
+
+
+@skaler("TR_VALIDATE_VKN", "m")
+def _vkn_dogrula(b, no):
+    """Vergi kimlik no sağlaması (10 hane; sayı olarak yazılmış baştaki sıfırı kaybetmiş değerler de zorlanmaz)."""
+    return kimlik.vkn_gecerli(no.strip())
+
+
+@skaler("TR_VALIDATE_IBAN", "m")
+def _iban_dogrula(b, iban):
+    """TR IBAN: 26 karakter, mod-97; boşluklu/tireli yazım kabul."""
+    return kimlik.iban_gecerli(iban)

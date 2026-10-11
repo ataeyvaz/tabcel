@@ -76,7 +76,7 @@ def test_turkce_ad_ve_goruntu():
 def test_kanonik_adlar_ingilizce():
     """Kural 3: kanonik (dosyadaki) ad İngilizce/ASCII; Türkçe yalnız görünüm."""
     from tabcel.formul.adlar import TABCEL_OZEL
-    assert set(TABCEL_OZEL) == {"TR_NUMBERTOWORDS", "TR_VALIDATE_TCKN"}
+    assert set(TABCEL_OZEL) == {"TR_NUMBERTOWORDS", "TR_VALIDATE_TCKN", "TR_VALIDATE_VKN", "TR_VALIDATE_IBAN"}   # Faz 9a: + VKN/IBAN
     assert all(ad.isascii() for ad in TABCEL_OZEL)
 
 

@@ -130,7 +130,9 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 
 - **YAZIYLA(sayı):** sayıyı Türkçe yazıya çevirir. `=YAZIYLA(125)` → *yüz yirmi beş*, `=YAZIYLA(-3)` → *eksi üç*, `=YAZIYLA(2,05)` → *iki virgül sıfır beş*. Mutlak değeri katrilyonun (10^15) altında olmalı, yoksa `#SAYI!` verir.
 - **TCKİMLİKDOĞRULA(no):** 11 haneli T.C. kimlik numarası sağlama kurallarına uyuyorsa DOĞRU, uymuyorsa YANLIŞ verir. Sayı ya da metin kabul eder (baştaki sıfır kaybolmasın diye metin yazabilirsiniz). Kişinin gerçekten var olup olmadığını denetlemez.
-- Bu iki işlev **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
+- **VERGİNOGEÇERLİ(no):** 10 haneli vergi kimlik numarası sağlama kuralına uyuyorsa DOĞRU verir. Sıfırla başlayan numaraları **metin** olarak yazın (), yoksa sayıda baştaki sıfır kaybolur.
+- **IBANGEÇERLİ(iban):** Türkiye IBAN'ı (26 karakter, mod-97) doğruysa DOĞRU verir; boşluklu ya da tireli yazım kabul edilir. Hesabın var olup olmadığını denetlemez.
+- Bu işlevler **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
 
 ## Ne yapmak istiyorsun? (Asistan)
 
