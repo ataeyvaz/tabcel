@@ -27,6 +27,9 @@ Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü he
 18. **Kişisel veri doğrulayıcıları tek yerde:** TC kimlik no, vergi no, IBAN, kart, telefon, e-posta algoritmaları yalnız `model/kimlik.py`'de; başka modül kendi kopyasını yazmaz.
 19. **Testlerde kişisel veri yalnız sentetiktir:** algoritmaya göre geçerli ama rastgele üretilmiş; gerçek kişiye ait veri kullanılmaz (test, örnek dosya, belge).
 20. **Hukuki iddia yok:** arayüz ve belgelerde "KVKK'ya uygunluğu garanti eder" gibi ifadeler kullanılmaz; araç "yardımcı" olarak sunulur; "Verileriniz bilgisayarınızdan çıkmaz" belirtilir.
+21. **Doğrulama kuralları tek yerde (Faz 10):** zorunlu alan, geçerli TC, negatif stok vb. kurallar yalnız veri modelindeki tanımda yaşar; form ve tablo aynı kuralı kullanır, formda ya da tabloda ayrı kural yazılmaz.
+22. **Şablon tanımları kodda değil dosyada (Faz 10):** şablon/akış/modül tanımları `sablonlar/` altındaki JSON dosyalarında durur; her tanımda `surum` ve `aciklama` bulunur. Yeni şablon Tablo Sağlık Kontrolü'nden 0 bulguyla geçmeden eklenmez.
+23. **Şablon bilgisi çok gizli sayfada (Faz 10):** şablon/form bilgisi kitapta `_tabcel` çok gizli sayfasında saklanır; sütunlara konumla değil kimlik, başlık ve tanımlı ad çapasıyla bağlanır; uyuşmazlıkta çökmez, formu devre dışı bırakıp uyarır.
 
 ## Dosya yapısı
 ```
