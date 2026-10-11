@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Hesap İzleme paneli:** bir hücrenin değerinin nereden geldiğini ve nerelerde kullanıldığını ağaç olarak gösterir; tıklayınca hücreye gider. Bkz. [Formüller](konu:formuller).
 - **Ne yapmak istiyorsun? (asistan):** isteğinizi Türkçe yazın, formül ya da Özet Tablo önerisi önizlemeyle gelir; onaylarsanız yazılır. Yerel ve kural tabanlıdır. Bkz. [Formüller](konu:formuller).
 - **Doldurma seçenekleri:** Ctrl ile sürüklemede seri ⇄ kopya geçişi ve doldurma sonrası *Otomatik Doldurma Seçenekleri* düğmesi (kopyala / seri / yalnız biçim / biçimlendirmeden). Bkz. [Doldurma ve Seriler](konu:doldurma).
 - **Dinamik diziler:** formül sonuçları komşu hücrelere taşar; `SIRALA`, `FİLTRE`, `BENZERSİZ`, `SIRALI`, `AL`, `BIRAK`, `DÜŞEYYIĞ`, `YATAYYIĞ`, `SÜTUNA`, `SATIRA`, `SÜTUNSEÇ`, `SATIRSEÇ`, `GENİŞLET`, `RASGDİZİ`, `DEVRİK_DÖNÜŞÜM` ve `LET` işlevleri eklendi. Bkz. [Formüller](konu:formuller).
@@ -133,6 +134,18 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **VERGİNOGEÇERLİ(no):** 10 haneli vergi kimlik numarası sağlama kuralına uyuyorsa DOĞRU verir. Sıfırla başlayan numaraları **metin** olarak yazın (`"0123456789"`), yoksa sayıda baştaki sıfır kaybolur.
 - **IBANGEÇERLİ(iban):** Türkiye IBAN'ı (26 karakter, mod-97) doğruysa DOĞRU verir; boşluklu ya da tireli yazım kabul edilir. Hesabın var olup olmadığını denetlemez.
 - Bu işlevler **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
+
+## Hesap İzleme: “Bu sayı nereden geliyor?”
+
+**Formüller → Formül Denetleme → Hesap İzleme** (ya da `Ctrl+Alt+I`) yan paneli açar; bir hücre seçtiğinizde o değerin **nasıl hesaplandığını** adım adım gösterir. Panel sürüklenerek istediğiniz kenara yerleştirilebilir, kapatılabilir; hücreleri **değiştirmez**.
+
+- **Nereden geliyor?** sekmesi: seçili hücrenin formülü (Türkçe) ve altında hesap zinciri: her satırda hücre adresi, formül ve değer (hücrenin sayı biçimiyle, ör. `145.000 ₺`). Ağaç tembel açılır; ilk iki seviye hazır gelir, `▸` ile derinleşirsiniz. Formülü olmayan hücreler (sabit değerler) zincirin yapraklarıdır. Başka sayfadaki hücreler sayfa adıyla yazılır (`Veri!A1`).
+- **Aralıklar tek satırdır:** `TOPLA(A1:A1000)` için `A1:A1000 — 1.000 hücre, 1.000 dolu, toplam 84.250`; açınca dolu hücreler 100'erli sayfalarla listelenir (`… daha göster`). Binlerce satır birden çizilmez.
+- **Nerelerde kullanılıyor?** sekmesi: seçili hücreyi okuyan formüller (doğrudan, ya da bir aralık içinden); her biri kendi bağımlılarıyla açılır.
+- Bir satıra **tıklayınca** ızgarada o hücreye gidilir (başka sayfaya da) ve hücre kısa süre turuncu çerçeveyle vurgulanır. Panel gezinirken kök değişmez; ızgarada kendiniz başka hücre seçince panel o hücreye geçer.
+- **Hata değerleri:** zincirde hata varsa panelin üstünde *Hatanın kaynağı: …* yazar ve hatanın asıl doğduğu hücre `⚠` ile işaretlenir.
+- **Döngüsel başvuru** `↻` ile işaretlenir ve açılmaz (sonsuz döngü olmaz).
+- Değerler yeniden hesaplanınca panel kendiliğinden güncellenir; formül düzenlenince ağaç yeniden kurulur. Panel kapalıyken hiçbir işlem yapılmaz.
 
 ## Ne yapmak istiyorsun? (Asistan)
 
@@ -337,6 +350,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 | `Shift+F2` | Not ekle / düzenle |
 | `F7` | Yazım denetimi |
 | `Alt+Q` | Ne yapmak istiyorsun? (asistan) |
+| `Ctrl+Alt+I` | Hesap İzleme panelini aç/kapat |
 | `Ctrl+9` / `Ctrl+0` | Satırları / Sütunları gizle |
 | `Ctrl+Shift+9` / `Ctrl+Shift+0` | Satırları / Sütunları göster |
 | `Ctrl+Boşluk` / `Shift+Boşluk` | Sütunu / Satırı seç |

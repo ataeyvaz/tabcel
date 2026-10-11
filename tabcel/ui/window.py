@@ -34,6 +34,7 @@ from .ad_penceresi import AdTanimlaPenceresi, AdYoneticisi, GitPenceresi
 from .bicim_cubugu import BicimCubugu
 from .bulut_islemleri import BulutIslemleri
 from .hizli_erisim import HizliErisim
+from .izleme_paneli import IzlemePaneli
 from .dosya_islemleri import DosyaIslemleri
 from .grafik_eylemleri import BAGLAM_SEKMESI, GrafikEylemleri
 from .serit import Serit, SeritGrubu
@@ -137,6 +138,11 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         dikey.setContentsMargins(0, 0, 0, 0)
         dikey.setSpacing(0)
         self.setCentralWidget(merkez)
+        self.izleme = IzlemePaneli(self)                 # Hesap İzleme: yerleştirilebilir yan panel (varsayılan kapalı)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.izleme)
+        self.izleme.hide()
+        self.izleme.hucreyeGit.connect(self.hucreye_git)
+        self.izleme.visibilityChanged.connect(lambda v: self.eylemler["izleme"].setChecked(bool(v)))
 
         self.izgara_yigini = QStackedWidget()          # şerit/Giriş sayfası ızgarayı bu yığından okur (erken kurulur)
 
@@ -357,7 +363,21 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         self.eylemler["hakkinda"] = h
         QShortcut(QKeySequence("F1"), self, activated=lambda: self.yardim_ac(None))
         QShortcut(QKeySequence("Alt+Q"), self, activated=lambda: self.asistan_ac(), context=Qt.WindowShortcut)
+        QShortcut(QKeySequence("Ctrl+Alt+I"), self, activated=lambda: self.izleme_ac(), context=Qt.WindowShortcut)
         QShortcut(QKeySequence("F7"), self, activated=lambda: self.yazim_denetle(), context=Qt.WindowShortcut)
+
+    # --- Hesap İzleme paneli (Faz 9b) ---
+    def izleme_ac(self) -> None:
+        """Paneli açar/kapatır (aç/kapat eylemi ve Ctrl+Alt+I)."""
+        self.izleme.setVisible(not self.izleme.isVisible())
+
+    def hucreye_git(self, sayfa, satir: int, sutun: int) -> None:
+        """Başka sayfadaki hücreye de geçer, hücreyi seçer ve vurgular."""
+        if sayfa in self.kitap.sayfalar and sayfa is not self.izgara().sayfa:
+            self.sekmeler.setCurrentIndex(self.kitap.sayfalar.index(sayfa))
+        g = self.izgara()
+        g.sec((satir, sutun))
+        g.vurgula(satir, sutun)
 
     # --- Asistan: “Ne yapmak istiyorsun?” (Faz 8f) ---
     def asistan_ac(self) -> bool:
@@ -569,6 +589,7 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
+        e("izleme", "Hesap İzleme", lambda: self.izleme_ac(), "Ctrl+Alt+I", "trace32", isaretli=True)
         e("asistan", "Ne yapmak istiyorsun?", lambda: self.asistan_ac(), "Alt+Q", "asistan32")
         e("ozet_tablo", "Özet Tablo…", lambda: self.ozet_tablo_ekle(), "", "pivot32")
         e("yazim", "Yazım Denetimi…", lambda: self.yazim_denetle(), "F7", "spell32")
@@ -744,6 +765,8 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
 
     def _kitap_olayi(self, olay: Olay):
         """Modeldeki değişikliklere arayüz tepkisi (doğrudan yazım, geri al ve yinele aynı yoldan gelir)."""
+        if getattr(self, "izleme", None) is not None:
+            self.izleme.olay(olay)
         if olay.tur in ("hucre", "sonuc", "yapi", "ek", "sayfa"):
             kuralli = False
             for g in self._izgaralar.values():
@@ -842,6 +865,8 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         self.sekmeler.setCurrentIndex((self.sekmeler.currentIndex() + yon) % n)
 
     def _sekme_degisti(self, i: int):
+        if getattr(self, "izleme", None) is not None:
+            self.izleme.hucre_degisti()
         if i < 0 or i >= len(self.kitap.sayfalar):
             return
         eski = self._izgaralar.get(self._secili_sayfa)
@@ -904,6 +929,8 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
     # ------------------------------------------------------------------ ad kutusu / formül çubuğu
     def _arayuzu_guncelle(self, *_):
         self._baslik_guncelle()
+        if getattr(self, "izleme", None) is not None:
+            self.izleme.hucre_degisti()
         g = self.izgara()
         kaynak = self.sender()
         if kaynak is not g and kaynak in self._izgaralar.values():

@@ -304,6 +304,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         self._oto: Dict[int, int] = {}                       # satır → otomatik yükseklik (piksel, yakınlaştırılmış)
         self._oto_ok = False                                 # otomatik yükseklikler güncel mi
         self._doldur: Optional[dict] = None                # doldurma tutamacı sürüklemesi: {kaynak, hedef}
+        self._vurgu: Optional[Tuple[int, int]] = None      # geçici vurgu (Hesap İzleme panelinden gidilen hücre)
         self._son_doldurma: Optional[dict] = None          # son doldurma: {kaynak, hedef, komut, secili} (Otomatik Doldurma Seçenekleri)
         self._doldur_dugmesi: Optional[QToolButton] = None
         self.veri_kaybi_onayi = None                       # () -> bool: birleştirme veri silecekse pencere sorar
@@ -1185,6 +1186,24 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             p.end()
         if self._son_doldurma is not None:
             self._doldur_dugmesi_konumla()                   # kaydırma/yeniden boyutlandırmada düğme köşede kalır
+        if self._vurgu is not None:
+            r = self.hucre_dikdortgeni(*self._vurgu)
+            if r is not None:
+                p = QPainter(self.viewport())
+                p.setClipRegion(olay.region())
+                p.setPen(QPen(QColor("#f59e0b"), 3))
+                p.drawRect(r.adjusted(1, 1, -2, -2))
+                p.end()
+
+    def vurgula(self, satir: int, sutun: int, sure_ms: int = 2200) -> None:
+        """Hücreyi geçici (turuncu çerçeve) vurgular ve görünür kılar; süre sonunda kalkar (Hesap İzleme gezintisi)."""
+        self._vurgu = (satir, sutun)
+        self.viewport().update()
+        QTimer.singleShot(sure_ms, self._vurgu_kaldir)
+
+    def _vurgu_kaldir(self) -> None:
+        self._vurgu = None
+        self.viewport().update()
 
     def _boya(self, p: QPainter, kirp: QRect) -> None:
         p.setClipRect(kirp)           # bölgenin her parçası kendi dikdörtgeniyle sınırlı (üst üste çizim olmasın)
