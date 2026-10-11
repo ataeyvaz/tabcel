@@ -73,7 +73,7 @@ class EtkilenenFormuller(QDialog):
     def __init__(self, etkiler: List[temizle.FormulEtkisi], kitap, ust=None):
         super().__init__(ust)
         self.setWindowTitle("Etkilenen formüller")
-        self.setMinimumSize(620, 380)
+        self.setMinimumSize(720, 380)
         d = QVBoxLayout(self)
         d.addWidget(QLabel("Maskeleme nedeniyle şu formüllerin sonucu değişiyor ya da hataya dönüyor. Formüller temiz kopyada "
                            "korunur ve maskeli değerle yeniden hesaplanır. İsterseniz özgün sonuçlarıyla değere çevirebilirsiniz; "
@@ -94,7 +94,7 @@ class EtkilenenFormuller(QDialog):
             else:
                 o.setToolTip(0, "Sonuç maskelenen bir değeri içerdiği için değere çevrilemez.")
             self.agac.addTopLevelItem(o)
-        for i, g in enumerate((90, 200, 130, 130)):
+        for i, g in enumerate((150, 170, 130, 130)):
             self.agac.setColumnWidth(i, g)
         d.addWidget(self.agac)
         d.addWidget(QLabel("Kutusu olmayan satırlar değere çevrilemez (sonuçları maskelenen bir değeri içerir)."))
@@ -150,7 +150,7 @@ class TemizleyiciPenceresi(QDialog):
         self.turler = QTreeWidget()                                  # tür başına eylem satırı
         self.turler.setHeaderLabels(["Veri türü", "Adet", "Gizli yerde", "Eylem", ""])
         self.turler.setRootIsDecorated(False)
-        self.turler.setMaximumHeight(190)
+        self.turler.setMaximumHeight(230)
         self.turler.header().setStretchLastSection(False)
         d.addWidget(self.turler)
         self.agac = QTreeWidget()
