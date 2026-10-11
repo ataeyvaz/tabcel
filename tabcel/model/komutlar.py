@@ -87,6 +87,7 @@ class _SatirSutun:
     def yap(self) -> None:
         self._olcu_once = self.sayfa.boyut_durumu()
         self._birlesim_once = self.sayfa.birlesim_durumu()
+        self._yapi_once = self.sayfa.sayfa_yapisi
         kitap = self.sayfa.kitap
         self._ek_once = ([(s, s.ek_durumu()) for s in (kitap.sayfalar if kitap else [self.sayfa])],
                          kitap.ad_durumu() if kitap else None,
@@ -109,6 +110,7 @@ class _SatirSutun:
             self.sayfa.bicim_geri_koy(self.eksen, self.nerede, self.adet, self._bicim_silinen)
         self.sayfa.boyut_durumu_yukle(self._olcu_once)
         self.sayfa.birlesim_yukle(self._birlesim_once)
+        self.sayfa.yazdirma_yaz(self._yapi_once)
         sayfa_durumlari, ad_durumu, nesne_durumlari = self._ek_once
         for s, durum in sayfa_durumlari:
             s.ek_durumu_yukle(durum)
@@ -776,10 +778,10 @@ class SayfaYapisiDegis:
         return self.yeni == self.eski
 
     def yap(self) -> None:
-        self.sayfa.sayfa_yapisi = self.yeni
+        self.sayfa.yazdirma_yaz(self.yeni)
 
     def geri_al(self) -> None:
-        self.sayfa.sayfa_yapisi = self.eski
+        self.sayfa.yazdirma_yaz(self.eski)
 
 
 class NesneEkle:

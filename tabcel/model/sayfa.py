@@ -75,6 +75,7 @@ class Sayfa:
         self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
         self.dondur: Optional[Tuple[int, int]] = None   # kaydırılabilir bölgenin sol üst hücresi; None = dondurma yok
         self.kilavuz: bool = True                  # kılavuz çizgileri görünür mü
+        self.sayfa_sonlari: bool = False           # ekranda sayfa sınırı çizgileri (T9; dosyaya yazılmaz)
         self.sayfa_yapisi = SayfaYapisi()           # yazdırma ayarları (Faz 4 / 4d)
         self.birlesimler: List[Aralik] = []        # birleştirilmiş hücre aralıkları (çakışmaz, ≥ 2 hücre)
         self._birlesim_idx: Dict[Anahtar, Aralik] = {}   # birleşimin kapsadığı her hücre → aralığı
@@ -377,7 +378,7 @@ class Sayfa:
         self._bildir("boyut")
 
     # --- görünüm: dondurulmuş bölmeler, kılavuz çizgileri (faz3_tasarim.md §4) ---
-    def gorunum_yaz(self, dondur="AYNI", kilavuz="AYNI") -> bool:
+    def gorunum_yaz(self, dondur="AYNI", kilavuz="AYNI", sayfa_sonlari="AYNI") -> bool:
         """Dondurma konumu `(satır, sütun)` (kaydırılabilir bölgenin sol üstü; `(1, 1)`/None = dondurma yok)
         ve kılavuz çizgisi durumunu yazar. Geri al yığınına GİRMEZ (Excel'de de geri alınamaz); değişirse
         `bicim` olayı `gorunum` ile yayılır. Döner: değişti mi."""
@@ -394,9 +395,20 @@ class Sayfa:
         if not isinstance(kilavuz, str) and bool(kilavuz) != self.kilavuz:
             self.kilavuz = bool(kilavuz)
             degisti["kilavuz"] = self.kilavuz
+        sb_degisti = False
+        if not isinstance(sayfa_sonlari, str) and bool(sayfa_sonlari) != self.sayfa_sonlari:
+            self.sayfa_sonlari = bool(sayfa_sonlari)       # dosyaya yazılmaz: belgeyi "değişti" yapmaz (bicim olayı yok)
+            sb_degisti = True
+            self._bildir("yazdirma", gorunum=True)
         if degisti:
             self._bildir("bicim", degisiklikler={}, satir={}, sutun={}, gorunum=degisti)
-        return bool(degisti)
+        return bool(degisti) or sb_degisti
+
+    def yazdirma_yaz(self, yapi) -> None:
+        """Yazdırma ayarlarını yazar ve `yazdirma` olayı yayar (ızgara sayfa sınırı çizgileri yenilensin)."""
+        if yapi != self.sayfa_yapisi:
+            self.sayfa_yapisi = yapi
+            self._bildir("yazdirma")
 
     # --- birleştirilmiş hücreler (faz3_tasarim.md §3) ---
     def birlesim(self, satir: int, sutun: int) -> Optional[Aralik]:
@@ -718,6 +730,7 @@ class Sayfa:
         self._birlesimleri_kaydir(eksen, nerede, fark, sinir)
         self._ekleri_kaydir(eksen, nerede, fark, sinir)
         self._nesneleri_kaydir(eksen, nerede, fark, sinir)
+        self._yapiyi_kaydir(eksen, nerede, fark, sinir)
         olcu = self.sutun_genislik if eksen else self.satir_yukseklik
         yeni_olcu = {}
         for k, v in olcu.items():
@@ -734,6 +747,36 @@ class Sayfa:
         self._bildir("yapi", eksen="sutun" if eksen else "satir", nerede=nerede, fark=fark,
                      silinen=silinen)
         return silinen
+
+    def _yapiyi_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
+        """Ekle-sil sonrası yazdırma ayarları (T9): el ile sayfa sonları, yazdırma alanı ve yinelenen başlık
+        satırları kayar (Excel gibi); silinen bandın içindeki sayfa sonu düşer, alan tamamen silinirse kalkar."""
+        y = self.sayfa_yapisi
+        kw = {}
+        ad = "sutun_kesmeleri" if eksen else "satir_kesmeleri"
+        kesmeler = getattr(y, ad)
+        if kesmeler:
+            yeni = tuple(k2 for k in kesmeler
+                         if (k2 := self._kaydir_indeks(k, nerede, fark, sinir)) is not None and k2 >= 2)
+            if yeni != kesmeler:
+                kw[ad] = yeni
+        if y.alan is not None:
+            ar = aralik_kaydir(y.alan, eksen, nerede, fark, sinir)
+            if ar != y.alan:
+                kw["alan"] = ar
+        if eksen == 0 and y.baslik_satirlari is not None:
+            a, b = y.baslik_satirlari
+            a2 = self._kaydir_indeks(a, nerede, fark, sinir)
+            b2 = self._kaydir_indeks(b, nerede, fark, sinir)
+            if a2 is None:                              # başlığın ilk satırı silindi: kalan kısım silinen bandın yerinde başlar
+                a2 = nerede
+            if b2 is None:                              # son satırı silindi: silinen bandın hemen üstünde biter
+                b2 = nerede - 1
+            yeni_b = (a2, b2) if 1 <= a2 <= b2 else None
+            if yeni_b != y.baslik_satirlari:
+                kw["baslik_satirlari"] = yeni_b
+        if kw:
+            self.sayfa_yapisi = y.degistir(**kw)
 
     def _stilleri_kaydir(self, eksen: int, nerede: int, fark: int, sinir: int) -> None:
         """Ekle-sil sonrası stil kayıtlarını kaydırır. Ekleme: yeni satır/sütun hemen üstündeki

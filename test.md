@@ -3481,3 +3481,35 @@ Nesnesiz sayfada çizim maliyeti **artmadı** (dikey sıçrama 23,9 ms [önceki 
 | 2 | Etkileşim hissi | taşıma/boyutlandırma akıcılığı, tutamaçlar, sağ tık menüsü, Delete/Ctrl+C-V | ⏳ |
 | 3 | Yazdırma | grafikli sayfayı PDF'e al, sayfa sınırında bölünen grafiği Excel çıktısıyla karşılaştır | ⏳ |
 | 4 | Resim | PNG/JPEG/GIF/BMP ekle, 25 MB üstü, bozuk dosya | ⏳ |
+
+## 18. T9 — sayfa sonları ve sayfa taşması ayarları (2026-10-11)
+
+Tasarım: `t9_tasarim.md`. Uygulama: `model/sayfa_yapisi.py`, `model/sayfalama.py` (`_plan`, `sayfala`, `sayfa_sinirlari`), `model/sayfa.py` (`_yapiyi_kaydir`, `yazdirma_yaz`, `sayfa_sonlari`), `io/xlsx_io.py`, `ui/grid.py` (`_sayfa_sonlarini_ciz`), `ui/window.py` + `serit_sekmeleri.py` + `dosya_islemleri.py` (eylemler), `ui/sayfa_yapisi_penceresi.py`.
+
+### 18.1 Otomatik testler
+| Alan | Dosya | Vaka |
+|---|---|---|
+| Model: doğrulama, kesmeli bölme (satır/sütun), otomatik bölmenin kesmeden sonra sürmesi, başlık yineleme, sığdır açıkken kesmeler yok sayılır, yüksekliğe sığdır ölçeği, sayfa sırası, `sayfa_sinirlari` ≡ `sayfala`, ekle-sil kayması (kesme + yazdırma alanı + başlık satırları) ve geri al, `SayfaYapisiDegis`, .xlsx gidiş-dönüş (6 yapı), Excel kimliği (`id` = önceki satır), başka programın fit dosyası | `test_sayfa_sonlari.py` | 29 |
+| Arayüz: etkin hücre kuralları (A1 kapalı, A sütunu/1. satır tek yön), Kaldır, Sıfırla, geri al/yinele, "gösterme belgeyi değiştirmez / ekleme değiştirir", piksel (el ile koyu, otomatik kesikli, dikey, kapalıyken yok), olayla kayma, kapalıyken hesap yok + açıkken önbellek, şerit eylemleri, Sayfa Yapısı penceresi, PDF dilim sayısı | `test_sayfa_sonlari_arayuz.py` | 12 |
+
+### 18.2 Tam paket (`araclar/test_parcali.py`, tek başına koşu)
+model 1886 ✅ · arayüz 782 ✅ + 1 başarısız (`test_izgara_stil::test_buyuk_secimde_ozet_ertelenir_kucukte_aninda`, **zamanlama**: tek başına 3/3 geçti) · arayüz2 351 ✅. **Toplam ≈ 3019 geçti**, 1 zamanlama testi yük altında düşüyor (önceki koşuda başka iki zamanlama testi düşmüştü: bu sınıf testler paketin ağır parçasında kararsız → ileride aralıkları genişletmek ya da `@pytest.mark.zamanlama` ile ayırmak düşünülebilir ⏳).
+
+### 18.3 Ekran görüntüsü (gerçek yazı tipi)
+1100 px: Sayfa Düzeni'nde Sayfa Yapısı (6 düğme) + Sığdır (iki kutu) + Sayfa Seçenekleri sığıyor ✅; 800 px: Sayfa Seçenekleri tek açılır düğmeye iniyor, taşma yok ✅. Izgarada çizgiler (el ile düz koyu / otomatik kesikli) doğru yerde ✅.
+
+### 18.4 Açık / bilinen
+| # | Konu | Durum |
+|---|---|---|
+| 1 | Sayfa Sonu Önizleme (mavi sınır sürükleme) yok | ➖ sonra |
+| 2 | Kesmeler / Sayfa Sırası düğmeleri `print_titles32` ikonunu paylaşıyor | ➖ ayrı ikon |
+| 3 | Sayfa sınırı çizgileri açıkken büyük sayfada (100.000 satır) yeniden hesap süresi ölçülmedi | ⏳ |
+| 4 | Excel'de aynı sayfa için `ExportAsFixedFormat` ile sayfa sayısı karşılaştırması; Excel'in manuel sonu ekranda hemen gösterip göstermediği | ⏳ |
+| 5 | T9 tasarım notu Sonnet'ten; Opus gözden geçirmesi | ⏳ |
+
+### 18.5 Elle test bekleyenler (kullanıcı)
+| # | Ne | Nasıl | Durum |
+|---|---|---|---|
+| 1 | Çizgiler | uzun tablo aç → Görünüm → Sayfa Sonlarını Göster; boyut/kenar/ölçek değişince çizgiler kayıyor mu | ⏳ |
+| 2 | Sayfa sonu ekle/kaldır | hücre seç → Kesmeler → Ekle; PDF'te o satırda yeni sayfa; Ctrl+Z | ⏳ |
+| 3 | Excel uyumu | sayfa sonlu dosyayı Excel'de aç/kaydet ve Tabcel'e geri aç; Sığdır (yükseklik) ve Sayfa Sırası aynı mı | ⏳ |

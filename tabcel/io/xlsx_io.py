@@ -28,6 +28,7 @@ from openpyxl.worksheet.cell_range import CellRange
 from openpyxl.formatting.rule import ColorScale, DataBar, FormatObject, Rule
 from openpyxl.styles.differential import DifferentialStyle
 from openpyxl.styles.colors import Color
+from openpyxl.worksheet.pagebreak import Break
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.styles.colors import COLOR_INDEX
@@ -341,11 +342,19 @@ def _adlari_oku(wb, kitap, sayfalar, rapor) -> None:
 def _yapi_yaz(ws, y: SayfaYapisi) -> None:
     ws.page_setup.orientation = "landscape" if y.yon == "yatay" else "portrait"
     ws.page_setup.paperSize = _KAGIT_KODU[y.kagit]
-    ws.page_setup.scale = None if y.sigdir_genislik else y.olcek
-    if y.sigdir_genislik:
+    sigdir = y.sigdir_genislik or y.sigdir_yukseklik
+    ws.page_setup.scale = None if sigdir else y.olcek
+    if sigdir:
         ws.sheet_properties.pageSetUpPr.fitToPage = True
-        ws.page_setup.fitToWidth = 1
-        ws.page_setup.fitToHeight = 0
+        ws.page_setup.fitToWidth = 1 if y.sigdir_genislik else 0
+        ws.page_setup.fitToHeight = 1 if y.sigdir_yukseklik else 0
+    if y.sayfa_sirasi == "sag_sonra_asagi":
+        ws.page_setup.pageOrder = "overThenDown"
+    # el ile sayfa sonları: Excel `id` = kesmeden ÖNCEKİ satır/sütun (yeni sayfa id+1'de başlar); yalnız el ile yazılır
+    for k in y.satir_kesmeleri:
+        ws.row_breaks.append(Break(id=k - 1, man=True, max=16383))
+    for k in y.sutun_kesmeleri:
+        ws.col_breaks.append(Break(id=k - 1, man=True, max=1048575))
     m = ws.page_margins
     m.top, m.bottom, m.left, m.right = (round(v / CM_INC, 4) for v in (y.ust, y.alt, y.sol, y.sag))
     ws.print_options.gridLines = y.kilavuz or None
@@ -364,13 +373,23 @@ def _yapi_oku(ws) -> SayfaYapisi:
         kw["yon"] = "yatay"
     kw["kagit"] = _KAGIT_ADI.get(ps.paperSize or 9, "A4")
     fit = bool(ws.sheet_properties.pageSetUpPr and ws.sheet_properties.pageSetUpPr.fitToPage)
-    if fit:
-        kw["sigdir_genislik"] = True
+    if fit:                                             # fitToWidth/Height yoksa 1, 0 = serbest (Excel)
+        g = 1 if ps.fitToWidth is None else int(ps.fitToWidth)
+        h = 1 if ps.fitToHeight is None else int(ps.fitToHeight)
+        kw["sigdir_genislik"], kw["sigdir_yukseklik"] = g != 0, h != 0
+        if g == 0 and h == 0:                           # ikisi de serbest: "sığdır" fiilen kapalı
+            kw["sigdir_genislik"] = kw["sigdir_yukseklik"] = False
     elif ps.scale and 10 <= int(ps.scale) <= 400:
         kw["olcek"] = int(ps.scale)
     for ad, v in (("ust", m.top), ("alt", m.bottom), ("sol", m.left), ("sag", m.right)):
         if v is not None and 0 <= v * CM_INC <= 10:
             kw[ad] = round(v * CM_INC, 2)
+    if ps.pageOrder == "overThenDown":
+        kw["sayfa_sirasi"] = "sag_sonra_asagi"
+    for ad, brk, sinir in (("satir_kesmeleri", ws.row_breaks, 1048576), ("sutun_kesmeleri", ws.col_breaks, 16384)):
+        liste = sorted({int(b.id) + 1 for b in brk.brk if b.man and b.id is not None and 1 <= int(b.id) < sinir})
+        if liste:
+            kw[ad] = tuple(liste)
     kw["kilavuz"] = bool(ws.print_options.gridLines)
     kw["yatay_ortala"] = bool(ws.print_options.horizontalCentered)
     try:

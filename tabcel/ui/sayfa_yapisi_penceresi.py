@@ -50,8 +50,15 @@ class SayfaYapisiPenceresi(QDialog):
         self.olcek.setValue(yapi.olcek)
         self.sigdir = QCheckBox("Tüm sütunları tek sayfa genişliğine sığdır")
         self.sigdir.setChecked(yapi.sigdir_genislik)
-        self.sigdir.toggled.connect(lambda v: self.olcek.setEnabled(not v))
-        self.olcek.setEnabled(not yapi.sigdir_genislik)
+        self.sigdir_yuk = QCheckBox("Tüm satırları tek sayfa yüksekliğine sığdır")
+        self.sigdir_yuk.setChecked(yapi.sigdir_yukseklik)
+        for kutu in (self.sigdir, self.sigdir_yuk):
+            kutu.toggled.connect(self._olcek_durumu)
+        self.olcek.setEnabled(not (yapi.sigdir_genislik or yapi.sigdir_yukseklik))
+        self.sira = QComboBox()
+        self.sira.addItem("Önce aşağı, sonra sağa", "asagi_sonra_sag")
+        self.sira.addItem("Önce sağa, sonra aşağı", "sag_sonra_asagi")
+        self.sira.setCurrentIndex(0 if yapi.sayfa_sirasi == "asagi_sonra_sag" else 1)
         self.kenarlar = {}
         kenar = QFormLayout()
         for ad, etiket in (("ust", "Üst (cm)"), ("alt", "Alt (cm)"), ("sol", "Sol (cm)"), ("sag", "Sağ (cm)")):
@@ -77,6 +84,8 @@ class SayfaYapisiPenceresi(QDialog):
         f1.addRow("Kağıt:", self.kagit)
         f1.addRow("Ölçek:", self.olcek)
         f1.addRow(self.sigdir)
+        f1.addRow(self.sigdir_yuk)
+        f1.addRow("Sayfa sırası:", self.sira)
         kenar_kutu = QGroupBox("Kenar boşlukları")
         kenar_kutu.setLayout(kenar)
         kenar.addRow(self.ortala)
@@ -95,6 +104,9 @@ class SayfaYapisiPenceresi(QDialog):
             d.addWidget(w)
         self._sonuc: Optional[SayfaYapisi] = None
 
+    def _olcek_durumu(self) -> None:
+        self.olcek.setEnabled(not (self.sigdir.isChecked() or self.sigdir_yuk.isChecked()))
+
     def _tamam(self) -> None:
         try:
             alan = aralik_coz(self.alan.text()) if self.alan.text().strip() else None
@@ -102,6 +114,7 @@ class SayfaYapisiPenceresi(QDialog):
             self._sonuc = self._yapi.degistir(
                 yon="yatay" if self.yatay.isChecked() else "dikey", kagit=self.kagit.currentText(),
                 olcek=self.olcek.value(), sigdir_genislik=self.sigdir.isChecked(),
+                sigdir_yukseklik=self.sigdir_yuk.isChecked(), sayfa_sirasi=self.sira.currentData(),
                 yatay_ortala=self.ortala.isChecked(), alan=alan, baslik_satirlari=baslik,
                 kilavuz=self.kilavuz.isChecked(), **{k: v.value() for k, v in self.kenarlar.items()})
         except (AdresHatasi, ValueError) as e:

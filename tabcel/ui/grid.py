@@ -319,6 +319,7 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         self._dondur_uygula()
         self.aktifDegisti.connect(lambda *_: self._giris_iletisi_guncelle())
         self._nesne_kur()                                    # Faz 6: yüzen nesne katmanı
+        self._sayfa_sonlari_kur()                            # T9: sayfa sınırı çizgileri
         self._etkilesim_kur()
         self.horizontalScrollBar().valueChanged.connect(self._yatay_kaydi)
         self.verticalScrollBar().valueChanged.connect(self._dikey_kaydi)
@@ -553,6 +554,68 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
     def kilavuz_goster(self, goster: bool) -> None:
         if self.sayfa.gorunum_yaz(kilavuz=goster):
             self.viewport().update()
+
+    # --- sayfa sınırı çizgileri (T9, t9_tasarim.md §4) ---
+    _SB_OLAYLARI = ("hucre", "sonuc", "yapi", "boyut", "bicim", "nesne", "sayfa", "yazdirma")
+
+    def _sayfa_sonlari_kur(self) -> None:
+        self._sb = None                                      # (anahtar, SayfaSinirlari): olay gelince düşer
+        kitap = self.sayfa.kitap
+        if kitap is not None:
+            birak = kitap.dinle(self._sb_olayi)
+            self.destroyed.connect(lambda *_: birak())
+
+    def _sb_olayi(self, olay) -> None:
+        if olay.tur in self._SB_OLAYLARI:
+            self._sb = None
+            if olay.tur == "yazdirma" and olay.sayfa is self.sayfa and self.sayfa.sayfa_sonlari:
+                self.viewport().update()
+
+    def sayfa_sonlari_goster(self, goster: bool) -> None:
+        if self.sayfa.gorunum_yaz(sayfa_sonlari=goster):
+            self.viewport().update()
+
+    def sayfa_sinirlari_ver(self):
+        """Etkin sayfanın ekran sınırları (`sayfalama.sayfa_sinirlari`); yazdırma ile aynı bölme kodu ve aynı
+        ölçüler (`yazdirma_yuksekligi`). Olay/ayar değişene dek önbellekte."""
+        from ..model.sayfalama import sayfa_sinirlari
+        anahtar = self.sayfa.sayfa_yapisi
+        if self._sb is None or self._sb[0] != anahtar:
+            sn = sayfa_sinirlari(self.sayfa, anahtar, lambda c: float(self.sayfa.genislik(c)),
+                                 self.yazdirma_yuksekligi)
+            self._sb = (anahtar, sn)
+        return self._sb[1]
+
+    def _sayfa_sonlarini_ciz(self, p: QPainter, sutunlar, satirlar, kirp: QRect) -> None:
+        """Kesikli gri = otomatik, düz koyu = el ile; çizgi yeni sayfanın ilk satırının/sütununun ÖN kenarında,
+        yazdırma alanı boyunca. Yalnız görünen satır/sütunlar taranır."""
+        sn = self.sayfa_sinirlari_ver()
+        if sn is None or not (sn.satirlar or sn.sutunlar):
+            return
+        alan = sn.alan
+        xs = {c: (x, g) for c, x, g in sutunlar}
+        ys = {r: (y, h) for r, y, h in satirlar}
+        sol = next((xs[c][0] for c in range(alan.ilk_sutun, alan.son_sutun + 1) if c in xs), None)
+        sag = next((xs[c][0] + xs[c][1] for c in range(alan.son_sutun, alan.ilk_sutun - 1, -1) if c in xs), None)
+        ust = next((ys[r][0] for r in range(alan.ilk_satir, alan.son_satir + 1) if r in ys), None)
+        alt = next((ys[r][0] + ys[r][1] for r in range(alan.son_satir, alan.ilk_satir - 1, -1) if r in ys), None)
+        p.save()
+        p.setClipRect(kirp)
+        for r, el_ile in sn.satirlar:
+            if r in ys and sol is not None and sag is not None:
+                p.setPen(self._sb_kalem(el_ile))
+                y = ys[r][0] - 1
+                p.drawLine(max(sol, self._baslik_g()), y, sag - 1, y)
+        for c, el_ile in sn.sutunlar:
+            if c in xs and ust is not None and alt is not None:
+                p.setPen(self._sb_kalem(el_ile))
+                x = xs[c][0] - 1
+                p.drawLine(x, max(ust, self._baslik_y()), x, alt - 1)
+        p.restore()
+
+    @staticmethod
+    def _sb_kalem(el_ile: bool) -> QPen:
+        return QPen(QColor("#404040"), 1) if el_ile else QPen(QColor("#7f7f7f"), 1, Qt.DashLine)
 
     def hucre_dikdortgeni(self, satir: int, sutun: int) -> Optional[QRect]:
         """Hücrenin viewport içindeki dikdörtgeni; görünmüyorsa None. Birleşimin sol üst hücresi için
@@ -1111,6 +1174,8 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             self._kenar_ciz(p, self._stilli, kirp)
 
         self._metinleri_ciz(p, metinler, kirp)
+        if self.sayfa.sayfa_sonlari and sutunlar and tum_satirlar:
+            self._sayfa_sonlarini_ciz(p, sutunlar, tum_satirlar, kirp)
         if self.sayfa.birlesimler:
             self._birlesimleri_ciz(p, kirp, pad)
         if self.sayfa.notlar:

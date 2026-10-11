@@ -61,13 +61,15 @@ class SayfaDuzeniSayfasi(SeritSayfasi):
         self.pencere = pencere
         e = pencere.eylemler
         m = pencere._menu
-        sy = SeritGrubu("Sayfa Yapısı", 5, "margins32")
+        sy = SeritGrubu("Sayfa Yapısı", 6, "margins32")
         sy.buyuk(menu=m(("kenar_normal", "kenar_genis", "kenar_dar", None, "kenar_ozel")),
                  ikon="margins32", metin="Kenar\nBoşlukları")
         sy.buyuk(menu=m(("yon_dikey", "yon_yatay")), ikon="orientation32", metin="Yönlendirme")
         sy.buyuk(menu=m(tuple(k for k in e if k.startswith("kagit_"))), ikon="paper32", metin="Boyut")
         sy.buyuk(menu=m(("alan_belirle", "alan_temizle")), ikon="print_area32", metin="Yazdırma\nAlanı")
         sy.buyuk(e["baslik_yazdir"], ikon="print_titles32", metin="Başlıkları\nYazdır")
+        sy.buyuk(menu=m(("sayfa_sonu_ekle", "sayfa_sonu_kaldir", None, "sayfa_sonu_sifirla")),
+                 ikon="print_titles32", metin="Kesmeler")
         sy.baslatici_ekle(e["dosya.sayfa_yapisi"].trigger, "Sayfa Yapısı")
         self.grup_ekle(sy)
 
@@ -82,21 +84,29 @@ class SayfaDuzeniSayfasi(SeritSayfasi):
         self.sigdir = QCheckBox("Genişliği tek sayfaya sığdır")
         self.sigdir.setFocusPolicy(Qt.NoFocus)
         self.sigdir.clicked.connect(self._sigdir_tiklandi)
-        sg.satirlar([[QLabel("Ölçek:"), self.olcek], [self.sigdir]])
+        self.sigdir_yuk = QCheckBox("Yüksekliği tek sayfaya sığdır")
+        self.sigdir_yuk.setFocusPolicy(Qt.NoFocus)
+        self.sigdir_yuk.clicked.connect(self._sigdir_yuk_tiklandi)
+        sg.satirlar([[QLabel("Ölçek:"), self.olcek], [self.sigdir], [self.sigdir_yuk]])
         self.grup_ekle(sg)
 
         so = SeritGrubu("Sayfa Seçenekleri", 3, "print_titles32")
         so.kucukler([e["kilavuz"], e["kilavuz_yazdir"]])
+        so.buyuk(menu=m(("sira_asagi", "sira_sag")), ikon="print_titles32", metin="Sayfa\nSırası")
         self.grup_ekle(so)
         self._esitleniyor = False
 
     def _olcek_girildi(self) -> None:
         if self._esitleniyor:
             return
-        self.pencere.sayfa_yapisi_degistir(olcek=self.olcek.value(), sigdir_genislik=False)
+        self.pencere.sayfa_yapisi_degistir(olcek=self.olcek.value(), sigdir_genislik=False,
+                                           sigdir_yukseklik=False)
 
     def _sigdir_tiklandi(self, secili: bool) -> None:
         self.pencere.sayfa_yapisi_degistir(sigdir_genislik=bool(secili))
+
+    def _sigdir_yuk_tiklandi(self, secili: bool) -> None:
+        self.pencere.sayfa_yapisi_degistir(sigdir_yukseklik=bool(secili))
 
     def guncelle(self) -> None:
         g = self.pencere.izgara()
@@ -107,8 +117,9 @@ class SayfaDuzeniSayfasi(SeritSayfasi):
         try:
             if not self.olcek.hasFocus():
                 self.olcek.setValue(y.olcek)
-            self.olcek.setEnabled(not y.sigdir_genislik)
+            self.olcek.setEnabled(not (y.sigdir_genislik or y.sigdir_yukseklik))
             self.sigdir.setChecked(y.sigdir_genislik)
+            self.sigdir_yuk.setChecked(y.sigdir_yukseklik)
         finally:
             self._esitleniyor = False
 
@@ -170,7 +181,7 @@ class GorunumSayfasi(SeritSayfasi):
         super().__init__()
         e = pencere.eylemler
         g = SeritGrubu("Göster", 3, "freeze32")
-        g.kucukler([e["kilavuz"]])
+        g.kucukler([e["kilavuz"], e["sayfa_sonlari"]])
         self.grup_ekle(g)
         y = SeritGrubu("Yakınlaştır", 4, "zoom100_32")
         y.buyuk(e["yakin_100"], metin="%100")

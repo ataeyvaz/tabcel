@@ -460,6 +460,35 @@ class DosyaIslemleri:
         self._eylem_durumlari()
         return True
 
+    # --- el ile sayfa sonları (T9): etkin hücrenin ÜSTÜNE ve SOLUNA, Excel gibi ---
+    def sayfa_sonu_ekle(self) -> bool:
+        g = self.izgara()
+        r, c = g._aktif
+        y = g.sayfa.sayfa_yapisi
+        kw = {}
+        if r >= 2 and r not in y.satir_kesmeleri:
+            kw["satir_kesmeleri"] = y.satir_kesmeleri + (r,)
+        if c >= 2 and c not in y.sutun_kesmeleri:
+            kw["sutun_kesmeleri"] = y.sutun_kesmeleri + (c,)
+        if not kw:
+            return False
+        g.sayfa.gorunum_yaz(sayfa_sonlari=True)               # ekleyince çizgiler görünsün
+        return self.sayfa_yapisi_degistir(**kw)
+
+    def sayfa_sonu_kaldir(self) -> bool:
+        g = self.izgara()
+        r, c = g._aktif
+        y = g.sayfa.sayfa_yapisi
+        kw = {}
+        if r in y.satir_kesmeleri:
+            kw["satir_kesmeleri"] = tuple(k for k in y.satir_kesmeleri if k != r)
+        if c in y.sutun_kesmeleri:
+            kw["sutun_kesmeleri"] = tuple(k for k in y.sutun_kesmeleri if k != c)
+        return bool(kw) and self.sayfa_yapisi_degistir(**kw)
+
+    def sayfa_sonlarini_sifirla(self) -> bool:
+        return self.sayfa_yapisi_degistir(satir_kesmeleri=(), sutun_kesmeleri=())
+
     def _yazdirilacak(self, tum: bool = False):
         return [self._izgaralar[s] for s in self.kitap.sayfalar] if tum else [self.izgara()]
 

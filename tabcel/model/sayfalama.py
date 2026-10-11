@@ -64,15 +64,17 @@ def yazdirma_alani(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Optional[Callable[
     return Aralik(r1, c1, min(r2, MAX_ROW), min(c2, MAX_COL))
 
 
-def _bol(boyutlar: List[Tuple[int, float]], sinir: float, ayrilan: float = 0.0) -> List[List[int]]:
+def _bol(boyutlar: List[Tuple[int, float]], sinir: float, ayrilan: float = 0.0,
+         kesmeler: frozenset = frozenset()) -> List[List[int]]:
     """Sıralı (indeks, boyut) listesini `sinir` boyutlu dilimlere böler; ilk dilimden sonrakilerde `ayrilan`
-    boyut (yinelenen başlık) düşülür. Her dilimde en az bir öğe vardır."""
+    boyut (yinelenen başlık) düşülür. `kesmeler`: yeni dilimin BAŞLADIĞI indeksler (el ile sayfa sonu). Her
+    dilimde en az bir öğe vardır."""
     dilimler: List[List[int]] = []
     sim: List[int] = []
     toplam = 0.0
     for i, b in boyutlar:
         kapasite = sinir - (ayrilan if dilimler else 0.0)
-        if sim and toplam + b > kapasite + 1e-6:
+        if sim and (i in kesmeler or toplam + b > kapasite + 1e-6):
             dilimler.append(sim)
             sim, toplam = [], 0.0
         sim.append(i)
@@ -82,20 +84,35 @@ def _bol(boyutlar: List[Tuple[int, float]], sinir: float, ayrilan: float = 0.0) 
     return dilimler
 
 
-def sayfala(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
-            yukseklik: Callable[[int], float]) -> List[SayfaDilimi]:
-    """Sayfa dilimlerini üretir. `genislik(c)` / `yukseklik(r)` 100% pikseldir (gizli → 0)."""
+@dataclass(frozen=True)
+class _Plan:
+    alan: Aralik
+    olcek: float
+    satir_dilimleri: List[List[int]]
+    sutun_dilimleri: List[List[int]]
+    baslik: List[int]
+    kesmeler_uygulandi: bool
+
+
+def _plan(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
+          yukseklik: Callable[[int], float]) -> Optional[_Plan]:
     alan = yazdirma_alani(sayfa, yapi, genislik, yukseklik)
     if alan is None:
-        return []
+        return None
     sutunlar = [(c, genislik(c)) for c in range(alan.ilk_sutun, alan.son_sutun + 1) if genislik(c) > 0]
     satirlar = [(r, yukseklik(r)) for r in range(alan.ilk_satir, alan.son_satir + 1) if yukseklik(r) > 0]
     if not sutunlar or not satirlar:
-        return []
+        return None
     pg, py = yapi.yazdirilabilir_px()
-    if yapi.sigdir_genislik:
-        toplam_g = sum(b for _, b in sutunlar)
-        olcek = min(1.0, pg / toplam_g) if toplam_g > 0 else 1.0
+    sigdir = yapi.sigdir_genislik or yapi.sigdir_yukseklik
+    if sigdir:
+        olcek = 1.0
+        if yapi.sigdir_genislik:
+            toplam_g = sum(b for _, b in sutunlar)
+            olcek = min(olcek, pg / toplam_g) if toplam_g > 0 else olcek
+        if yapi.sigdir_yukseklik:
+            toplam_y = sum(b for _, b in satirlar)
+            olcek = min(olcek, py / toplam_y) if toplam_y > 0 else olcek
         olcek = max(olcek, 0.1)
     else:
         olcek = yapi.olcek / 100.0
@@ -108,18 +125,60 @@ def sayfala(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
         baslik_yuk = sum(yukseklik(r) for r in baslik)
         if baslik_yuk >= sy:                           # başlık sayfayı doldurur: yinelenmez
             baslik, baslik_yuk = [], 0.0
+    # Excel: "sığdır" seçiliyse el ile sayfa sonları yok sayılır
+    kesme_var = not sigdir and bool(yapi.satir_kesmeleri or yapi.sutun_kesmeleri)
+    satir_k = frozenset(yapi.satir_kesmeleri) if not sigdir else frozenset()
+    sutun_k = frozenset(yapi.sutun_kesmeleri) if not sigdir else frozenset()
     # başlık satırları alanın içindeyse ilk dilimde zaten vardır; yinelemede tekrar eklenmez
-    satir_dilimleri = _bol(satirlar, sy, baslik_yuk)
-    sutun_dilimleri = _bol(sutunlar, sg)
-    toplam = len(satir_dilimleri) * len(sutun_dilimleri)
+    return _Plan(alan, olcek, _bol(satirlar, sy, baslik_yuk, satir_k), _bol(sutunlar, sg, 0.0, sutun_k),
+                 baslik, kesme_var)
+
+
+def sayfala(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
+            yukseklik: Callable[[int], float]) -> List[SayfaDilimi]:
+    """Sayfa dilimlerini üretir. `genislik(c)` / `yukseklik(r)` 100% pikseldir (gizli → 0)."""
+    pl = _plan(sayfa, yapi, genislik, yukseklik)
+    if pl is None:
+        return []
+    toplam = len(pl.satir_dilimleri) * len(pl.sutun_dilimleri)
     sonuc: List[SayfaDilimi] = []
+
+    def dilim(sut, sat, k, no):
+        cizilecek = list(sat)
+        if k > 0 and pl.baslik:
+            cizilecek = [r for r in pl.baslik if r not in sat] + cizilecek
+        return SayfaDilimi(tuple(cizilecek), tuple(sut), pl.olcek, no, toplam, len(cizilecek) - len(sat))
+
     no = 0
-    for sut in sutun_dilimleri:                        # Excel varsayılanı: önce aşağı, sonra sağa
-        for k, sat in enumerate(satir_dilimleri):
-            cizilecek = list(sat)
-            if k > 0 and baslik:
-                cizilecek = [r for r in baslik if r not in sat] + cizilecek
-            no += 1
-            n_baslik = len(cizilecek) - len(sat)
-            sonuc.append(SayfaDilimi(tuple(cizilecek), tuple(sut), olcek, no, toplam, n_baslik))
+    if yapi.sayfa_sirasi == "sag_sonra_asagi":         # önce sağa, sonra aşağı
+        for k, sat in enumerate(pl.satir_dilimleri):
+            for sut in pl.sutun_dilimleri:
+                no += 1
+                sonuc.append(dilim(sut, sat, k, no))
+    else:                                              # Excel varsayılanı: önce aşağı, sonra sağa
+        for sut in pl.sutun_dilimleri:
+            for k, sat in enumerate(pl.satir_dilimleri):
+                no += 1
+                sonuc.append(dilim(sut, sat, k, no))
     return sonuc
+
+
+@dataclass(frozen=True)
+class SayfaSinirlari:
+    """Ekranda gösterilecek sayfa sınırları: `satirlar`/`sutunlar` = ((indeks, el_ile), …); çizgi ilgili
+    satırın/sütunun ÖNÜNDEDİR (yeni sayfa o satırda/sütunda başlar). `alan`: çizgilerin uzanacağı yazdırma alanı."""
+    satirlar: Tuple[Tuple[int, bool], ...]
+    sutunlar: Tuple[Tuple[int, bool], ...]
+    alan: Aralik
+
+
+def sayfa_sinirlari(sayfa: Sayfa, yapi: SayfaYapisi, genislik: Callable[[int], float],
+                    yukseklik: Callable[[int], float]) -> Optional[SayfaSinirlari]:
+    """`sayfala` ile AYNI bölme kodundan: ekran çizgileri ile yazdırma çıktısı tutarsız olamaz."""
+    pl = _plan(sayfa, yapi, genislik, yukseklik)
+    if pl is None:
+        return None
+    sk, uk = set(yapi.satir_kesmeleri), set(yapi.sutun_kesmeleri)
+    sat = tuple((d[0], d[0] in sk and pl.kesmeler_uygulandi) for d in pl.satir_dilimleri[1:])
+    sut = tuple((d[0], d[0] in uk and pl.kesmeler_uygulandi) for d in pl.sutun_dilimleri[1:])
+    return SayfaSinirlari(sat, sut, pl.alan)

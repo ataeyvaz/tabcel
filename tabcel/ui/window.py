@@ -483,6 +483,15 @@ class Pencere(DosyaIslemleri, QMainWindow):
         e("alan_belirle", "Yazdırma Alanını Belirle", lambda: self.sayfa_yapisi_degistir(alan=g().secim))
         e("alan_temizle", "Yazdırma Alanını Temizle", lambda: self.sayfa_yapisi_degistir(alan=None))
         e("baslik_yazdir", "Başlıkları Yazdır", lambda: self.sayfa_yapisi_ac(), "", "print_titles32")
+        e("sayfa_sonu_ekle", "Sayfa Sonu Ekle", lambda: self.sayfa_sonu_ekle())
+        e("sayfa_sonu_kaldir", "Sayfa Sonunu Kaldır", lambda: self.sayfa_sonu_kaldir())
+        e("sayfa_sonu_sifirla", "Tüm Sayfa Sonlarını Sıfırla", lambda: self.sayfa_sonlarini_sifirla())
+        e("sira_asagi", "Önce aşağı, sonra sağa", lambda: self.sayfa_yapisi_degistir(sayfa_sirasi="asagi_sonra_sag"),
+          isaretli=True)
+        e("sira_sag", "Önce sağa, sonra aşağı", lambda: self.sayfa_yapisi_degistir(sayfa_sirasi="sag_sonra_asagi"),
+          isaretli=True)
+        sb = e("sayfa_sonlari", "Sayfa Sonlarını Göster", None, isaretli=True)
+        sb.toggled.connect(lambda v: g().sayfa_sonlari_goster(v))
         e("kilavuz_yazdir", "Kılavuz Çizgilerini Yazdır",
           lambda: self.sayfa_yapisi_degistir(kilavuz=not g().sayfa.sayfa_yapisi.kilavuz), isaretli=True)
 
@@ -496,13 +505,21 @@ class Pencere(DosyaIslemleri, QMainWindow):
         if g is None:
             return
         e = self.eylemler
+        y = g.sayfa.sayfa_yapisi
         for anahtar, deger in (("kilavuz", g.sayfa.kilavuz), ("filtre", g.sayfa.filtre is not None),
-                               ("kilavuz_yazdir", g.sayfa.sayfa_yapisi.kilavuz)):
+                               ("kilavuz_yazdir", y.kilavuz), ("sayfa_sonlari", g.sayfa.sayfa_sonlari),
+                               ("sira_asagi", y.sayfa_sirasi == "asagi_sonra_sag"),
+                               ("sira_sag", y.sayfa_sirasi == "sag_sonra_asagi")):
             a = e[anahtar]
             a.blockSignals(True)
             a.setChecked(bool(deger))
             a.blockSignals(False)
         e["coz"].setEnabled(g.sayfa.dondur is not None)
+        r, c = g._aktif                                      # sayfa sonları: etkin hücrenin üstü ve solu
+        e["sayfa_sonu_ekle"].setEnabled((r >= 2 and r not in y.satir_kesmeleri)
+                                        or (c >= 2 and c not in y.sutun_kesmeleri))
+        e["sayfa_sonu_kaldir"].setEnabled(r in y.satir_kesmeleri or c in y.sutun_kesmeleri)
+        e["sayfa_sonu_sifirla"].setEnabled(bool(y.satir_kesmeleri or y.sutun_kesmeleri))
         var = g.not_var_mi()
         e["notu_sil"].setEnabled(var)
         e["yeni_not"].setText("Notu Düzenle" if var else "Yeni Not")

@@ -36,6 +36,8 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Sayfa sınırı çizgileri ve el ile sayfa sonu:** Görünüm → Sayfa Sonlarını Göster; Sayfa Düzeni → Kesmeler. Ayrıca *yüksekliği tek sayfaya sığdır* ve *sayfa sırası* seçenekleri. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
+
 - **Grafik ve resim yazdırma:** grafikler ve resimler artık yazdırılır ve PDF'e aktarılır. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 
 ## 10 Ekim 2026
@@ -206,9 +208,17 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 ## Yazdırma ve PDF
 
-**Sayfa Düzeni** sekmesi: kenar boşlukları, yönlendirme, kâğıt boyutu, yazdırma alanı, başlıkları yazdır, ölçek / genişliği sayfaya sığdır. `Ctrl+P` yazdırır, **Dosya → Yazdırma Önizleme** sonucu gösterir; etkin sayfa ya da tüm sayfalar **PDF** olarak dışa aktarılabilir.
+**Sayfa Düzeni** sekmesi: kenar boşlukları, yönlendirme, kâğıt boyutu, yazdırma alanı, başlıkları yazdır, ölçek, genişliği ve/veya yüksekliği tek sayfaya sığdır, sayfa sırası. `Ctrl+P` yazdırır, **Dosya → Yazdırma Önizleme** sonucu gösterir; etkin sayfa ya da tüm sayfalar **PDF** olarak dışa aktarılabilir.
 
 **Grafik ve resimler** de yazdırılır ve PDF'e girer. Grafikler vektör olarak çizilir (büyütünce bulanıklaşmaz). Yazdırma alanı ayarlamadıysanız alan, hücreler ile grafik/resimlerin kapladığı yeri birlikte kapsar; sayfada yalnız grafik olsa bile basılır. Bir grafik sayfa sınırına denk gelirse (Excel'deki gibi) iki sayfaya bölünerek basılır; yazdırma alanı ayarladıysanız alanın dışında kalan kısmı basılmaz.
+
+### Sayfa sınırları ve sayfa sonları
+- **Görünüm → Sayfa Sonlarını Göster** ekranda sayfaların nerede bölüneceğini gösterir: **kesikli gri çizgi** otomatik sayfa sınırı, **düz koyu çizgi** sizin eklediğiniz sayfa sonudur. Çizgiler yazdırma alanı boyunca uzanır; sayfa boyutunu, kenar boşluklarını, ölçeği ya da satır/sütun boyutunu değiştirince kendiliğinden yenilenir.
+- **Sayfa Düzeni → Kesmeler → Sayfa Sonu Ekle:** etkin hücrenin **üstüne ve soluna** sayfa sonu koyar (A sütunundaysanız yalnız yatay, 1. satırdaysanız yalnız dikey; A1'de eklenemez). **Sayfa Sonunu Kaldır** etkin hücrenin üstündeki/solundaki sonu kaldırır, **Tüm Sayfa Sonlarını Sıfırla** hepsini siler. Hepsi `Ctrl+Z` ile geri alınır.
+- Satır/sütun ekleyip sildiğinizde sayfa sonları, yazdırma alanı ve yinelenen başlık satırları birlikte kayar.
+- **Sığdır** seçeneklerinden biri açıkken el ile sayfa sonları yok sayılır (Excel gibi); çizgiler de gösterilmez.
+- **Sayfa Düzeni → Sığdır:** *Genişliği tek sayfaya sığdır* ve *Yüksekliği tek sayfaya sığdır* ayrı ayrı ya da birlikte işaretlenebilir (ölçek gerektiği kadar küçülür). **Sayfa Sırası** çok sayfalı çıktıda önce aşağı mı önce sağa mı gidileceğini belirler; Sayfa Yapısı penceresinde de vardır.
+- Sayfa sonları ve sığdır ayarları `.xlsx` dosyasına yazılır; Excel'de hazırlanmış dosyadaki el ile sayfa sonları okunur.
 
 <!-- konu: pano | Kopyala ve Yapıştır -->
 # Kopyala ve Yapıştır
@@ -268,6 +278,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
 - Dışarıdan yapıştırılan metindeki tarihler tarih olarak anlaşılmaz (elle yazarken anlaşılır).
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
+- **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 
 <!-- konu: sorunlar | Sık Sorulanlar ve Sorun Giderme -->

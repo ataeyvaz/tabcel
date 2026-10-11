@@ -2,7 +2,7 @@
 from dataclasses import dataclass, replace
 from typing import Optional, Tuple
 
-from .adres import Aralik
+from .adres import MAX_COL, MAX_ROW, Aralik
 
 # Kağıt boyutları (cm, dikey: genişlik × yükseklik)
 KAGITLAR = {
@@ -10,6 +10,7 @@ KAGITLAR = {
     "Letter": (21.59, 27.94), "Legal": (21.59, 35.56),
 }
 YONLER = ("dikey", "yatay")
+SAYFA_SIRALARI = ("asagi_sonra_sag", "sag_sonra_asagi")
 CM_INC = 2.54
 PX_CM = 96 / CM_INC          # 96 dpi: 1 cm ≈ 37,8 px (ızgara pikseli ile aynı birim)
 
@@ -30,6 +31,12 @@ class SayfaYapisi:
     baslik_satirlari: Optional[Tuple[int, int]] = None  # her sayfada yinelenen satırlar (ilk, son)
     kilavuz: bool = False                              # kılavuz çizgilerini yazdır
     yatay_ortala: bool = False
+    # T9 (t9_tasarim.md): el ile sayfa sonları = YENİ sayfanın başladığı satır/sütun (≥ 2, sıralı, tekrarsız);
+    # sığdır açıkken yok sayılır (Excel gibi)
+    satir_kesmeleri: Tuple[int, ...] = ()
+    sutun_kesmeleri: Tuple[int, ...] = ()
+    sigdir_yukseklik: bool = False                     # tüm satırlar tek sayfa yüksekliğine sığsın
+    sayfa_sirasi: str = "asagi_sonra_sag"
 
     def __post_init__(self):
         if self.yon not in YONLER:
@@ -45,6 +52,13 @@ class SayfaYapisi:
             a, b = self.baslik_satirlari
             if not 1 <= a <= b:
                 raise ValueError("başlık satırları geçersiz")
+        if self.sayfa_sirasi not in SAYFA_SIRALARI:
+            raise ValueError(f"sayfa sırası şunlardan biri olmalı: {SAYFA_SIRALARI}")
+        for ad, sinir in (("satir_kesmeleri", MAX_ROW), ("sutun_kesmeleri", MAX_COL)):
+            k = tuple(sorted(set(int(x) for x in getattr(self, ad))))
+            if any(not 2 <= x <= sinir for x in k):
+                raise ValueError("sayfa sonu 2. satır/sütundan başlamalı ve sayfa içinde kalmalı")
+            object.__setattr__(self, ad, k)
 
     def degistir(self, **alanlar) -> "SayfaYapisi":
         return replace(self, **alanlar)
