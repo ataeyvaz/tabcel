@@ -87,6 +87,7 @@ class DosyaIslemleri:
         self.rapor: Rapor = Rapor()
         self._temiz_damga = self.yigin.damga()
         DosyaIslemleri._acik_pencereler.add(self)
+        self._bulut_kur()
         for tus, islem in (("Ctrl+N", self.yeni), ("Ctrl+O", self.ac_penceresi), ("Ctrl+S", self.kaydet),
                            ("Ctrl+Shift+S", self.farkli_kaydet), ("F12", self.farkli_kaydet),
                            ("Ctrl+P", self.yazdir_baslat)):
@@ -137,6 +138,7 @@ class DosyaIslemleri:
         menu.addSeparator()
         ekle("kaydet", "Kaydet\tCtrl+S", self.kaydet)
         ekle("farkli_kaydet", "Farklı Kaydet…\tCtrl+Shift+S", self.farkli_kaydet)
+        self._bulut_menusu_doldur(menu)                       # yalnız bilgisayarda o bulut klasörü varsa görünür (7a)
         menu.addSeparator()
         ekle("sayfa_yapisi", "Sayfa Yapısı…", self.sayfa_yapisi_ac)
         ekle("onizleme", "Yazdırma Önizleme…", self.onizleme_ac)
@@ -217,6 +219,8 @@ class DosyaIslemleri:
                 son_dosyalar.ekle(yol)
                 p._dosya_gorunur_yap()
                 return p
+        if self.google_bicimi_ac(yol):                       # .gsheet vb.: içerik bilgisayarda yok (7a)
+            return None
         csv_mi = os.path.splitext(yol)[1].lower() == ".csv"
         try:
             sonuc = self._csv_oku(yol) if csv_mi else self._kitap_oku(yol)
@@ -233,6 +237,7 @@ class DosyaIslemleri:
         else:
             p.yol = os.path.abspath(yol)
             p._disk_damgasi = _damga(p.yol)
+            p._izle()
         p.rapor = rapor
         p._belge_adi_guncelle()
         p._bilgi_goster()
@@ -337,6 +342,7 @@ class DosyaIslemleri:
         self.yol = os.path.abspath(yol)
         self.kaynak_yol = None
         self._disk_damgasi = _damga(self.yol)
+        self._izle()
         # artık dosya bu kitabın kendisi: açılıştaki kayıp uyarısı biter; kayıt sırasındaki düzeltmeler bildirilir
         self.rapor = kayit_raporu if isinstance(kayit_raporu, Rapor) else Rapor()
         self._bilgi_goster()

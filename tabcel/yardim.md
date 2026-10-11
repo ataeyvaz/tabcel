@@ -36,6 +36,10 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Hızlı Erişim çubuğu:** şeritteki herhangi bir düğmeye sağ tıklayıp *Hızlı Erişim Araç Çubuğuna Ekle* deyin; komut pencerenin üst şeridinde Kaydet/Geri Al/Yinele'nin yanında durur (en çok 12). Kaldırmak için o düğmeye sağ tıklayın. Ayar kapatıp açınca kalır.
+- **Yazım denetimi (F7):** Gözden Geçir sekmesinde; Windows'un Türkçe yazım denetimiyle metin hücrelerini denetler. Bkz. [Veri Doğrulama, Koşullu Biçim ve Notlar](konu:veriaraclari).
+- **Hakkında ve uygulama ikonu:** Yardım sekmesi → Hakkında; sürüm, künye ve kullanılan açık kaynak bileşenler. Uygulamanın kendi ikonu (yeşil sayfa, ızgara, T) eklendi.
+- **Google Drive / OneDrive:** Dosya menüsünden buluttaki klasörden aç/oraya kaydet; dosya başka yerde değişirse haber verilir. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
 - **Hata açıklamaları:** hata değeri olan hücrede (ipucu ve durum çubuğu) hatanın nedeni ve hangi hücreden geldiği Türkçe yazılır. Bkz. [Formüller](konu:formuller).
 - **Seçim içinde gezinme (Excel gibi):** birden çok hücre seçiliyken `Enter`/`Tab` etkin hücreyi seçimin içinde dolaştırır; `Ctrl+Boşluk`/`Shift+Boşluk` etkin hücreyi yerinde bırakır; `Ctrl+A` önce veri bölgesini, ikinci basışta tüm sayfayı seçer.
 - **Türkiye'ye özel işlevler:** `YAZIYLA(sayı)` sayıyı yazıya çevirir (125 → *yüz yirmi beş*), `TCKİMLİKDOĞRULA(no)` T.C. kimlik numarasının sağlama kuralına uyup uymadığını söyler. Bkz. [Formüller](konu:formuller).
@@ -178,6 +182,7 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **Veri Doğrulama** (**Veri** sekmesi): hücreye girilebilecekleri sınırlayın (liste, sayı, tarih, metin uzunluğu…); hatalı girişte uyarı iletisi görünür, liste doğrulamasında hücrede açılır ok çıkar.
 - **Koşullu Biçimlendirme** (**Giriş → Stiller**): değere göre renklendirme (büyüktür, arasında, yinelenen, en yüksek/en düşük, ortalamanın üstü, renk ölçekleri, veri çubukları, formüle dayalı kurallar). **Kuralları Yönet** ile sıra ve kapsam düzenlenir.
 - **Notlar:** `Shift+F2` hücreye not ekler/düzenler; notlu hücrelerin köşesinde işaret görünür. **Gözden Geçir** sekmesinden silinir.
+- **Yazım denetimi** (`F7`, **Gözden Geçir** sekmesi): Windows'un Türkçe yazım denetimini kullanır; metniniz bu bilgisayardan çıkmaz. Birkaç hücre seçiliyse yalnız onlar, tek hücre seçiliyse tüm sayfa sayfanın başından itibaren denetlenir. Yalnız **sabit metin** hücreleri denetlenir (formüller, sayılar ve tarihler denetlenmez). Yanlış sözcük için öneri listesinden seçip **Değiştir** / **Tümünü Değiştir**, ya da **Yoksay** / **Tümünü Yoksay**; her düzeltme ayrı bir geri al adımıdır. Windows'ta Türkçe yazma bileşeni yüklü değilse denetim açılmaz ve nasıl ekleneceği söylenir.
 
 <!-- konu: grafikler | Grafikler ve Resimler -->
 # Grafikler ve Resimler
@@ -218,6 +223,12 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Kayıt güvenlidir: önce geçici dosyaya yazılır, sonra yerine konur; kayıt yarıda kesilirse özgün dosya bozulmaz.
 - **Grafikler ve resimler** .xlsx dosyasına kaydedilir ve Excel'de açıldığında grafik/resim olarak görünür. Excel'de hazırlanmış dosyalarda sütun, çubuk, çizgi, pasta, halka, alan ve dağılım grafikleri okunur; **3B, radar, borsa, kabarcık** gibi türler, ikincil eksenler ve birleşik grafikler desteklenmez.
 - Açılan dosyada {APP_NAME}'in korumadığı bir öğe varsa (ör. pivot tablo, şekil, makro, desteklenmeyen grafik türü) pencerenin üstünde **uyarı çubuğu** çıkar ve kaydederken ayrıca sorulur; böylece sessizce veri kaybetmezsiniz. Excel'de hazırlanmış grafikli dosyalarda "grafikler uyarlandı" bilgisi görürsünüz: grafik açılır, ancak Excel'e özgü süslemeler (gradyan, eğilim çizgisi vb.) kaydedince kaybolabilir.
+
+## Google Drive ve OneDrive
+
+- Bilgisayarınızda **Google Drive** ya da **OneDrive** masaüstü uygulaması kuruluysa Dosya menüsünde *Google Drive'dan Aç…*, *Google Drive'a Kaydet…* (ve OneDrive karşılıkları) görünür. {APP_NAME} hesabınıza, şifrenize ya da buluta **hiç bağlanmaz**; dosyayı eşitleme klasörüne yazar, gerisini sizin Drive/OneDrive uygulamanız yapar.
+- Açık dosya başka yerde (web, başka bilgisayar) değişirse fark edilir: sizin kaydedilmemiş değişikliğiniz yoksa yeni sürüm kendiliğinden yüklenir; varsa **Onların Sürümünü Yükle**, **Benimkini Koru** ya da **Benimkini Ayrı Kaydet** seçeneklerini görürsünüz.
+- `.gsheet` gibi Google biçimli dosyaların içeriği bilgisayarda bulunmaz, açılamaz; tarayıcıda Dosya → İndir → Microsoft Excel (.xlsx) ile indirip burada açın.
 
 ## Otomatik kayıt ve kurtarma
 
@@ -273,6 +284,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 | `Ctrl+Shift+L` | Filtreyi aç/kapat |
 | `Ctrl+Alt+L` | Filtreyi yeniden uygula |
 | `Shift+F2` | Not ekle / düzenle |
+| `F7` | Yazım denetimi |
 | `Ctrl+9` / `Ctrl+0` | Satırları / Sütunları gizle |
 | `Ctrl+Shift+9` / `Ctrl+Shift+0` | Satırları / Sütunları göster |
 | `Ctrl+Boşluk` / `Shift+Boşluk` | Sütunu / Satırı seç |
@@ -299,6 +311,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Biçim Boyacısı sayfa değişince biter (Excel sayfalar arasında da boyar) ve birleşimi/sütun genişliğini taşımaz.
 - Dışarıdan yapıştırılan metindeki tarihler tarih olarak anlaşılmaz (elle yazarken anlaşılır).
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
+- **Yazım denetimi** sayfanın başından başlar (Excel etkin hücreden başlar, sonda baştan devam edilsin mi diye sorar); yalnız sabit metin hücreleri denetlenir, özel sözlüğe ekleme ve otomatik düzeltme yoktur.
 - Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
 - Elle yazılan bazı nadir girdiler Excel'den farklı anlaşılır: `$5` (Excel Türkçe ayarında metin bırakır, burada para birimli sayı olur), tek haneli yıllı `1/2/3`, `1/13`, `1-2-3`, `12:3`, `25:00` ve `- 5` (Excel sayıya/tarihe çevirir, burada metin kalır).

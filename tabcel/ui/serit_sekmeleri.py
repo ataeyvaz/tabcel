@@ -156,6 +156,9 @@ class GozdenGecirSayfasi(SeritSayfasi):
     def __init__(self, pencere):
         super().__init__()
         e = pencere.eylemler
+        y = SeritGrubu("Yazım", 6, "spell32")
+        y.buyuk(e["yazim"], metin="Yazım\nDenetimi")
+        self.grup_ekle(y)
         n = SeritGrubu("Notlar", 5, "note32")
         n.buyuk(e["yeni_not"])
         n.kucukler([e["notu_sil"]])
@@ -173,6 +176,7 @@ class YardimSayfasi(SeritSayfasi):
         y.buyuk(e["yardim_kisayollar"], ikon="keyboard32", metin="Klavye\nKısayolları")
         y.buyuk(e["yardim_yenilikler"], ikon="info32", metin="Yenilikler")
         y.buyuk(e["yardim_farklar"], ikon="help32", metin="Excel'den\nFarklar")
+        y.buyuk(e["hakkinda"], ikon="info32", metin="Hakkında")
         self.grup_ekle(y)
 
 

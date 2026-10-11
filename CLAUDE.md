@@ -40,16 +40,18 @@ tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustu
                      yeniden hesap), kaydir (başvuru kaydırma), ad_yardim, isaretleme, hata_neden (T8 hata açıklaması); Faz 5: kosul (koşullu
                      biçim + doğrulama değerlendirmesi); fonksiyonlar/turkiye (Tabcel'e özel, kural 16) — Qt yok
 tabcel/io/           xlsx_io, xlsx_grafik (grafik/resim), xlsx_kayip (Excel'de değişmiş grafik tespiti),
-                     csv_io, kurtarma, son_dosyalar
+                     csv_io, kurtarma, son_dosyalar; Faz 7: bulut (Drive/OneDrive klasörleri, Qt yok),
+                     yazim_motoru (Windows yazım denetimi, comtypes)
 tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
                      serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
                      arka_plan (iş parçacığı), dosya_islemleri, bicim_cubugu, renkli,
-                     pencereler (*_penceresi: bicim, csv, sayfa yapısı, yazdır…)
+                     pencereler (*_penceresi: bicim, csv, sayfa yapısı, yazdır…);
+                     Faz 7: bulut_islemleri, hizli_erisim, hakkinda_penceresi, yazim_penceresi
 testler/             pytest
 araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, dosya_olcum, cizim_dogrula,
                      test_raporu, test_parcali [tam paket 3 süreçte], ornek_uret(.py/_excel.ps1),
                      excel_dogrula.ps1, excel_girdi_karsilastir.ps1 [gerçek Excel, COM])
-kurulum/             Inno Setup betiği (Faz 7)
+kurulum/             Inno Setup betiği (tabcel.iss); kökte tabcel.spec (PyInstaller onedir), tabcel.ico (araclar/ikon_uret.py)
 tabcel/yardim.md     uygulama içi yardım içeriği (F1); ad `{APP_NAME}` yer tutucusuyla yazılır
 plan.md / surec.md / test.md                     plan, süreç günlüğü, test sonuçları
 faz2/3/5/5j/6_tasarim.md   formül motoru / biçimlendirme / veri araçları / şerit / grafik tasarımı

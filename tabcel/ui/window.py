@@ -32,6 +32,8 @@ from ..model.sayfa import CalismaKitabi, Sayfa
 from . import icons, theme
 from .ad_penceresi import AdTanimlaPenceresi, AdYoneticisi, GitPenceresi
 from .bicim_cubugu import BicimCubugu
+from .bulut_islemleri import BulutIslemleri
+from .hizli_erisim import HizliErisim
 from .dosya_islemleri import DosyaIslemleri
 from .grafik_eylemleri import BAGLAM_SEKMESI, GrafikEylemleri
 from .serit import Serit, SeritGrubu
@@ -99,7 +101,7 @@ class _FormulCubugu(QLineEdit):
             super().keyPressEvent(olay)
 
 
-class Pencere(DosyaIslemleri, QMainWindow):
+class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
     def __init__(self, kitap: Optional[CalismaKitabi] = None):
         super().__init__()
         self.kitap = kitap or CalismaKitabi()
@@ -162,10 +164,16 @@ class Pencere(DosyaIslemleri, QMainWindow):
         h.addWidget(self.kaydet_dugmesi)
         h.addWidget(self.geri_dugmesi)
         h.addWidget(self.yinele_dugmesi)
+        self._hizli_kutu = QWidget()                   # kullanıcının eklediği komutlar (Hızlı Erişim, sağ tık)
+        hk = QHBoxLayout(self._hizli_kutu)
+        hk.setContentsMargins(0, 0, 0, 0)
+        hk.setSpacing(2)
+        h.addWidget(self._hizli_kutu)
         h.addStretch(1)
         h.addWidget(self.belge_etiketi)
         h.addStretch(1)
         dikey.addWidget(baslik)
+        self._hizli_kur()
 
         # eski menü sözlükleri: katalogla aynı nesneler (testler ve kodun geri kalanı bunlara dayanır)
         self.gorunum_eylemleri = {k: self.eylemler[k] for k in ("bolme", "ust_satir", "ilk_sutun", "coz")}
@@ -343,7 +351,47 @@ class Pencere(DosyaIslemleri, QMainWindow):
             a.setToolTip(ipucu or metin)
             a.triggered.connect(lambda _=False, k=konu: self.yardim_ac(k))
             self.eylemler[anahtar] = a
+        h = QAction(f"{APP_NAME} Hakkında", self)
+        h.setToolTip("Sürüm, künye ve kullanılan açık kaynak bileşenler")
+        h.triggered.connect(lambda _=False: self.hakkinda_ac())
+        self.eylemler["hakkinda"] = h
         QShortcut(QKeySequence("F1"), self, activated=lambda: self.yardim_ac(None))
+        QShortcut(QKeySequence("F7"), self, activated=lambda: self.yazim_denetle(), context=Qt.WindowShortcut)
+
+    # --- Gözden Geçir: Yazım Denetimi (Faz 7c) ---
+    def _yazim_motoru(self):
+        """Windows Yazım Denetimi API'si; kullanılamıyorsa None ve ileti. Testlerde yamalanır."""
+        from ..io.yazim_motoru import SpellEngine, SpellEngineUnavailable
+        try:
+            return SpellEngine()
+        except SpellEngineUnavailable as e:
+            QMessageBox.information(self, APP_NAME, str(e))
+            return None
+
+    def yazim_denetle(self) -> bool:
+        """Seçili hücreleri (tek hücre seçiliyse tüm sayfayı) denetler; yanlış bulunduysa pencere açılır."""
+        from ..model.komutlar import HucrelerDegis
+        from ..model.yazim import YazimOturumu, hucre_sirasi
+        from .yazim_penceresi import YazimPenceresi
+        g = self.izgara()
+        motor = self._yazim_motoru()
+        if motor is None:
+            return False
+        secimler = g.secimler
+        tek = len(secimler) == 1 and secimler[0].ilk_satir == secimler[0].son_satir             and secimler[0].ilk_sutun == secimler[0].son_sutun
+        sira = hucre_sirasi(g.sayfa, secimler, tek)
+        oturum = YazimOturumu(g.sayfa, sira, motor,
+                              lambda sayfa, yeni: g.yigin.calistir(HucrelerDegis(sayfa, yeni)))
+        d = YazimPenceresi(oturum, self, git=lambda r, c: g.sec((r, c)))
+        if d.baslat():
+            d.exec()
+        else:
+            QMessageBox.information(self, APP_NAME, "Yazım denetimi tamamlandı: yanlış sözcük bulunamadı.")
+        return True
+
+    def hakkinda_ac(self) -> None:
+        from .hakkinda_penceresi import HakkindaPenceresi
+        HakkindaPenceresi(self).exec()
 
     def yardim_ac(self, konu=None):
         """Yardım penceresini açar (tek örnek); `konu` verilirse o konuya gider."""
@@ -406,6 +454,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
             a = QAction(metin, self)
             if ikon:
                 a.setIcon(icons.icon(ikon))
+                a.setProperty("ikonAdi", ikon)
             a.setToolTip(metin.rstrip("…") + (f" ({kisayol})" if kisayol else ""))
             if isaretli:
                 a.setCheckable(True)
@@ -464,6 +513,7 @@ class Pencere(DosyaIslemleri, QMainWindow):
         e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
+        e("yazim", "Yazım Denetimi…", lambda: self.yazim_denetle(), "F7", "spell32")
         e("yeni_not", "Yeni Not", lambda: g().not_duzenle(), "Shift+F2", "note32")
         e("notu_sil", "Notu Sil", lambda: g().notu_sil(), "", "note_delete")
         # görünüm

@@ -8,6 +8,7 @@ from pathlib import Path
 
 APP_NAME = "Tabcel"
 __version__ = "0.1"
+DEVELOPERS = "Developed By Usta ve Ata"
 KUNYE = f"{APP_NAME} {__version__}"
 
 

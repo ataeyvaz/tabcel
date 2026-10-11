@@ -64,6 +64,7 @@ def _dugme(eylem: Optional[QAction], buyuk: bool, menu: Optional[QMenu] = None,
         d.setDefaultAction(eylem)
     if ikon is not None:
         d.setIcon(icons.icon(ikon))
+        d.setProperty("ikonAdi", ikon)                     # Hızlı Erişim'e eklenirken beyaz simge için
     if metin is not None:
         d.setText(metin)
     d.setAutoRaise(True)

@@ -40,7 +40,9 @@ def test_eski_sozlukler_katalogla_ayni_nesneler(pencere):
 def test_dosya_menusu_eylemleri_katalogda(pencere):
     dosya = {k for k in pencere.eylemler if k.startswith("dosya.")}
     assert dosya == {"dosya." + a for a in ("yeni", "ac", "kaydet", "farkli_kaydet", "sayfa_yapisi", "onizleme",
-                                            "yazdir", "pdf_etkin", "pdf_tum", "cikis")}
+                                            "yazdir", "pdf_etkin", "pdf_tum", "cikis",
+                                            "bulut_ac_google", "bulut_kaydet_google",         # Faz 7a (klasör yoksa gizli)
+                                            "bulut_ac_onedrive", "bulut_kaydet_onedrive")}
     menu = pencere.dosya_menusu
     assert all(pencere.eylemler[k] in menu.actions() for k in dosya)
 
