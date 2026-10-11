@@ -303,6 +303,36 @@ def _tabcel_ozel_kullanimi(kitap) -> set:
     return {TABCEL_OZEL[a] for a in bulunan}
 
 
+_YOKSAY_ADI = "TabcelSaglikYoksay"            # belge özelliği öneki; değer ≤ 240 karakterlik parçalara bölünür (Excel özellik sınırı)
+
+
+def _yoksay_yaz(wb, kitap) -> None:
+    """Sağlık Kontrolü'nde “yoksay” denen bulguların anahtarlarını (kontrol|sayfa|adres — kişisel veri içermez) belge özelliği olarak yazar."""
+    import json
+    from openpyxl.packaging.custom import StringProperty
+    if not getattr(kitap, "saglik_yoksay", None):
+        return
+    metin = json.dumps(sorted(kitap.saglik_yoksay), ensure_ascii=False)
+    for i in range(0, len(metin), 240):
+        wb.custom_doc_props.append(StringProperty(name=f"{_YOKSAY_ADI}{i // 240 + 1}", value=metin[i:i + 240]))
+
+
+def _yoksay_oku(wb, kitap) -> None:
+    import json
+    parcalar = {}
+    for p in wb.custom_doc_props.props:
+        if p.name.startswith(_YOKSAY_ADI) and p.name[len(_YOKSAY_ADI):].isdigit():
+            parcalar[int(p.name[len(_YOKSAY_ADI):])] = str(p.value)
+    if not parcalar:
+        return
+    try:
+        liste = json.loads("".join(parcalar[i] for i in sorted(parcalar)))
+    except ValueError:
+        return
+    if isinstance(liste, list):
+        kitap.saglik_yoksay = {x for x in liste if isinstance(x, str)}
+
+
 def _let_xlpm_yaz(m: str) -> str:
     """LET değişken adlarına dosyadaki `_xlpm.` önekini ekler (`LET(x,1,x+1)` → `LET(_xlpm.x,1,_xlpm.x+1)`; Excel öneksiz
     adı #AD? sayar). İç içe LET'ler de işlenir; çift tırnaklı metin sabitlerine dokunulmaz."""
@@ -649,6 +679,7 @@ def kaydet(kitap: CalismaKitabi, yol: str, parola: Optional[str] = None) -> Rapo
             sayac["resim_yok"] = sayac.get("resim_yok", 0) + r_yok
 
     xlsx_grafik.im_yaz(wb)
+    _yoksay_yaz(wb, kitap)
     _adlari_yaz(wb, kitap)
     ozel = _tabcel_ozel_kullanimi(kitap)
     if ozel:
@@ -1180,6 +1211,7 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
         raise XlsxHatasi(f"Dosya okunamadı: {e}") from e
 
     kitap = CalismaKitabi()
+    _yoksay_oku(wb, kitap)
     havuz = kitap.stil_havuzu
     sayfalar = []
     for i, ws in enumerate(wb.worksheets):

@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Tablo Sağlığı:** sekiz kontrolle eksik aralık, tutarsız formül, metin sayı, hata, geçersiz T.C./vergi no/IBAN vb. bulur; onayınız olmadan hücre değiştirmez. Bkz. [Formüller](konu:formuller).
 - **Hesap İzleme paneli:** bir hücrenin değerinin nereden geldiğini ve nerelerde kullanıldığını ağaç olarak gösterir; tıklayınca hücreye gider. Bkz. [Formüller](konu:formuller).
 - **Ne yapmak istiyorsun? (asistan):** isteğinizi Türkçe yazın, formül ya da Özet Tablo önerisi önizlemeyle gelir; onaylarsanız yazılır. Yerel ve kural tabanlıdır. Bkz. [Formüller](konu:formuller).
 - **Doldurma seçenekleri:** Ctrl ile sürüklemede seri ⇄ kopya geçişi ve doldurma sonrası *Otomatik Doldurma Seçenekleri* düğmesi (kopyala / seri / yalnız biçim / biçimlendirmeden). Bkz. [Doldurma ve Seriler](konu:doldurma).
@@ -146,6 +147,22 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **Hata değerleri:** zincirde hata varsa panelin üstünde *Hatanın kaynağı: …* yazar ve hatanın asıl doğduğu hücre `⚠` ile işaretlenir.
 - **Döngüsel başvuru** `↻` ile işaretlenir ve açılmaz (sonsuz döngü olmaz).
 - Değerler yeniden hesaplanınca panel kendiliğinden güncellenir; formül düzenlenince ağaç yeniden kurulur. Panel kapalıyken hiçbir işlem yapılmaz.
+
+## Tablo Sağlığı: sorunlu yerleri bulma
+
+**Gözden Geçir → Denetim → Tablo Sağlığı** yan paneli açar ve çalışma kitabının tüm sayfalarını tarar. Tarama arka planda küçük dilimlerle çalışır: arayüz donmaz, ilerleme çubuğu görünür, **İptal** ile durdurabilirsiniz. Denetçi **hiçbir hücreyi kendiliğinden değiştirmez**; yalnız siz *Düzelt*'e basarsanız değiştirir ve `Ctrl+Z` geri alır.
+
+Sekiz kontrol vardır; sonuçlar *Kritik / Uyarı / Bilgi* altında adetleriyle listelenir:
+
+- **Eksik aralık** (kritik): `TOPLA`, `ORTALAMA`, `SAY`… aralığının hemen bitişiğindeki veri toplamaya katılmıyor.
+- **Hata değerleri** (kritik): hata veren hücreler; aynı kaynaktan doğanlar tek bulguda toplanır ve hatanın asıl doğduğu hücreye gidilir.
+- **Geçersiz kimlik verisi** (kritik): T.C. kimlik no, vergi no, IBAN sütunlarında sağlama kuralına uymayan değerler. Sütun, başlığından ya da içeriğinin çoğunun geçerli olmasından anlaşılır.
+- **Tutarsız formül** (uyarı): komşularıyla aynı desende olması gereken ama farklı olan formül (bilerek dönüşümlü desenler sayılmaz).
+- **Metin olarak saklanan sayı** (uyarı; tüm sütun metinse bilgi): hesaplara katılmayan sayılar. IBAN, T.C. no, telefon, baştaki sıfırlı kodlar ve *Metin* biçimli hücreler sorun sayılmaz.
+- **Formül içinde sabit sayı** (bilgi): `=B5*1,18` gibi. Sık kullanılan sayılar (0, 1, 2, 12, 100, 365…) yoksayılır; liste **Ayarlar…**'dan değişir.
+- **Boş hücreye başvuru** (bilgi) ve **Yinelenen satırlar** (bilgi).
+
+Bir bulguya **tıklayınca** ızgarada ilgili hücreye gidilir; altında sade bir açıklama ve “neden sorun olabilir” yazar. **Düzelt** yalnız güvenli durumlarda vardır (metni sayıya çevir, eksik aralığı genişlet, formülü komşularla eşitle) ve önerinin ne yapacağını önceden yazar. **Yoksay** bulguyu kalıcı olarak gizler; yoksayılanlar dosyayla birlikte saklanır (**Yoksayılanları geri al** ile döner). Her kontrol **Ayarlar…**'dan kapatılabilir. Kitap değişince sonuçların eskidiğini söyleyen bir uyarı görünür; yeniden taramak için *Tara*'ya basın.
 
 ## Ne yapmak istiyorsun? (Asistan)
 

@@ -937,6 +937,7 @@ class CalismaKitabi:
     def __init__(self):
         self.sayfalar: List[Sayfa] = []
         self.stil_havuzu = StilHavuzu()
+        self.saglik_yoksay: Set[str] = set()         # Tablo Sağlık Kontrolü: yoksayılan bulguların anahtarları (yalnız kontrol|sayfa|adres; dosyayla saklanır)
         self._dinleyiciler: List[Callable[[Olay], None]] = []
         self._sonraki_kimlik = 1
         self.adlar: Dict[Tuple[Optional[int], str], TanimliAd] = {}   # tanımlı adlar (faz5_tasarim.md §4)

@@ -35,6 +35,7 @@ from .bicim_cubugu import BicimCubugu
 from .bulut_islemleri import BulutIslemleri
 from .hizli_erisim import HizliErisim
 from .izleme_paneli import IzlemePaneli
+from .saglik_paneli import SaglikPaneli
 from .dosya_islemleri import DosyaIslemleri
 from .grafik_eylemleri import BAGLAM_SEKMESI, GrafikEylemleri
 from .serit import Serit, SeritGrubu
@@ -142,6 +143,10 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.izleme)
         self.izleme.hide()
         self.izleme.hucreyeGit.connect(self.hucreye_git)
+        self.saglik = SaglikPaneli(self)                 # Tablo Sağlık Kontrolü: yerleştirilebilir rapor paneli (varsayılan kapalı)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.saglik)
+        self.saglik.hide()
+        self.saglik.hucreyeGit.connect(self.hucreye_git)
         self.izleme.visibilityChanged.connect(lambda v: self.eylemler["izleme"].setChecked(bool(v)))
 
         self.izgara_yigini = QStackedWidget()          # şerit/Giriş sayfası ızgarayı bu yığından okur (erken kurulur)
@@ -366,6 +371,13 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         QShortcut(QKeySequence("Ctrl+Alt+I"), self, activated=lambda: self.izleme_ac(), context=Qt.WindowShortcut)
         QShortcut(QKeySequence("F7"), self, activated=lambda: self.yazim_denetle(), context=Qt.WindowShortcut)
 
+    # --- Tablo Sağlık Kontrolü (Faz 9c) ---
+    def saglik_ac(self) -> None:
+        """Paneli açar ve tüm çalışma kitabını taramayı başlatır (donmadan; Panel'den iptal edilebilir)."""
+        self.saglik.show()
+        self.saglik.raise_()
+        self.saglik.tara()
+
     # --- Hesap İzleme paneli (Faz 9b) ---
     def izleme_ac(self) -> None:
         """Paneli açar/kapatır (aç/kapat eylemi ve Ctrl+Alt+I)."""
@@ -589,6 +601,7 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
+        e("saglik", "Tablo Sağlığı", lambda: self.saglik_ac(), "", "saglik32")
         e("izleme", "Hesap İzleme", lambda: self.izleme_ac(), "Ctrl+Alt+I", "trace32", isaretli=True)
         e("asistan", "Ne yapmak istiyorsun?", lambda: self.asistan_ac(), "Alt+Q", "asistan32")
         e("ozet_tablo", "Özet Tablo…", lambda: self.ozet_tablo_ekle(), "", "pivot32")
@@ -767,6 +780,8 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         """Modeldeki değişikliklere arayüz tepkisi (doğrudan yazım, geri al ve yinele aynı yoldan gelir)."""
         if getattr(self, "izleme", None) is not None:
             self.izleme.olay(olay)
+        if getattr(self, "saglik", None) is not None:
+            self.saglik.olay(olay)
         if olay.tur in ("hucre", "sonuc", "yapi", "ek", "sayfa"):
             kuralli = False
             for g in self._izgaralar.values():
