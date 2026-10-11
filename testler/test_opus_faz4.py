@@ -219,13 +219,19 @@ def test_dizi_formulu_tasan_formul_olarak_okunur(tmp_path):
     assert [s.deger(1, 2), s.deger(2, 2)] == [2.0, 4.0] and s.hucre(1, 2).formul == "=A1:A2*2"
 
 
-def test_gizli_sayfa_kayip_sayilir(tmp_path):
+def test_gizli_sayfa_korunur(tmp_path):
+    """Faz 9d kararı: gizli sayfa dosyada gizli kalır (eskiden görünür yapılıp kayıp sayılıyordu)."""
     wb = Workbook()
     wb.active["A1"] = 1
     wb.create_sheet("Gizli").sheet_state = "hidden"
     yol = str(tmp_path / "g.xlsx")
     wb.save(yol)
-    assert xlsx_io.ac(yol)[1].veri_kaybi
+    k, rapor = xlsx_io.ac(yol)
+    assert not rapor.veri_kaybi and [s.gizli for s in k.sayfalar] == [False, True]
+    yol2 = str(tmp_path / "g2.xlsx")
+    xlsx_io.kaydet(k, yol2)
+    from openpyxl import load_workbook
+    assert [w.sheet_state for w in load_workbook(yol2).worksheets] == ["visible", "hidden"]
 
 
 def test_duz_dosyada_yanlis_uyari_yok(tmp_path):

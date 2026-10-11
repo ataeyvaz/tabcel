@@ -39,19 +39,19 @@ tabcel/model/        sayfa (Hucre/Sayfa/CalismaKitabi), anlik (salt okunur kitap
                      komutlar (geri al), pano, olcu, stil, sayi_bicimi, doldur, sayfa_yapisi, sayfalama;
                      Faz 5: harmanla, bul, sirala, filtre, dogrulama, kosullu; Faz 6: grafik, grafik_verisi,
                      grafik_cizim (çizim listesi), grafik_islem, resim_yukle; ayrıca ad, notlar, bicim_islem,
-                     bicim_kodlari, tarihseri, sirala — Qt yok
+                     bicim_kodlari, tarihseri, sirala; Faz 9: kimlik (doğrulayıcılar, tek kaynak), temizle (KVKK temizleyici çekirdeği) — Qt yok
 tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustur, degerlendir,
                      fonksiyonlar/ (kayıt + gruplar), adlar (tr⇄en), ceviri, motor (bağımlılık +
                      yeniden hesap), kaydir (başvuru kaydırma), ad_yardim, isaretleme, hata_neden (T8 hata açıklaması); Faz 5: kosul (koşullu
                      biçim + doğrulama değerlendirmesi); fonksiyonlar/turkiye (Tabcel'e özel, kural 16) — Qt yok
 tabcel/io/           xlsx_io, xlsx_grafik (grafik/resim), xlsx_kayip (Excel'de değişmiş grafik tespiti),
                      csv_io, kurtarma, son_dosyalar; Faz 7: bulut (Drive/OneDrive klasörleri, Qt yok),
-                     yazim_motoru (Windows yazım denetimi, comtypes); formul/asistan (Türkçe cümle → formül önerisi)
+                     yazim_motoru (Windows yazım denetimi, comtypes); Faz 9d: temiz_dosya (KVKK temiz kopya yazma + doğrulama); formul/asistan (Türkçe cümle → formül önerisi)
 tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
                      serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
                      arka_plan (iş parçacığı), dosya_islemleri, bicim_cubugu, renkli,
                      pencereler (*_penceresi: bicim, csv, sayfa yapısı, yazdır…);
-                     Faz 7: bulut_islemleri, hizli_erisim, hakkinda_penceresi, yazim_penceresi
+                     Faz 7: bulut_islemleri, hizli_erisim, hakkinda_penceresi, yazim_penceresi; Faz 9: izleme_paneli, saglik_paneli, temizleyici_penceresi
 testler/             pytest
 araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, dosya_olcum, cizim_dogrula,
                      test_raporu, test_parcali [tam paket 3 süreçte], ornek_uret(.py/_excel.ps1),

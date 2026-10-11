@@ -378,6 +378,15 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         self.saglik.raise_()
         self.saglik.tara()
 
+    # --- KVKK Paylaşım Temizleyici (Faz 9d) ---
+    def temizleyici_ac(self):
+        """Kişisel veri taraması ve temiz kopya penceresi (modal; özgün kitap/dosya değişmez)."""
+        from .temizleyici_penceresi import TemizleyiciPenceresi
+        d = TemizleyiciPenceresi(self)
+        d.tara()
+        d.exec()
+        return d
+
     # --- Hesap İzleme paneli (Faz 9b) ---
     def izleme_ac(self) -> None:
         """Paneli açar/kapatır (aç/kapat eylemi ve Ctrl+Alt+I)."""
@@ -602,6 +611,7 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
         e("saglik", "Tablo Sağlığı", lambda: self.saglik_ac(), "", "saglik32")
+        e("temizleyici", "Paylaşım Temizleyici", lambda: self.temizleyici_ac(), "", "temizle32")
         e("izleme", "Hesap İzleme", lambda: self.izleme_ac(), "Ctrl+Alt+I", "trace32", isaretli=True)
         e("asistan", "Ne yapmak istiyorsun?", lambda: self.asistan_ac(), "Alt+Q", "asistan32")
         e("ozet_tablo", "Özet Tablo…", lambda: self.ozet_tablo_ekle(), "", "pivot32")

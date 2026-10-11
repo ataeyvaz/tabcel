@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Paylaşım Temizleyici:** dosyayı başkasıyla paylaşmadan önce T.C. no, vergi no, IBAN, telefon, e-posta, kart no ve (sütun başlığına göre) ad-soyad bulur; seçtiğinizi maskeler ya da siler ve **yeni bir dosyaya** yazar. Yardımcı araçtır; yasal uygunluğu garanti etmez. Bkz. [Formüller](konu:formuller).
 - **Tablo Sağlığı:** sekiz kontrolle eksik aralık, tutarsız formül, metin sayı, hata, geçersiz T.C./vergi no/IBAN vb. bulur; onayınız olmadan hücre değiştirmez. Bkz. [Formüller](konu:formuller).
 - **Hesap İzleme paneli:** bir hücrenin değerinin nereden geldiğini ve nerelerde kullanıldığını ağaç olarak gösterir; tıklayınca hücreye gider. Bkz. [Formüller](konu:formuller).
 - **Ne yapmak istiyorsun? (asistan):** isteğinizi Türkçe yazın, formül ya da Özet Tablo önerisi önizlemeyle gelir; onaylarsanız yazılır. Yerel ve kural tabanlıdır. Bkz. [Formüller](konu:formuller).
@@ -163,6 +164,16 @@ Sekiz kontrol vardır; sonuçlar *Kritik / Uyarı / Bilgi* altında adetleriyle 
 - **Boş hücreye başvuru** (bilgi) ve **Yinelenen satırlar** (bilgi).
 
 Bir bulguya **tıklayınca** ızgarada ilgili hücreye gidilir; altında sade bir açıklama ve “neden sorun olabilir” yazar. **Düzelt** yalnız güvenli durumlarda vardır (metni sayıya çevir, eksik aralığı genişlet, formülü komşularla eşitle) ve önerinin ne yapacağını önceden yazar. **Yoksay** bulguyu kalıcı olarak gizler; yoksayılanlar dosyayla birlikte saklanır (**Yoksayılanları geri al** ile döner). Her kontrol **Ayarlar…**'dan kapatılabilir. Kitap değişince sonuçların eskidiğini söyleyen bir uyarı görünür; yeniden taramak için *Tara*'ya basın.
+
+## Paylaşım Temizleyici: kişisel verileri maskeleme
+
+**Gözden Geçir → Denetim → Paylaşım Temizleyici**, dosyayı başkasına göndermeden önce içindeki kişisel verileri bulmanıza ve gizlemenize yardım eder. *Yardımcı araçtır:* bulduklarını siz onaylarsınız, KVKK ya da başka bir mevzuata uygunluğu garanti etmez. **Verileriniz bilgisayarınızdan çıkmaz.**
+
+- **Neleri bulur:** T.C. kimlik no, vergi no, IBAN, telefon, e-posta, kredi kartı no (sağlama kurallarıyla doğrulanır; rastgele bir sayıya yanlış alarm vermemesi için) ve **ad-soyad** (yalnız başlığı *Ad Soyad*, *Müşteri Adı* gibi olan sütunların altı; öneridir). 10 haneli çıplak sayı telefon ya da vergi no olabilir; *belirsiz* diye işaretlenir.
+- **Nerelere bakar:** tüm sayfalar, **gizli satır/sütun/sayfa**, hücre notları ve not yazarları, formüllerin içindeki metinler, tanımlı adlar, sayfa adları, grafik başlıkları ve seri adları, veri doğrulama listeleri ve iletileri. Gizli yerdekiler kırmızı *gizli …* notuyla belirtilir. **Resimlerin içeriği taranamaz**; resim varsa uyarılır, elle bakmanız gerekir.
+- **Ne yapar:** her veri türü için *Maskele* (örn. `12*******34`), *Sil* ya da *Bırak* seçersiniz; **Maske…** ile açık kalacak karakter sayısını değiştirirsiniz. Listede tek tek kutuyu kaldırarak bir bulguyu dışarıda bırakabilir, tıklayarak hücreye gidebilirsiniz.
+- **Özgün dosya değişmez.** **Temiz kopya oluştur…** yeni bir dosyaya yazar; özgün dosyanın üzerine yazmaya izin vermez. Temiz kopyada özgün dosyanın yazar/son kaydeden gibi meta verisi, üst-alt bilgisi, geri al geçmişi ve kurtarma kopyası bulunmaz. Yazdıktan sonra dosyanın tüm parçalarında özgün değerin kalmadığı **otomatik doğrulanır**; bulunursa dosya silinir ve uyarılır.
+- **Formüller:** maskelenen hücreye bağlı formüller korunur ve maskeli değerle yeniden hesaplanır. Sonucu değişen ya da hataya dönen formüller kaydetmeden önce listelenir; sonucu kişisel veri içermeyenleri isterseniz özgün sonuçlarıyla *değere çevirebilirsiniz*.
 
 ## Ne yapmak istiyorsun? (Asistan)
 
@@ -401,6 +412,8 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
 - Elle yazılan bazı nadir girdiler Excel'den farklı anlaşılır: `$5` (Excel Türkçe ayarında metin bırakır, burada para birimli sayı olur), tek haneli yıllı `1/2/3`, `1/13`, `1-2-3`, `12:3`, `25:00` ve `- 5` (Excel sayıya/tarihe çevirir, burada metin kalır).
 - `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok); dosyada `TR_NUMBERTOWORDS` ve `TR_VALIDATE_TCKN` adıyla saklanır, Excel'de `#AD?` görünür.
+- **Gizli sayfa:** Excel'de gizli olan sayfa {APP_NAME}'te sekme olarak görünür (gizleme/gösterme komutu yoktur); kaydedince dosyada yine gizli kalır. *Paylaşım Temizleyici* gizli sayfadaki kişisel verileri ayrıca bildirir.
+- **Paylaşım Temizleyici** Excel'de yoktur. Üst/alt bilgi {APP_NAME}'te saklanmadığı için temiz kopyada hiç bulunmaz; resimlerin içi taranamaz.
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 
 <!-- konu: sorunlar | Sık Sorulanlar ve Sorun Giderme -->

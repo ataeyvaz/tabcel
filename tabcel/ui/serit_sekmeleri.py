@@ -170,6 +170,7 @@ class GozdenGecirSayfasi(SeritSayfasi):
         self.grup_ekle(y)
         sg = SeritGrubu("Denetim", 6, "saglik32")
         sg.buyuk(e["saglik"], ikon="saglik32", metin="Tablo\nSağlığı")
+        sg.buyuk(e["temizleyici"], ikon="temizle32", metin="Paylaşım\nTemizleyici")
         self.grup_ekle(sg)
         n = SeritGrubu("Notlar", 5, "note32")
         n.buyuk(e["yeni_not"])

@@ -79,6 +79,7 @@ class Sayfa:
         self.gizli_sutun: Set[int] = set()
         self.gizli_satir: Set[int] = set()
         self.sekme_rengi: Optional[str] = None     # '#rrggbb' ya da None
+        self.gizli: bool = False                   # .xlsx'te gizli sayfa: dosyada korunur (arayüzde sekme görünür kalır); KVKK temizleyici gizli yeri ayrıca bildirir
         self._kul: Optional[Tuple[int, int, int, int]] = None   # kullanılan aralık önbelleği
         self._sonuc: Dict[Anahtar, Deger] = {}     # formüllerin hesaplanmış sonuçları (girdi değil)
         self.tasma: Dict[Anahtar, Aralik] = {}     # taşan formül hücresi → yazılı taşma alanı (kendisi dahil, ≥ 2 hücre; Faz 8e)

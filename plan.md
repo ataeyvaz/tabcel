@@ -55,6 +55,9 @@ Kural: `model/` ve `formul/` Qt içe aktarmaz → hızlı test edilir, ileride b
 | 6 Grafikler | Orta–yüksek | QPainter ile kendi grafik motoru; .xlsx'e yazma |
 | 7 Paket/dağıtım | Orta | PyInstaller boyutu; LGPL uyumu; kurulum testi |
 | 8 Sonra | Değişken | Pivot, dinamik diziler |
+| 9 Güven/denetim | Orta–yüksek | Yanlış alarm; büyük tabloda hız (9d elle test bekliyor) |
+| 10 Şablon sihirbazı + formlar | **Yüksek** (10a–c, 10f), Orta (diğerleri) | Tanım şeması baştan yanlış kurulursa tüm şablonlar etkilenir; form–tablo tek kural/tek geri al/eşzamanlı yansıma; gizli sayfa bilgisinin Excel'de bozulması; büyük kapasitede SUMIFS hızı; Türkçe ek eşleştirme |
+| 11 Şablon düzenleyici | Yüksek | Tanım şemasını kullanıcıya açmak (hatalı tanım, geriye uyum) |
 
 **Her faz bitiş ölçütü:** testler geçer → gerçek iş senaryosu testi → surec.md güncel → (kullanıcı isterse) commit.
 
@@ -166,6 +169,43 @@ Tabcel'i Excel'den ayıran üç özellik; kalite ve güvenilirlik (özellikle **
 - **9d — Özellik 5: KVKK Paylaşım Temizleyici** ("yardımcı araç"; hukuki uygunluk iddiası yok; "Verileriniz bilgisayarınızdan çıkmaz"): algılanan veri: TC, vergi no, IBAN, telefon, e-posta, kart (Luhn), ad-soyad (yalnız sütun başlığına göre öneri). Taranan yerler: tüm sayfalar, gizli satır/sütun, **gizli sayfa** (model gizli sayfayı korur — aşağıdaki karar), notlar, grafik başlıkları/seri adları, tanımlı adlar, sayfa adları, doğrulama listeleri, üst/alt bilgi, özgün dosyanın meta verisi (yazar vb.; resimler taranamaz → uyarı). Tür başına Maskele / Sil / Bırak; maske biçimleri ayarlı; gizli yerdeki veri için özel uyarı. **Özgün dosya asla değişmez** (yeni dosya, kullanıcı ad/yer seçer; özgün yola yazma engellenir); temiz kopya bellekte derin kopyadan üretilir, geçmiş/geri al/meta verisi yoktur, kurtarma kopyası yazılmaz; testle dosya düzeyinde "özgün değer hiçbir parçada yok" doğrulanır. Maskelenen hücreye bağlı formüller: **formül kalır, maskeli değerle yeniden hesaplanır; kaydetmeden önce sonucu değişen/hataya dönen formüller listelenir; isteğe bağlı "değere çevir" yalnız sonuç maskelenen bir değeri içermiyorsa** (özgün değerlerle dondurmak sızdırabilir).
 - **Kararlar (kullanıcı onayı 2026-10-11):** formül stratejisi yukarıdaki; `VERGİNOGEÇERLİ`/`IBANGEÇERLİ` adları; gizli sayfa korunur (`Sayfa.gizli`; mevcut "görünür yap + uyar" davranışı ve `test_gizli_sayfa_kayip_sayilir` buna göre güncellenir — kural 12 bildirimi); yoksayma kaydı yalnız adres+kural.
 - **Test verisi yalnız sentetik** (algoritmaya göre geçerli ama rastgele üretilmiş TC/vergi no/IBAN/kart); gerçek kişi verisi kullanılmaz.
+
+### Faz 10 — Şablon Sihirbazı ve Otomatik Veri Giriş Formları (karar 2026-10-11, kullanıcı; ayrıntı ve şema: `sablon_tasarim.md`)
+Hedef: kullanıcı şablon listesinde gezinmez; birkaç soruya (≤ 7) verdiği cevaplara göre birbirine bağlı sayfalardan oluşan, formülleri/açılır listeleri/doğrulamaları hazır bir kitap üretilir; veri tabloya ya da otomatik formdan girilir. Excel'de VBA/Access ile yapılabilecek iş, kodsuz, Türkçe, yerel (kural 6). **Yapay zekâ yoktur;** yönlendirme anahtar kelime eşleştirmesidir.
+
+**Yerleşim gerekçesi:** Faz 9'dan **sonra**: (1) üretilen her kitap Tablo Sağlık Kontrolü'nden hatasız geçmeli (9c), (2) alanlar TC/vergi no/IBAN/telefon/e-posta doğrulayıcılarına `model/kimlik.py`'den bağlanır (9a, kural 18), (3) çok gizli sayfa, Temizleyici ve `Sayfa.gizli` altyapısı 9d'de var, (4) YAZIYLA (T7) hazır, (5) Veri doğrulama (Faz 5g), Ad Yöneticisi (5d), notlar, dinamik diziler hazır. Faz 8'in kalan parçalarından (Tablo nesnesi) **bağımsızdır** (modüller sabit kapasiteli adlandırılmış aralıklardır). Faz 7'nin kalan işleri (GitHub, .exe) bu fazla çakışmaz; yerleşik şablonlar PyInstaller verisi olarak pakete girer.
+
+**Bağımlılıklar (hazır değil → önce yapılacak, "10-ön"):**
+- `TRİŞGÜNÜ` / `TRTAMİŞGÜNÜ` + `tabcel/veri/resmi_tatiller.json` (surec.md §2 madde 12 / T7-9: **yapılmadı**) → **Çek-senet akışı buna bağlı**.
+- `TR_VALIDATE_PHONE` / `TR_VALIDATE_EMAIL` işlevleri (telefon/e-posta alan doğrulaması hücre doğrulamasında kullanılacak; algoritma `kimlik.py`'de var, işlev yok).
+- `SUMIFS/COUNTIFS/XLOOKUP/INDEX/MATCH/IFERROR/SUMPRODUCT` mevcut ✓; `YAZIYLA` ✓ (Teklif formu); `TCKİMLİKDOĞRULA/VERGİNOGEÇERLİ/IBANGEÇERLİ` ✓.
+- `Sayfa.gizli` bool → üç durumlu (`yok/gizli/cok_gizli`; `veryHidden` gidiş-dönüşü, 10c).
+
+| Alt faz | İçerik | Zorluk | Risk |
+|---|---|---|---|
+| 10-ön | TRİŞGÜNÜ/TRTAMİŞGÜNÜ + tatil verisi, telefon/e-posta işlevleri, `gizli` üç durumlu | Orta | Resmî tatil verisi doğruluğu (kullanıcı doğrular); dini bayram tarihleri yıl yıl güncellenir |
+| 10a | Şema + yükleyici + doğrulayıcı + sürüm/göç + kullanıcı klasörü + yükleme raporu (`tabcel/sablon/`, Qt'siz); yerleşik `stok_takibi` örneği; anahtar kelime eşleştirici | **Yüksek** | Şema eksik kalırsa sonra kırıcı değişiklik; hatalı kullanıcı dosyası dayanıklılığı |
+| 10b | Üretici: tanım+cevap → `CalismaKitabi` (sayfalar, tür biçimleri, doğrulama, açılır liste, yer tutucu genişletme, Ayarlar, Nasıl Kullanılır, örnek veri + "Örnek verileri temizle"); **Stok takibi dikey dilimi** (sağlık kontrolü testiyle) | **Yüksek** | Formül genişletme doğruluğu; sabit kapasite × SUMIFS hızı; sağlık kontrolü yanlış alarmı |
+| 10c | Saklama: `_tabcel` çok gizli sayfa (parçalama ≤ 30.000 karakter, sağlama, sürüm), tanımlı ad çapaları (`TR_MOD_*`), başlık/kimlik eşleme, açılışta uyuşma denetimi + yeniden eşleme önerisi, formu güvenle devre dışı bırakma; Temizleyici çok gizli sayfayı tarar | **Yüksek** | Excel'de düzenlenen dosyada bozulma; openpyxl gidiş-dönüşü; büyük tanım |
+| 10d | Sihirbaz arayüzü: serbest metin kutusu → eşleştirme → sorular (+ "Emin değilim, siz seçin"), canlı önizleme, kategori düğmeleri, "Şablonlar" penceresi (yükleme raporu) | Orta | Önizleme performansı; yanlış yönlendirme |
+| 10e | Diğer 5 akışın tanımları: Cari hesap, Apartman aidat, Teklif formu (YAZIYLA), Çek-senet (10-ön'e bağlı), Not çizelgesi; her biri tüm cevap kombinasyonu testi | Orta | Alan bilgisi (aidat/çek hesapları); formül karmaşıklığı |
+| 10f | Kural motoru (tek kaynak: tablo `Dogrulama` + form aynı formülü değerlendirir) + otomatik form (bileşenler, klavye, Kaydet ve yeni, gezinme/arama, geri al, form–tablo canlı eşzamanı) + Sağlık Kontrolü "kural ihlali" | **Yüksek** | Tek kural/iki yüzey tutarlılığı; eşzamanlı düzenleme çakışması; yapıştırmada doğrulama atlanması |
+| 10g | Barkod okuyucu (bulunamazsa "Yeni ürün olarak ekle") | Orta | Okuyucu zamanlaması (hızlı tuş dizisi); odak yönetimi |
+| 10h | Varyant matrisi (beden × renk tek tablo giriş, tek geri al adımı) | Orta | Seyrek matris, çok satır yazımı ve geri al |
+
+**Sıra:** 10-ön → 10a → 10b (+10c bir arada denenmeli: üretim saklamasız anlamsız) → 10d → 10e → 10f → 10g → 10h. Formu (10f) sihirbazdan sonraya koymanın nedeni: tablo-doğrudan kullanım zaten değer verir; form aynı şemadan türer, şema 10a–c'de oturmuş olmalı. **Bitiş ölçütü (her alt faz):** testler → gerçek iş senaryosu (stok akışıyla örnek mağaza) → surec.md → yardım (kural 13).
+
+**Kesinleşen kararlar (kullanıcı, 2026-10-11):**
+- Tanım biçimi **JSON** (YAML değil); yorum yok → her düğümde `aciklama`; her dosyada ve gizli sayfa verisinde **`surum`**, eski sürüm yüklemede otomatik dönüştürülür (`gocler`), yeni sürüm eski uygulamada form devre dışı (tablo çalışır).
+- Tanımlar uygulama içinde (salt okunur) + kullanıcı klasörü (`%APPDATA%\<APP_NAME>\sablonlar`). Kullanıcı klasöründe şemaya göre doğrulanır; hatalı dosya **atlanır**, hangi dosyada ne sorun olduğu Türkçe gösterilir. **Aynı kimlik hem yerleşikte hem kullanıcıda varsa ikisi de listelenir** (yerleşik sessizce değişmez).
+- Saklama: kitapta **çok gizli sayfa `_tabcel`** (JSON hücrelere ≤ 30.000 karakterlik parçalarla, sağlama toplamıyla); tanımlar sütunlara **konumla değil kalıcı kimlik + tanımlı ad çapası + başlık adıyla** bağlanır; Excel'de sütun ekle/sil/sayfa yeniden adlandırma halinde çökmez, uyuşmazlığı tespit eder, uyarır, formu devre dışı bırakır ve başlık adlarıyla yeniden eşlemeyi önerir. KVKK Temizleyici çok gizli sayfaları da tarar.
+- Doğrulama kuralları **veri modelinde** (tanımda) yaşar; form ve tablo aynı kuralı kullanır; form kayıtları geri al yığınına girer; form–tablo canlı eşzamanlıdır.
+- Şablon Düzenleyici → **Faz 11**.
+
+**Planlanan testler:** (1) her akış × tüm cevap kombinasyonu → geçerli kitap, Tablo Sağlık Kontrolü **0 bulgu** (kural: bu testi geçmeyen şablon eklenmez); (2) anahtar kelime: ekli/eksiz/yumuşamalı (`stoklarımı`, `stoğu`, `stokta`, `STOK`, `aidat`, `apartman`, `site yönetimi`) ve eşleşmeyen girişler (`hava durumu`, boş, tek harf); (3) şema: hatalı dosya atlanır (eksik alan, bilinmeyen tür, 8 soru, çakışan sütun kimliği, hatalı JSON, yinelenen kimlik, sürüm yeni/eski/göç), Türkçe ileti içerir, uygulama çökmez; (4) form–tablo aynı kural (TC, zorunlu, negatif stok, benzersiz) — tablodan doğrudan giriş de engellenir/işaretlenir, aynı ileti; (5) form–tablo eşzamanı ve geri al/yinele (tek kayıt, düzenleme, matris çok satır); (6) gidiş-dönüş: kaydet–aç ile form/bağlantılar çalışır; **büyük tanım** (> 32.767 karakter → çok parça) gidiş-dönüşü; sağlama bozulursa devre dışı; Excel (COM, `excel_dogrula.ps1`) ile açılışta bozulmama + gizli sayfanın görünmemesi; (7) **uyuşma**: Excel'de sütun ekle/sil/yeniden sırala, sayfa yeniden adlandır, başlık adı değiştir, `_tabcel` sil/değiştir → çökmez, uyarır, form devre dışı, mümkünse yeniden eşleme önerir (Excel'de elle düzenlenmiş örnek dosyalar `testler/ornekler/`); (8) Temizleyici çok gizli sayfayı tarar; (9) performans: sabit kapasite × SUMIFS ölçümü (`araclar/formul_olcum`).
+
+### Faz 11 — Şablon Düzenleyici (Faz 10'dan sonra)
+Kullanıcının kendi soru/modül/sütun/kural tanımlaması: liste tabanlı düzenleyici; yazılan tanımı Faz 10a doğrulayıcısıyla denetler, kullanıcı klasörüne kaydeder; var olan kitaptan "şablon olarak kaydet". Şema Faz 10'da buna uygun tasarlanır (kimlik/sürüm/aciklama). Kapsamı Faz 10 sonunda yeniden planlanır.
 
 ## Yapılmayacaklar
 - VBA/makro çalıştırma (güvenlik + kapsam), Power Query, Power Pivot, **Solver**, ortak canlı düzenleme (Excel Online'a özgü), bulut yapay zekâ (Sözcük kararı: veri buluta gitmez)
