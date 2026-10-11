@@ -70,7 +70,8 @@ En yenisi en üstte.
 | `1.234,56` | sayı (binlik nokta, ondalık virgül) |
 | `₺100`, `1.234,56 ₺` | para birimli sayı |
 | `%15` | yüzde (0,15) |
-| `10.10.2026`, `10/10/2026`, `12 Ekim 2026` | tarih |
+| `10.10.2026`, `10/10/2026`, `12 Ekim 2026`, `2026-01-02` | tarih |
+| `(5)` | eksi sayı (−5) |
 | `14:30` | saat |
 | `00123` | sayı **123** olur (Excel gibi); sıfırı korumak için hücreyi Metin biçimine alın |
 
@@ -296,6 +297,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Birleşik hücrelerin bulunduğu alana doldurma yapılamaz.
 - Excel'de hazırlanmış dosyada "2 sayfa genişliğine × 3 sayfa yüksekliğine sığdır" gibi çok sayfalı sığdırma tek sayfaya sığdırma olarak uygulanır (açılışta bilgi verilir).
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
+- Elle yazılan bazı nadir girdiler Excel'den farklı anlaşılır: `$5` (Excel Türkçe ayarında metin bırakır, burada para birimli sayı olur), tek haneli yıllı `1/2/3`, `1/13`, `1-2-3`, `12:3`, `25:00` ve `- 5` (Excel sayıya/tarihe çevirir, burada metin kalır).
 - `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok).
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 

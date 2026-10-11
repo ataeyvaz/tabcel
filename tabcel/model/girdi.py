@@ -118,7 +118,14 @@ def _saat_coz(metin: str) -> Optional[Tuple[float, str]]:
     return (sa * 3600 + dk * 60 + sn_i) / 86400.0, kod
 
 
+_TARIH_ISO = re.compile(r"^(\d{4})-(\d{1,2})-(\d{1,2})$")          # 2026-01-02 (Excel tarih olarak alır)
+
+
 def _tarih_coz(metin: str, bugun: _dt.date) -> Optional[Tuple[int, str]]:
+    m = _TARIH_ISO.match(metin)
+    if m:
+        seri = _tarih_seri(int(m.group(3)), int(m.group(2)), int(m.group(1)))
+        return None if seri is None else (seri, "d.mm.yyyy")
     m = _TARIH_SAYISAL.match(metin)
     if m:
         g, a, y = int(m.group(1)), int(m.group(3)), m.group(4)
@@ -148,7 +155,7 @@ def sayisal_akilli(metin: str, bugun: Optional[_dt.date] = None) -> Optional[Tup
         return None
     bugun = bugun or _dt.date.today()
     c0 = m[0]
-    if not (c0.isdigit() or c0 in "+-%₺$€,"):
+    if not (c0.isdigit() or c0 in "+-%₺$€,("):
         return None
     for rx in (_YUZDE_SON, _YUZDE_ON):
         g = rx.match(m)
@@ -157,6 +164,10 @@ def sayisal_akilli(metin: str, bugun: Optional[_dt.date] = None) -> Optional[Tup
             if n is not None:
                 d = _ondalik_sayisi(g.group(1))
                 return _yuzde_bol(g.group(1), n), "0" + ("." + "0" * d if d else "") + "%"
+    if m[0] == "(" and m[-1] == ")":                        # (5) → -5 (Excel'de eksi sayı yazımı)
+        n = sayi_coz(m[1:-1])
+        if n is not None and not m[1:-1].lstrip().startswith(("-", "+")):
+            return -n, None
     g = _PARA_ON.match(m)
     if g and g.group(4) and not (g.group(1) and g.group(3)):     # `-₺-5` çift işaret: metin kalır
         n = sayi_coz(g.group(3) + g.group(4))

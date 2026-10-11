@@ -994,3 +994,10 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Belirsiz (kural 4):** her iki Türkçe ad Microsoft listesinde yok; Tabcel'e özgü. Değiştirmek istenirse yalnız `adlar.TABCEL_OZEL`.
 - **Bilinçli sınırlar:** YAZIYLA para birimi ("lira/kuruş") yapmaz; TC doğrulama yalnız algoritma. Dosyadan Excel'de açılan kopyada formül `#AD?` olur (değer önbelleği saklanır).
 - **Sıradaki:** T5 (elle kopyala-yapıştır testi, belirsiz sayı girdileri), T8 (Türkçe hata açıklamaları).
+
+### T5b — Belirsiz girdiler (2026-10-11)
+- **Yöntem:** `araclar/excel_girdi_karsilastir.ps1` gerçek Excel'de (Türkçe bölgesel ayar, `Range.FormulaLocal`) 52 girdiyi yazıp sonucu okur. Dikkat: `Value2` ataması ABD biçimiyle ayrıştırır (`1,234` → 1234) → Türkçe elle yazmayı yansıtmaz, kullanılmaz.
+- **Sonuç:** 52 girdinin 45'i zaten aynıydı. Düzeltilenler: `(5)` → −5, ISO tarih `2026-01-02` → tarih. `testler/test_belirsiz_girdiler.py` (Excel'den dondurulmuş tablo; 45 eşit + 7 strict xfail).
+- **Kalan farklar (nadir, xfail):** `$5` (Excel TR: metin; Tabcel para birimli sayı — **bilinçli bırakıldı**, USD girişi yararlı), `1/2/3`, `1-2-3`, `1/13` (Excel tek haneli yılı 2000'ler sayar), `12:3`, `25:00` (Excel >24 saati kabul eder), `- 5`.
+- **Karar:** elle yazılan `0123` → 123 (Excel gibi) kalır; sıfır için `'0123` ya da Metin biçimi.
+- **T5a (Excel/Word pano çapraz testi):** kullanıcıdan gerçek pano örneği gerekir; bekliyor (`pano.py` TSV+HTML var).
