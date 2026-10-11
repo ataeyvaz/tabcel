@@ -131,6 +131,9 @@ class FormullerSayfasi(SeritSayfasi):
     def __init__(self, pencere):
         super().__init__()
         e = pencere.eylemler
+        asi = SeritGrubu("Asistan", 6, "asistan32")
+        asi.buyuk(e["asistan"], ikon="asistan32", metin="Ne yapmak\nistiyorsun?")
+        self.grup_ekle(asi)
         ik = SeritGrubu("İşlev Kitaplığı", 5, "autosum32")
         ik.buyuk(e["otomatik_toplam"], ikon="autosum32", metin="Otomatik\nToplam")
         self.grup_ekle(ik)

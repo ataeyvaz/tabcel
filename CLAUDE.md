@@ -41,7 +41,7 @@ tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustu
                      biçim + doğrulama değerlendirmesi); fonksiyonlar/turkiye (Tabcel'e özel, kural 16) — Qt yok
 tabcel/io/           xlsx_io, xlsx_grafik (grafik/resim), xlsx_kayip (Excel'de değişmiş grafik tespiti),
                      csv_io, kurtarma, son_dosyalar; Faz 7: bulut (Drive/OneDrive klasörleri, Qt yok),
-                     yazim_motoru (Windows yazım denetimi, comtypes)
+                     yazim_motoru (Windows yazım denetimi, comtypes); formul/asistan (Türkçe cümle → formül önerisi)
 tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
                      serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
                      arka_plan (iş parçacığı), dosya_islemleri, bicim_cubugu, renkli,

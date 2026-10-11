@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Ne yapmak istiyorsun? (asistan):** isteğinizi Türkçe yazın, formül ya da Özet Tablo önerisi önizlemeyle gelir; onaylarsanız yazılır. Yerel ve kural tabanlıdır. Bkz. [Formüller](konu:formuller).
 - **Doldurma seçenekleri:** Ctrl ile sürüklemede seri ⇄ kopya geçişi ve doldurma sonrası *Otomatik Doldurma Seçenekleri* düğmesi (kopyala / seri / yalnız biçim / biçimlendirmeden). Bkz. [Doldurma ve Seriler](konu:doldurma).
 - **Dinamik diziler:** formül sonuçları komşu hücrelere taşar; `SIRALA`, `FİLTRE`, `BENZERSİZ`, `SIRALI`, `AL`, `BIRAK`, `DÜŞEYYIĞ`, `YATAYYIĞ`, `SÜTUNA`, `SATIRA`, `SÜTUNSEÇ`, `SATIRSEÇ`, `GENİŞLET`, `RASGDİZİ`, `DEVRİK_DÖNÜŞÜM` ve `LET` işlevleri eklendi. Bkz. [Formüller](konu:formuller).
 - **Özet Tablo:** Ekle sekmesinden satır/sütun/değer alanlarıyla özet tablo oluşturulur (anlık görüntü). Bkz. [Sırala, Filtre, Bul ve Değiştir](konu:siralafiltre).
@@ -130,6 +131,17 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **YAZIYLA(sayı):** sayıyı Türkçe yazıya çevirir. `=YAZIYLA(125)` → *yüz yirmi beş*, `=YAZIYLA(-3)` → *eksi üç*, `=YAZIYLA(2,05)` → *iki virgül sıfır beş*. Mutlak değeri katrilyonun (10^15) altında olmalı, yoksa `#SAYI!` verir.
 - **TCKİMLİKDOĞRULA(no):** 11 haneli T.C. kimlik numarası sağlama kurallarına uyuyorsa DOĞRU, uymuyorsa YANLIŞ verir. Sayı ya da metin kabul eder (baştaki sıfır kaybolmasın diye metin yazabilirsiniz). Kişinin gerçekten var olup olmadığını denetlemez.
 - Bu iki işlev **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
+
+## Ne yapmak istiyorsun? (Asistan)
+
+Bir tablonun içinde bir hücre seçip **Formüller → Ne yapmak istiyorsun?** (ya da `Alt+Q`) deyin ve isteğinizi Türkçe yazın: *“Bölgeye göre toplam satış”*. {APP_NAME} tablonun başlıklarına ve değerlerine bakıp yapacağını **önizleme** olarak gösterir (formül ve yazılacak yer); **Uygula** deyince yazar, `Ctrl+Z` ile geri alınır. Hiçbir şey sormadan yazmaz.
+
+- **Tek değer:** *Satış toplamı*, *tutar ortalaması*, *en yüksek tutar*, *kaç kayıt var*; koşullu: *Kuzey bölgesinin toplam satışı*, *Kuzey ve çay için adet toplamı*, *1000'den büyük satış sayısı*.
+- **Gruplama (Özet Tablo):** *Bölgeye göre toplam satış*, *bölge ve ürüne göre ortalama tutar*, *her ürün için kaç adet var*.
+- **Listeleme:** *Tutarı 500'den büyük olanları listele*, *Güney bölgesindekileri göster*, *ortalamanın üstünde olanlar*; **en yüksek/en düşük N**: *en yüksek 5 satış*; **sıralama**: *tutara göre büyükten küçüğe sırala*; **benzersiz / tekrar eden**: *ürünlerin benzersiz listesi*, *tekrar eden müşteriler*.
+- **Yeni sütun:** *toplamdaki payı (%)*, *değişim (%)*, *kümülatif toplam*.
+
+Sütun adları büyük/küçük harf, Türkçe harf ve ek farkına bakmaz (`bölgeye` = *Bölge*, `satışların` = *Satış*); hücrelerdeki metin değerleri de (ör. *Kuzey*) tanınır. Cümleyi anlayamazsa **tahmin yürütmez**: nedenini, tablonun sütunlarını ve örnekleri söyler. Asistan tamamen bu bilgisayarda, kurallarla çalışır; yapay zekâ modeli ya da internet kullanmaz, bu yüzden yalnız yukarıdaki kalıpları anlar.
 
 ## Dinamik diziler (taşma)
 
@@ -322,6 +334,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 | `Ctrl+Alt+L` | Filtreyi yeniden uygula |
 | `Shift+F2` | Not ekle / düzenle |
 | `F7` | Yazım denetimi |
+| `Alt+Q` | Ne yapmak istiyorsun? (asistan) |
 | `Ctrl+9` / `Ctrl+0` | Satırları / Sütunları gizle |
 | `Ctrl+Shift+9` / `Ctrl+Shift+0` | Satırları / Sütunları göster |
 | `Ctrl+Boşluk` / `Shift+Boşluk` | Sütunu / Satırı seç |

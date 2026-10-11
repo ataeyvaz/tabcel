@@ -356,7 +356,33 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         h.triggered.connect(lambda _=False: self.hakkinda_ac())
         self.eylemler["hakkinda"] = h
         QShortcut(QKeySequence("F1"), self, activated=lambda: self.yardim_ac(None))
+        QShortcut(QKeySequence("Alt+Q"), self, activated=lambda: self.asistan_ac(), context=Qt.WindowShortcut)
         QShortcut(QKeySequence("F7"), self, activated=lambda: self.yazim_denetle(), context=Qt.WindowShortcut)
+
+    # --- Asistan: “Ne yapmak istiyorsun?” (Faz 8f) ---
+    def asistan_ac(self) -> bool:
+        """Türkçe cümleden formül/Özet Tablo önerir (yerel, kural tabanlı); onaylanırsa tek geri al adımıyla uygular."""
+        from ..formul import asistan
+        from ..model.ozet import OzetHatasi
+        from .asistan_penceresi import AsistanPenceresi
+        g = self.izgara()
+        tablo = asistan.tablo_oku(g.sayfa, g.secim)
+        if tablo.aralik.son_satir <= tablo.aralik.ilk_satir:
+            QMessageBox.information(self, APP_NAME, "Önce başlıklı bir tablonun içinde bir hücre seçin "
+                                    "(ilk satır başlık, altında veri olmalı).")
+            return False
+        d = AsistanPenceresi(tablo, g._aktif, self)
+        if d.exec() != QDialog.Accepted or d.secilen is None:
+            return False
+        try:
+            kmt = d.secilen.komut(self.kitap, g.sayfa)
+            self.yigin.calistir(kmt)
+        except (OzetHatasi, ValueError) as e:
+            QMessageBox.warning(self, APP_NAME, str(e))
+            return False
+        if d.secilen.hedef is not None:
+            g.sec(d.secilen.hedef)
+        return True
 
     # --- Ekle: Özet Tablo (Faz 8d) ---
     def ozet_tablo_ekle(self) -> bool:
@@ -543,6 +569,7 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
+        e("asistan", "Ne yapmak istiyorsun?", lambda: self.asistan_ac(), "Alt+Q", "asistan32")
         e("ozet_tablo", "Özet Tablo…", lambda: self.ozet_tablo_ekle(), "", "pivot32")
         e("yazim", "Yazım Denetimi…", lambda: self.yazim_denetle(), "F7", "spell32")
         e("yeni_not", "Yeni Not", lambda: g().not_duzenle(), "Shift+F2", "note32")
