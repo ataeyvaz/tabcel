@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 11 Ekim 2026
 
+- **Doldurma seçenekleri:** Ctrl ile sürüklemede seri ⇄ kopya geçişi ve doldurma sonrası *Otomatik Doldurma Seçenekleri* düğmesi (kopyala / seri / yalnız biçim / biçimlendirmeden). Bkz. [Doldurma ve Seriler](konu:doldurma).
 - **Dinamik diziler:** formül sonuçları komşu hücrelere taşar; `SIRALA`, `FİLTRE`, `BENZERSİZ`, `SIRALI`, `AL`, `BIRAK`, `DÜŞEYYIĞ`, `YATAYYIĞ`, `SÜTUNA`, `SATIRA`, `SÜTUNSEÇ`, `SATIRSEÇ`, `GENİŞLET`, `RASGDİZİ`, `DEVRİK_DÖNÜŞÜM` ve `LET` işlevleri eklendi. Bkz. [Formüller](konu:formuller).
 - **Özet Tablo:** Ekle sekmesinden satır/sütun/değer alanlarıyla özet tablo oluşturulur (anlık görüntü). Bkz. [Sırala, Filtre, Bul ve Değiştir](konu:siralafiltre).
 - **.ods (OpenDocument Hesap Tablosu):** açılır ve kaydedilir; Excel ve LibreOffice ile uyumludur. Bkz. [Dosyalar, Yazdırma ve Kurtarma](konu:dosyalar).
@@ -160,6 +161,8 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - Seçimin sağ alt köşesindeki **doldurma tutamacını** sürükleyin; seri devam eder: `1, 2, 3 …`, `Ocak, Şubat …`, `Pazartesi …`, `Ürün 1, Ürün 2 …`, `1. Çeyrek …`. Aşağı/sağa ve yukarı/sola çalışır.
 - İki sayı seçip sürüklerseniz aradaki **adım** kullanılır; üç ve fazlasında doğrusal eğilim sürer.
 - Tutamaca **çift tıklama** komşu sütundaki verinin sonuna kadar doldurur.
+- **Ctrl basılıyken** sürüklemek varsayılanı tersine çevirir (Excel gibi): tek sayı `5` → `5, 6, 7 …` seri olur; `1, 2` ya da `Ocak` gibi seriler seri olmadan **kopyalanır**.
+- Doldurmanın hemen sonrasında köşede beliren **Otomatik Doldurma Seçenekleri** düğmesi (▾) sonucu değiştirir: *Hücreleri Kopyala*, *Seriyi Doldur*, *Yalnızca Biçimleri Doldur* (içerik değişmez), *Biçimlendirmeden Doldur* (hedefin biçimi korunur). Başka bir işlem yapınca düğme kalkar. Seçim, doldurmayı geri alıp yeniden yapar (tek geri al adımı).
 - Formüller doldurulurken başvurular göreli kayar.
 - `Ctrl+D` üstteki hücreyi aşağıya, `Ctrl+R` soldaki hücreyi sağa **kopyalar**.
 - Birleşik hücreler dolduruma katılamaz.

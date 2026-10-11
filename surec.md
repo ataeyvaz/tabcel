@@ -1067,3 +1067,10 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Testler:** `test_dizi_islevleri` 82, `test_tasma` 14, `test_tasma_dosya` 15. Tam paket 5 parçada koşulur (bkz. aşağıdaki not).
 - **Açık:** formül çubuğu taşan hücrede sahibin formülünü göstermez (değeri gösterir; üstüne yazmak taşmayı engeller); Opus gözden geçirmesi (motor); `AL`/`BIRAK`/... Excel'de elle bakılmadı (yalnız COM ile 24 ifade).
 - **Kural 12 bildirimi (2):** `test_sayfa.py::test_k4_hata_degeri` hata sözlüğünün boyutunu 7 olarak sabitlemişti; `#TAŞMA!`/`#HESAPLA!` eklendiği için 9'a güncellendi. **Tam paket (5 parça) sonucu:** 638+1208+644+635+417 geçti, 7 xfail; tek başarısız bu testti (düzeltildi).
+
+### Doldurma tutamacı — Ctrl + Otomatik Doldurma Seçenekleri (2026-10-11, kullanıcı isteği)
+- **Durum tespiti:** sağ alt köşeden sürükleyerek doldurma (seri/kopya/formül kayması/çift tık) **zaten vardı** (Faz 3h). Eksik olanlar eklendi:
+- **Ctrl ile sürükleme** (Excel): varsayılan tersine döner — tek sayı seri olur (+1), çok sayı/ay-gün adı/sayılı metin/tarih seri olmadan kopyalanır (`doldur._serit_degerleri(..., ters)`, `seri_plani(..., ters)`).
+- **Otomatik Doldurma Seçenekleri** (`Izgara.doldur(..., mod, ters, secenek)`): doldurmadan (sürükleme ya da çift tık) sonra köşede ▾ düğmesi; menü: Hücreleri Kopyala / Seriyi Doldur / Yalnızca Biçimleri Doldur (`doldur.bicim_plani`) / Biçimlendirmeden Doldur. Seçim son doldurmayı **geri alıp** seçilenle yeniden yapar (tek adım); başka tuş/fare/işlem düğmeyi kaldırır; kaydırmada köşede kalır. Fare sağ tuşla sürükleme menüsü ve "Hızlı Doldur" yok.
+- Testler: `test_doldur_arayuz.py` +6 (Ctrl seri/kopya, düğme/menü/seçenekler, yalnız biçim/biçimsiz, gizlenme, çift tık).
+

@@ -317,7 +317,6 @@ def test_ctrl_surukle_seri_kopyaya_doner(pencere):
 def test_secenek_dugmesi_gorunur_ve_secenekler(pencere):
     g = pencere.izgara()
     g.sayfa.ata(1, 1, Hucre("Ocak"))
-    g.bicim_uygula if False else None
     g.sec((1, 1))
     surukle_mod(g, (3, 1), Qt.NoModifier)
     assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Şubat", "Mart"]
@@ -330,7 +329,7 @@ def test_secenek_dugmesi_gorunur_ve_secenekler(pencere):
     assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Ocak", "Ocak"]
     assert g.doldur_secenek_menusu().actions()[0].isChecked()
     assert g.doldur_secenegi("seri") and [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", "Şubat", "Mart"]
-    pencere.yigin.geri_al() if hasattr(pencere, "yigin") else g.geri_al()
+    g.geri_al()
     assert [deger(g, r, 1) for r in (1, 2, 3)] == ["Ocak", None, None]                    # tek geri al adımı
 
 
