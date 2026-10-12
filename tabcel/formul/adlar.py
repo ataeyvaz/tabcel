@@ -34,7 +34,9 @@ EN_TR: Dict[str, str] = {
 # Tabcel'e özel (Microsoft Excel'de YOK; adlar Microsoft listesinden doğrulanmadı — surec.md §8b). `.xlsx`e
 # yazılınca başka programda #AD? verir; kaydederken uyarı gösterilir (`xlsx_io`).
 TABCEL_OZEL: Dict[str, str] = {"TR_NUMBERTOWORDS": "YAZIYLA", "TR_VALIDATE_TCKN": "TCKİMLİKDOĞRULA",
-                               "TR_VALIDATE_VKN": "VERGİNOGEÇERLİ", "TR_VALIDATE_IBAN": "IBANGEÇERLİ"}          # VKN/IBAN: Faz 9a
+                               "TR_VALIDATE_VKN": "VERGİNOGEÇERLİ", "TR_VALIDATE_IBAN": "IBANGEÇERLİ",
+                               "TR_VALIDATE_PHONE": "TELEFONGEÇERLİ", "TR_VALIDATE_EMAIL": "EPOSTAGEÇERLİ",
+                               "TR_NETWORKDAYS": "TRTAMİŞGÜNÜ", "TR_WORKDAY": "TRİŞGÜNÜ"}   # VKN/IBAN: Faz 9a; telefon/e-posta: 10-ön
 EN_TR.update(TABCEL_OZEL)
 
 TR_EN: Dict[str, str] = {tr_buyuk(tr): en for en, tr in EN_TR.items()}

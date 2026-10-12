@@ -609,8 +609,8 @@ def kaydet(kitap: CalismaKitabi, yol: str, parola: Optional[str] = None) -> Rapo
         ws = wb.create_sheet(sayfa.ad)
         if sayfa.sekme_rengi:
             ws.sheet_properties.tabColor = sayfa.sekme_rengi[1:]
-        if sayfa.gizli and any(not x.gizli for x in kitap.sayfalar):   # en az bir görünür sayfa şart
-            ws.sheet_state = "hidden"
+        if (sayfa.gizli or sayfa.cok_gizli) and any(not (x.gizli or x.cok_gizli) for x in kitap.sayfalar):   # en az bir görünür sayfa şart
+            ws.sheet_state = "veryHidden" if sayfa.cok_gizli else "hidden"
         for (r, c), h in sayfa._hucreler.items():
             if type(h) is TasmaHucre:                    # taşma hücreleri türetilmiştir; sahibi dizi formülü olarak yazılır
                 continue
@@ -1225,6 +1225,7 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
             kitap.yeniden_adlandir(s, ad)
         if ws.sheet_state != "visible":
             s.gizli = True
+            s.cok_gizli = ws.sheet_state == "veryHidden"
             rapor.ekle(f"Gizli sayfa '{ad}' {APP_NAME}'te görünür gösterilir; kaydederseniz dosyada yine gizli kalır.")
         sayfalar.append((ws, s))
 

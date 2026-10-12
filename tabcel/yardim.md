@@ -34,6 +34,10 @@ Yazım kuralları:
 
 En yenisi en üstte.
 
+## 12 Ekim 2026
+- Yeni işlevler: **TELEFONGEÇERLİ**, **EPOSTAGEÇERLİ**, **TRTAMİŞGÜNÜ**, **TRİŞGÜNÜ** (Türkiye resmî tatilleriyle iş günü). Ayrıntı: "Türkiye'ye özel işlevler".
+- Excel'de "çok gizli" sayfalar artık dosyada çok gizli olarak korunur.
+
 ## 11 Ekim 2026
 
 - **Paylaşım Temizleyici:** dosyayı başkasıyla paylaşmadan önce T.C. no, vergi no, IBAN, telefon, e-posta, kart no ve (sütun başlığına göre) ad-soyad bulur; seçtiğinizi maskeler ya da siler ve **yeni bir dosyaya** yazar. Yardımcı araçtır; yasal uygunluğu garanti etmez. Bkz. [Formüller](konu:formuller).
@@ -135,6 +139,10 @@ Döngüsel başvuru (bir hücre kendi sonucuna bağlıysa) durum çubuğunda "D�
 - **TCKİMLİKDOĞRULA(no):** 11 haneli T.C. kimlik numarası sağlama kurallarına uyuyorsa DOĞRU, uymuyorsa YANLIŞ verir. Sayı ya da metin kabul eder (baştaki sıfır kaybolmasın diye metin yazabilirsiniz). Kişinin gerçekten var olup olmadığını denetlemez.
 - **VERGİNOGEÇERLİ(no):** 10 haneli vergi kimlik numarası sağlama kuralına uyuyorsa DOĞRU verir. Sıfırla başlayan numaraları **metin** olarak yazın (`"0123456789"`), yoksa sayıda baştaki sıfır kaybolur.
 - **IBANGEÇERLİ(iban):** Türkiye IBAN'ı (26 karakter, mod-97) doğruysa DOĞRU verir; boşluklu ya da tireli yazım kabul edilir. Hesabın var olup olmadığını denetlemez.
+- **TELEFONGEÇERLİ(numara):** Türkiye telefonu (`+90 532 123 45 67`, `0532…`, parantezli/tireli yazım; cep, sabit ve 850 hatları) doğruysa DOĞRU verir. Hattın var olup olmadığını denetlemez.
+- **EPOSTAGEÇERLİ(adres):** e-posta adresi biçimi doğruysa DOĞRU verir; adresin var olup olmadığını denetlemez.
+- **TRTAMİŞGÜNÜ(başlangıç; bitiş; [tatiller]):** `TAMİŞGÜNÜ` gibi, ama Türkiye resmî tatillerini (yılbaşı, 23 Nisan, 1 Mayıs, 19 Mayıs, 15 Temmuz, 30 Ağustos, 29 Ekim, dini bayramlar) kendiliğinden eler; isteğe bağlı `tatiller` listesi bunlara eklenir. Arife günleri tam iş günü sayılır. Tatil verisi **2024–2028** yıllarını kapsar; dışındaki tarihlerde `#SAYI!` verir. Dini bayram tarihleri henüz doğrulanmadı; idari izin/köprü günleri yoktur.
+- **TRİŞGÜNÜ(başlangıç; gün; [tatiller]):** `İŞGÜNÜ` gibi, resmî tatilleri atlayarak. `TAMİŞGÜNÜ`/`İŞGÜNÜ` Excel'deki gibi çalışmaya devam eder.
 - Bu işlevler **Excel'de yoktur**; dosyayı .xlsx olarak kaydedince Excel ve diğer programlarda `#AD?` verirler. Kaydederken bu konuda uyarılırsınız. Başka kişiye gidecek dosyada sonucu değere çevirmeniz (kopyala → Özel Yapıştır → Değerler) önerilir.
 
 ## Hesap İzleme: “Bu sayı nereden geliyor?”

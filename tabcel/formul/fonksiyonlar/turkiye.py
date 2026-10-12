@@ -6,11 +6,16 @@ uyarı gösterilir (`xlsx_io.TABCEL_OZEL`).
 
 - `YAZIYLA(sayı)`: sayıyı Türkçe yazıya çevirir. 125 → "yüz yirmi beş"; −3 → "eksi üç"; 2,05 → "iki virgül sıfır beş".
   |sayı| < 10^15 (katrilyon altı); ondalık basamaklar tek tek okunur (en çok 10 basamak).
+- `TRNETWORKDAYS`/`TRWORKDAY` (`TRTAMİŞGÜNÜ`/`TRİŞGÜNÜ`): `TAMİŞGÜNÜ`/`İŞGÜNÜ` gibi, ama Türkiye resmî tatillerini
+  (`tabcel/veri/resmi_tatiller.json`) kendiliğinden eler; ek tatil listesi isteğe bağlı. Arife yarım gün tam iş günü sayılır.
+  Veri kapsamı dışındaki yıllar `#SAYI!`. Excel'in `TAMİŞGÜNÜ`/`İŞGÜNÜ` davranışı (kural 7) değişmez.
 - `TCKIMLIKDOGRULA(no)`: 11 haneli T.C. kimlik numarası algoritmasına uyuyorsa DOĞRU (yalnızca biçim/sağlama: kişi
   gerçekten var mı denetlenmez). Sayı ya da metin kabul eder (baştaki sıfır korunmuş metin).
 """
 from ...model import deger as D
-from ...model import kimlik
+from ...model.deger import Hata
+from ...model import kimlik, tatiller as _tatil_verisi
+from ...model.tarihseri import MAKS_SERI, seri_ymd
 from . import fonksiyon  # noqa: F401
 from .ortak import skaler
 
@@ -88,3 +93,77 @@ def _vkn_dogrula(b, no):
 def _iban_dogrula(b, iban):
     """TR IBAN: 26 karakter, mod-97; boşluklu/tireli yazım kabul."""
     return kimlik.iban_gecerli(iban)
+
+
+@skaler("TR_VALIDATE_PHONE", "m")
+def _telefon_dogrula(b, tel):
+    """Türkiye telefonu: +90/0090/0 ön ekli ya da 10 haneli; cep (5xx), sabit (2xx/3xx/4xx), 850."""
+    return kimlik.telefon_gecerli(tel)
+
+
+@skaler("TR_VALIDATE_EMAIL", "m")
+def _eposta_dogrula(b, adres):
+    """E-posta adresi biçimi (adresin var olup olmadığı denetlenmez)."""
+    return kimlik.eposta_gecerli(adres)
+
+
+def _ek_tatiller(ek):
+    """Resmî tatiller + isteğe bağlı ek liste (küme) ya da hata."""
+    from .tarih import _tatiller
+    t = _tatiller(ek) if ek is not None else set()
+    if isinstance(t, Hata):
+        return t
+    return t | _tatil_verisi.tatiller()
+
+
+@fonksiyon("TR_NETWORKDAYS", en_az=2, en_cok=3)
+def _tr_networkdays(b, bas, son, ek=None):
+    from .ortak import ham
+    from ..donustur import sayiya
+    from .tarih import _is_gunu, _seri_kontrol
+    n1, n2 = sayiya(ham(bas)), sayiya(ham(son))
+    for x in (n1, n2):
+        if isinstance(x, Hata):
+            return x
+    n1, n2 = _seri_kontrol(n1), _seri_kontrol(n2)
+    for n in (n1, n2):
+        if isinstance(n, Hata):
+            return n
+    t = _ek_tatiller(ek)
+    if isinstance(t, Hata):
+        return t
+    if not _tatil_verisi.kapsiyor_mu(n1, n2):
+        return D.SAYI                                   # tatil verisi olmayan yılda sessizce yanlış sayma
+    isaret, a, z = (1, n1, n2) if n1 <= n2 else (-1, n2, n1)
+    return float(isaret * sum(1 for n in range(a, z + 1) if _is_gunu(n, t)))
+
+
+@fonksiyon("TR_WORKDAY", en_az=2, en_cok=3)
+def _tr_workday(b, bas, gun, ek=None):
+    import math
+    from .ortak import ham
+    from ..donustur import sayiya
+    from .tarih import _is_gunu, _seri_kontrol
+    n1, k = sayiya(ham(bas)), sayiya(ham(gun))
+    for x in (n1, k):
+        if isinstance(x, Hata):
+            return x
+    n = _seri_kontrol(n1)
+    if isinstance(n, Hata):
+        return n
+    t = _ek_tatiller(ek)
+    if isinstance(t, Hata):
+        return t
+    ilk, son = _tatil_verisi.yil_araligi()
+    k = math.trunc(k)
+    adim = 1 if k >= 0 else -1
+    kalan = abs(k)
+    if not ilk <= seri_ymd(n)[0] <= son:
+        return D.SAYI
+    while kalan:
+        n += adim
+        if n < 0 or n > MAKS_SERI or not ilk <= seri_ymd(n)[0] <= son:
+            return D.SAYI
+        if _is_gunu(n, t):
+            kalan -= 1
+    return float(n)

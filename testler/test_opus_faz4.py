@@ -548,3 +548,20 @@ def test_pdf_hatasinda_ayni_yoldaki_eski_dosya_bozulmaz(tmp_path, monkeypatch):
     with pytest.raises(OSError):
         yz.pdf_yaz([p.izgara()], str(yol))
     assert yol.read_bytes() == b"ESKI" and [x.name for x in tmp_path.iterdir()] == ["e.pdf"]
+
+
+def test_cok_gizli_sayfa_korunur(tmp_path):
+    """10-ön: veryHidden gidiş-dönüşte veryHidden kalır; gizli ile karışmaz."""
+    wb = Workbook()
+    wb.active["A1"] = 1
+    wb.create_sheet("G").sheet_state = "hidden"
+    wb.create_sheet("_tabcel").sheet_state = "veryHidden"
+    yol = str(tmp_path / "cg.xlsx")
+    wb.save(yol)
+    k, rapor = xlsx_io.ac(yol)
+    assert not rapor.veri_kaybi
+    assert [(s.gizli, s.cok_gizli) for s in k.sayfalar] == [(False, False), (True, False), (True, True)]
+    yol2 = str(tmp_path / "cg2.xlsx")
+    xlsx_io.kaydet(k, yol2)
+    from openpyxl import load_workbook
+    assert [w.sheet_state for w in load_workbook(yol2).worksheets] == ["visible", "hidden", "veryHidden"]

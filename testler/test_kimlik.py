@@ -151,9 +151,27 @@ def test_iban_islevi():
     assert hesapla("=TR_VALIDATE_IBAN(5)") is False                                       # sayı
 
 
+def test_telefon_islevi():
+    assert hesapla('=TR_VALIDATE_PHONE("+90 532 123 45 67")') is True                     # normal
+    assert hesapla('=TR_VALIDATE_PHONE("0 (212) 123 45 67")') is True                      # sabit hat
+    assert hesapla("=TR_VALIDATE_PHONE(A1)") is False                                     # boş hücre
+    assert hesapla("=TR_VALIDATE_PHONE(A1)", {(1, 1): D.BASV}) == D.BASV                  # hata girdisi
+    assert hesapla('=TR_VALIDATE_PHONE("0532 abc 45 67")') is False                        # metin/sayı karışımı
+    assert hesapla("=TR_VALIDATE_PHONE(5321234567)") is True                               # sayı olarak yazılmış
+
+
+def test_eposta_islevi():
+    assert hesapla('=TR_VALIDATE_EMAIL("ali.veli@ornek.com")') is True
+    assert hesapla("=TR_VALIDATE_EMAIL(A1)") is False
+    assert hesapla("=TR_VALIDATE_EMAIL(A1)", {(1, 1): D.YOK}) == D.YOK
+    assert hesapla('=TR_VALIDATE_EMAIL("ali@")') is False
+    assert hesapla("=TR_VALIDATE_EMAIL(5)") is False
+
+
 def test_turkce_adlar():
     assert adlar.turkcesi("TR_VALIDATE_VKN") == "VERGİNOGEÇERLİ" and adlar.ingilizcesi("VERGİNOGEÇERLİ") == "TR_VALIDATE_VKN"
     assert adlar.turkcesi("TR_VALIDATE_IBAN") == "IBANGEÇERLİ" and adlar.ingilizcesi("IBANGEÇERLİ") == "TR_VALIDATE_IBAN"
+    assert adlar.turkcesi("TR_VALIDATE_PHONE") == "TELEFONGEÇERLİ" and adlar.ingilizcesi("EPOSTAGEÇERLİ") == "TR_VALIDATE_EMAIL"
 
 
 # ---------------------------------------------------------------- motor: öncüller / bağımlılar
@@ -172,3 +190,45 @@ def test_motor_onculler_ve_bagimlilar():
     assert m.bagimlilar((kim, 1, 1)) == {(kim, 1, 3)}                                    # doğrudan + aralık üzerinden
     assert m.bagimlilar((kim, 2, 1)) == {(kim, 1, 3)}                                    # aralık içindeki hücre
     assert m.bagimlilar((kim, 1, 3)) == {(kim, 1, 4)} and m.bagimlilar((kim, 1, 4)) == set()
+
+
+# ---------------------------------------------------------------- 10-ön: TRTAMİŞGÜNÜ / TRİŞGÜNÜ (resmî tatilli iş günü)
+from tabcel.model.tarihseri import ymd_seri
+from tabcel.model import tatiller
+
+
+def S(y, m, g):
+    return float(ymd_seri(y, m, g))
+
+
+def test_tatil_verisi():
+    assert tatiller.yukle()["surum"] == 1 and tatiller.yukle()["aciklama"]
+    assert tatiller.yil_araligi() == (2024, 2028)
+    assert ymd_seri(2026, 4, 23) in tatiller.tatiller() and ymd_seri(2026, 3, 20) in tatiller.tatiller()
+    assert ymd_seri(2026, 3, 19) not in tatiller.tatiller()                                 # arife tam iş günü
+
+
+def test_tr_tamisgunu():
+    # 2026-04-20 Pzt … 2026-04-24 Cum: 23 Nisan Perşembe tatil → 4 (Excel TAMİŞGÜNÜ 5 verir)
+    assert hesapla("=TR_NETWORKDAYS(DATE(2026,4,20),DATE(2026,4,24))") == 4.0               # normal
+    assert hesapla("=NETWORKDAYS(DATE(2026,4,20),DATE(2026,4,24))") == 5.0                  # Excel davranışı değişmedi
+    assert hesapla("=TR_NETWORKDAYS(DATE(2026,4,20),DATE(2026,4,24),A1)") == 4.0            # boş ek liste
+    assert hesapla("=TR_NETWORKDAYS(DATE(2026,4,20),DATE(2026,4,24),A1)", {(1, 1): S(2026, 4, 21)}) == 3.0   # ek tatil
+    assert hesapla("=TR_NETWORKDAYS(A1,DATE(2026,4,24))", {(1, 1): D.YOK}) == D.YOK          # hata girdisi
+    assert hesapla('=TR_NETWORKDAYS("x",DATE(2026,4,24))') == D.DEGER_HATASI                  # metin
+    assert hesapla("=TR_NETWORKDAYS(DATE(2026,4,24),DATE(2026,4,20))") == -4.0               # ters sıra
+    assert hesapla("=TR_NETWORKDAYS(DATE(2023,12,28),DATE(2024,1,3))") == D.SAYI            # veri kapsamı dışı
+
+
+def test_tr_isgunu():
+    assert hesapla("=TR_WORKDAY(DATE(2026,4,22),1)") == S(2026, 4, 24)                       # 23 Nisan atlanır
+    assert hesapla("=WORKDAY(DATE(2026,4,22),1)") == S(2026, 4, 23)                          # Excel değişmedi
+    assert hesapla("=TR_WORKDAY(DATE(2026,3,18),2)") == S(2026, 3, 23)                       # 19 arife iş günü; 20 Cuma bayram, 21–22 hafta sonu
+    assert hesapla("=TR_WORKDAY(DATE(2026,4,24),-1)") == S(2026, 4, 22)                      # geri
+    assert hesapla("=TR_WORKDAY(DATE(2026,4,22),A1)", {(1, 1): D.BASV}) == D.BASV            # hata
+    assert hesapla("=TR_WORKDAY(DATE(2026,4,22),1,A1)", {(1, 1): S(2026, 4, 24)}) == S(2026, 4, 27)   # ek tatil
+    assert hesapla("=TR_WORKDAY(DATE(2028,12,28),5)") == D.SAYI
+
+
+def test_tr_tatil_adlari():
+    assert adlar.turkcesi("TR_NETWORKDAYS") == "TRTAMİŞGÜNÜ" and adlar.ingilizcesi("TRİŞGÜNÜ") == "TR_WORKDAY"
