@@ -1,0 +1,21 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "stok_durumu",
+  "ad": "Stok durumu",
+  "tekil_ad": "Stok durumu",
+  "aciklama": "Her ürünün toplam giriş, çıkış ve eldeki miktarı; kendiliğinden hesaplanır.",
+  "sayfa_adi": "Stok Durumu",
+  "sutunlar": [
+    {"kimlik": "urun_kodu", "ad": "Ürün kodu", "tur": "hesaplanan",
+     "formul": "=IFERROR(INDEX([urunler.urun_kodu],ROW()-1)&\"\",\"\")"},
+    {"kimlik": "giris", "ad": "Toplam giriş", "tur": "hesaplanan",
+     "formul": "=IF([@urun_kodu]=\"\",\"\",SUMIFS([stok_hareketleri.miktar],[stok_hareketleri.urun],[@urun_kodu],[stok_hareketleri.hareket_turu],\"Giriş\"))"},
+    {"kimlik": "cikis", "ad": "Toplam çıkış", "tur": "hesaplanan",
+     "formul": "=IF([@urun_kodu]=\"\",\"\",SUMIFS([stok_hareketleri.miktar],[stok_hareketleri.urun],[@urun_kodu],[stok_hareketleri.hareket_turu],\"Çıkış\"))"},
+    {"kimlik": "mevcut", "ad": "Mevcut", "tur": "hesaplanan",
+     "formul": "=IF([@urun_kodu]=\"\",\"\",[@giris]-[@cikis])"},
+    {"kimlik": "durum", "ad": "Durum", "tur": "hesaplanan",
+     "formul": "=IF([@urun_kodu]=\"\",\"\",IF([@mevcut]<=INDEX([urunler.kritik_stok],ROW()-1),\"Kritik\",\"Yeterli\"))"}
+  ]
+}

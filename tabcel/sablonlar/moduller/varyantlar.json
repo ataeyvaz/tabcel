@@ -1,0 +1,15 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "varyantlar",
+  "ad": "Varyantlar",
+  "tekil_ad": "Varyant",
+  "aciklama": "Bir ürünün beden, renk gibi çeşitleri; her çeşit ayrı satır.",
+  "sayfa_adi": "Varyantlar",
+  "sutunlar": [
+    {"kimlik": "urun", "ad": "Ürün kodu", "tur": "baglanti", "zorunlu": true, "baglanti": {"modul": "urunler", "alan": "urun_kodu"}},
+    {"kimlik": "beden", "ad": "Beden", "tur": "metin"},
+    {"kimlik": "renk", "ad": "Renk", "tur": "metin"},
+    {"kimlik": "barkod", "ad": "Barkod", "tur": "metin", "benzersiz": true, "barkod": true}
+  ]
+}

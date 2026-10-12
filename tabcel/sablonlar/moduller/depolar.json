@@ -1,0 +1,14 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "depolar",
+  "ad": "Depolar",
+  "tekil_ad": "Depo",
+  "aciklama": "Stokun tutulduğu depo ya da şube listesi.",
+  "sayfa_adi": "Depolar",
+  "gorunen": ["depo_adi"],
+  "sutunlar": [
+    {"kimlik": "depo_adi", "ad": "Depo adı", "tur": "metin", "zorunlu": true, "benzersiz": true},
+    {"kimlik": "konum", "ad": "Konum", "tur": "metin"}
+  ]
+}

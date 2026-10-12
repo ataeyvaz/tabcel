@@ -1,0 +1,28 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "urunler",
+  "ad": "Ürünler",
+  "tekil_ad": "Ürün",
+  "aciklama": "Satılan ya da stokta tutulan her ürün için bir satır.",
+  "sayfa_adi": "Ürünler",
+  "gorunen": ["urun_kodu", "ad"],
+  "sutunlar": [
+    {"kimlik": "urun_kodu", "ad": "Ürün kodu", "tur": "metin", "zorunlu": true, "benzersiz": true,
+     "aciklama": "Her ürün için tekil kod."},
+    {"kimlik": "ad", "ad": "Ürün adı", "tur": "metin", "zorunlu": true},
+    {"kimlik": "barkod", "ad": "Barkod", "tur": "metin", "benzersiz": true, "barkod": true,
+     "aciklama": "Baştaki sıfırlar korunur."},
+    {"kimlik": "birim", "ad": "Birim", "tur": "metin", "varsayilan": "adet"},
+    {"kimlik": "alis_fiyati", "ad": "Alış fiyatı", "tur": "para", "para_birimi": "ayar:para_birimi", "kisit": {"min": 0},
+     "eger": "fiyat_takibi", "aciklama": "KDV hariç birim alış fiyatı."},
+    {"kimlik": "satis_fiyati", "ad": "Satış fiyatı", "tur": "para", "para_birimi": "ayar:para_birimi", "kisit": {"min": 0},
+     "eger": "fiyat_takibi", "aciklama": "KDV hariç birim satış fiyatı."},
+    {"kimlik": "kritik_stok", "ad": "Kritik stok", "tur": "tam_sayi", "kisit": {"min": 0}, "varsayilan": 0,
+     "aciklama": "Stok bu sayıya düşünce Stok Durumu'nda uyarı çıkar."}
+  ],
+  "ornek_veri": [
+    {"urun_kodu": "U001", "ad": "Örnek tişört", "birim": "adet", "alis_fiyati": 120, "satis_fiyati": 199, "kritik_stok": 10},
+    {"urun_kodu": "U002", "ad": "Örnek kupa", "birim": "adet", "alis_fiyati": 35, "satis_fiyati": 69, "kritik_stok": 20}
+  ]
+}

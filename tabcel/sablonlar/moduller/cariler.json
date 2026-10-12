@@ -1,0 +1,17 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "cariler",
+  "ad": "Cariler",
+  "tekil_ad": "Cari",
+  "aciklama": "Müşteri ve tedarikçi kayıtları.",
+  "sayfa_adi": "Cariler",
+  "gorunen": ["cari_adi"],
+  "sutunlar": [
+    {"kimlik": "cari_adi", "ad": "Cari adı", "tur": "metin", "zorunlu": true, "benzersiz": true},
+    {"kimlik": "cari_turu", "ad": "Türü", "tur": "liste", "secenekler": ["Müşteri", "Tedarikçi"]},
+    {"kimlik": "telefon", "ad": "Telefon", "tur": "telefon"},
+    {"kimlik": "eposta", "ad": "E-posta", "tur": "eposta"},
+    {"kimlik": "vergi_no", "ad": "Vergi no", "tur": "vergi_no"}
+  ]
+}

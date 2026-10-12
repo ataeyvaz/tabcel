@@ -50,6 +50,9 @@ tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustu
 tabcel/io/           xlsx_io, xlsx_grafik (grafik/resim), xlsx_kayip (Excel'de değişmiş grafik tespiti),
                      csv_io, kurtarma, son_dosyalar; Faz 7: bulut (Drive/OneDrive klasörleri, Qt yok),
                      yazim_motoru (Windows yazım denetimi, comtypes); Faz 9d: temiz_dosya (KVKK temiz kopya yazma + doğrulama); formul/asistan (Türkçe cümle → formül önerisi)
+tabcel/sablon/       Faz 10: sema (tanım şeması + doğrulayıcı), yukleyici (yerleşik + kullanıcı klasörü, sürüm göçü, rapor), eslestirici — Qt yok
+tabcel/sablonlar/    yerleşik şablon tanımları (JSON, kural 22): akislar/, moduller/
+tabcel/veri/         resmi_tatiller.json (TRİŞGÜNÜ/TRTAMİŞGÜNÜ; model/tatiller.py okur)
 tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
                      serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
                      arka_plan (iş parçacığı), dosya_islemleri, bicim_cubugu, renkli,
@@ -73,7 +76,8 @@ t8/t9/t10_*/t4_arkaplan/secim_tasarim.md   T-işleri tasarım notları (hata aç
 - Izgara kendi çizimimiz (`QAbstractScrollArea` + `QPainter`), QTableView değil — gerekçe `plan.md`
 - Tema: Excel yeşili `#217346` başlık şeridi; Sözcük'ün `theme.py`, `icons.py`, `widgets.py` dosyaları örnek alınır (kopyalanıp uyarlanır, Sözcük klasöründe **değişiklik yapılmaz**)
 - Bilgisayar: RAM 7,9 GB — ağır testlerde başka uygulamaların kapalı olduğunu kontrol et
-- **Bu bilgisayarda Excel kurulu** (`C:\Program Files\Microsoft Officeoot\Office16\EXCEL.EXE`, Office 16; 2026-10-11'de kullanıcı bildirdi). Excel uyumu **COM ile gerçek Excel'de** denenir: `araclar\excel_dogrula.ps1 <dosya.xlsx> <çıktı_klasörü>` (görünmez açar, grafik türlerini/sayılarını yazar, grafikleri PNG'ye döker, Excel'in kendi kaydını üretir). Excel'de görsel/davranış doğrulaması gereken işlerde önce bunu kullan; yalnız Excel'in arayüzünde elle denenmesi gerekenler (kısayol hissi, iletişim kutuları) `surec.md`'ye "elle test bekliyor" diye yazılır. Excel'i çalıştırırken kullanıcının açık çalışma kitaplarına dokunma (yeni örnek, `DisplayAlerts=false`, işin sonunda `Quit`)
+- **Bu bilgisayarda Excel kurulu** (`C:\Program Files\Microsoft Office
+oot\Office16\EXCEL.EXE`, Office 16; 2026-10-11'de kullanıcı bildirdi). Excel uyumu **COM ile gerçek Excel'de** denenir: `araclar\excel_dogrula.ps1 <dosya.xlsx> <çıktı_klasörü>` (görünmez açar, grafik türlerini/sayılarını yazar, grafikleri PNG'ye döker, Excel'in kendi kaydını üretir). Excel'de görsel/davranış doğrulaması gereken işlerde önce bunu kullan; yalnız Excel'in arayüzünde elle denenmesi gerekenler (kısayol hissi, iletişim kutuları) `surec.md`'ye "elle test bekliyor" diye yazılır. Excel'i çalıştırırken kullanıcının açık çalışma kitaplarına dokunma (yeni örnek, `DisplayAlerts=false`, işin sonunda `Quit`)
 
 ## Test ve çalıştırma
 - Çalıştır: `Tabcel.bat` ya da `.venv\Scripts\python main.py [dosya.xlsx]`

@@ -1,0 +1,30 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "stok_hareketleri",
+  "ad": "Stok hareketleri",
+  "tekil_ad": "Stok hareketi",
+  "aciklama": "Her giriş (alış, iade) ve çıkış (satış, fire) için bir satır.",
+  "sayfa_adi": "Stok Hareketleri",
+  "gorunen": ["tarih", "urun"],
+  "sutunlar": [
+    {"kimlik": "tarih", "ad": "Tarih", "tur": "tarih", "zorunlu": true},
+    {"kimlik": "urun", "ad": "Ürün kodu", "tur": "baglanti", "zorunlu": true, "baglanti": {"modul": "urunler", "alan": "urun_kodu"},
+     "aciklama": "Ürünler sayfasındaki koddan seçilir."},
+    {"kimlik": "hareket_turu", "ad": "Hareket türü", "tur": "liste", "zorunlu": true, "secenekler": ["Giriş", "Çıkış"]},
+    {"kimlik": "miktar", "ad": "Miktar", "tur": "tam_sayi", "zorunlu": true, "kisit": {"min": 1}},
+    {"kimlik": "depo", "ad": "Depo", "tur": "baglanti", "baglanti": {"modul": "depolar", "alan": "depo_adi"}, "eger": "coklu_depo"},
+    {"kimlik": "cari", "ad": "Cari", "tur": "baglanti", "baglanti": {"modul": "cariler", "alan": "cari_adi"}, "eger": "cari_takibi"},
+    {"kimlik": "aciklama", "ad": "Açıklama", "tur": "metin"}
+  ],
+  "kurallar": [
+    {"kimlik": "stok_negatif_olmasin", "ad": "Stok eksiye düşemez",
+     "formul": "=SUMIFS([stok_durumu.mevcut],[stok_durumu.urun_kodu],[@urun])-[@miktar]>=0",
+     "ne_zaman": "hareket_turu=Çıkış", "ileti": "Bu çıkış stoğu eksiye düşürür.", "siddet": "durdur"}
+  ],
+  "ornek_veri": [
+    {"tarih": "2026-01-05", "urun": "U001", "hareket_turu": "Giriş", "miktar": 50, "aciklama": "İlk alış"},
+    {"tarih": "2026-01-12", "urun": "U001", "hareket_turu": "Çıkış", "miktar": 8, "aciklama": "Satış"},
+    {"tarih": "2026-01-05", "urun": "U002", "hareket_turu": "Giriş", "miktar": 100, "aciklama": "İlk alış"}
+  ]
+}

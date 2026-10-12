@@ -1,0 +1,42 @@
+{
+  "surum": 1,
+  "tur": "akis",
+  "kimlik": "stok_takibi",
+  "ad": "Stok takibi",
+  "kategori": "Ticaret",
+  "aciklama": "Ürünlerin giriş-çıkışını ve anlık stok durumunu izleyin.",
+  "anahtar_kelimeler": {
+    "kokler": ["stok", "stoğ", "envanter", "ürün", "depo"],
+    "es_anlamlilar": ["mal takibi", "depo takibi", "ürün takibi", "mal giriş çıkış", "eldeki mal"],
+    "agirlik": 1.0
+  },
+  "sorular": [
+    {"kimlik": "varyant", "metin": "Ürünlerinizin beden, renk gibi çeşitleri var mı?", "varsayilan": false, "emin_degilim": false,
+     "aciklama": "Evet derseniz her çeşit ayrı satırda izlenir."},
+    {"kimlik": "depo", "metin": "Birden fazla deponuz veya şubeniz var mı?", "varsayilan": false, "emin_degilim": false,
+     "aciklama": "Evet derseniz her hareket için hangi depoda olduğu da yazılır."},
+    {"kimlik": "fiyat", "metin": "Alış ve satış fiyatlarını da takip etmek ister misiniz?", "varsayilan": true, "emin_degilim": true,
+     "aciklama": "Fiyat sütunları ürün listesine eklenir."},
+    {"kimlik": "cari", "metin": "Müşteri ve tedarikçilerinizi de kaydetmek ister misiniz?", "varsayilan": false, "emin_degilim": false,
+     "aciklama": "Evet derseniz hareketlerde kimden alındığı / kime satıldığı seçilir."}
+  ],
+  "moduller": [
+    {"modul": "urunler"},
+    {"modul": "stok_hareketleri"},
+    {"modul": "stok_durumu"},
+    {"modul": "varyantlar", "eger": "varyant"},
+    {"modul": "depolar", "eger": "depo"},
+    {"modul": "cariler", "eger": "cari"}
+  ],
+  "bayraklar": {"fiyat_takibi": "fiyat", "coklu_depo": "depo", "cari_takibi": "cari"},
+  "ayarlar": [
+    {"kimlik": "kdv", "ad": "KDV oranı", "tur": "yuzde", "varsayilan": 0.2, "aciklama": "Fiyatlara uygulanacak KDV oranı."},
+    {"kimlik": "para_birimi", "ad": "Para birimi", "tur": "metin", "varsayilan": "TRY", "aciklama": "Üç harfli para birimi kodu."}
+  ],
+  "nasil_kullanilir": [
+    {"baslik": "Ürün ekleme", "metin": "Ürünler sayfasına her ürün için bir satır yazın. Ürün kodu benzersiz olmalıdır."},
+    {"baslik": "Giriş ve çıkış", "metin": "Stok Hareketleri sayfasına her alış (Giriş) ve satış (Çıkış) için bir satır ekleyin."},
+    {"baslik": "Stok durumu", "metin": "Stok Durumu sayfası kendiliğinden hesaplanır; elle değiştirmeyin."}
+  ],
+  "ornek_veri": true
+}

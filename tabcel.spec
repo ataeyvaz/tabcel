@@ -10,6 +10,7 @@ project = Path(SPECPATH)
 datas = [
     (str(project / "tabcel" / "yardim.md"), "tabcel"),     # resource_dir() / "tabcel" / "yardim.md"
     (str(project / "tabcel" / "veri" / "resmi_tatiller.json"), "tabcel/veri"),   # model/tatiller.py
+    (str(project / "tabcel" / "sablonlar"), "tabcel/sablonlar"),                  # sablon/yukleyici.py (yerleşik şablon tanımları)
     (str(project / "tabcel.ico"), "."),
 ]
 
