@@ -222,3 +222,11 @@ Excel'e benzer **sekmeli şerit** (Dosya · Giriş · Ekle · Sayfa Düzeni · F
 - **Kod yazımı ve testler:** Sonnet 5.5 (`/model sonnet`) — her faz `plan.md`'de ayrıntılı tarif edildiği için Sonnet'in uygulaması yeterli
 - **İstisna — Opus'la yazılacak zor çekirdekler:** formül ayrıştırıcı + bağımlılık grafiği + başvuru kaydırma (Faz 2 çekirdeği), .xlsx biçim/sayı biçimi kodu çözümleyicisi (Faz 3–4). Bunlarda hata, sonradan her yere yayılır
 - Her fazın sonunda kısa bir Opus gözden geçirmesi: "plan.md'deki Faz X'i surec.md'deki kayda göre gözden geçir"
+
+## Faz 12 (öneri, 2026-10-12, kullanıcı isteği) — Alan düzeyinde şifreleme ("korumalı alanlar")
+Amaç: dosya parolasından bağımsız, TC/IBAN/borç gibi sütunları dosyada **şifreli** tutmak; anahtarı olmayan kişi Tabcel'de maskeli (`12*******34`) görür, anahtarı olan açar. Excel'de şifreli metin görünür.
+- **Tasarım notu Opus ile yazılmalı** (kriptografi: anahtar türetme [scrypt/Argon2], AES-GCM, hücre başına rastgele nonce, kimlik doğrulama etiketi, sürümleme; anahtar kaybında kurtarma YOK, kullanıcıya açıkça söylenir).
+- Bağımlılık: `cryptography` (Apache-2.0/BSD) — eklemeden önce lisans kontrolü (kural 5), README/Hakkında listesi.
+- Sınırlar (belgeye yazılır): anahtar dosyayla gönderilmez; anahtarı bilen kişi değeri elle aktarabilir; korumalı alana dayanan formüller anahtarsız hesaplanamaz; zayıf anahtar (kısa PIN) reddedilir; "KVKK'ya uygunluğu garanti eder" denmez (kural 20).
+- Alt işler (taslak): 12a şifreleme çekirdeği (Qt'siz, `model/korumali.py`) · 12b model/hücre entegrasyonu + maskeli gösterim + pano/yazdır/dışa aktar engeli · 12c .xlsx saklama (şifreli hücreler + `_tabcel` meta) · 12d arayüz (alan koruma, kilidi aç) · 12e Temizleyici entegrasyonu · 12f gerçek senaryo + Opus gözden geçirmesi.
+- Önkoşul: Faz 10c (çok gizli `_tabcel` saklama) bitmeli.
