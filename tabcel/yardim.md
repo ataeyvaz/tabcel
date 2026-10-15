@@ -34,6 +34,9 @@ Yazım kuralları:
 
 En yenisi en üstte.
 
+## 15 Ekim 2026
+- **Dosya → Şablondan Yeni…:** ne yapmak istediğinizi yazın, {APP_NAME} uygun hazır tabloyu (şimdilik *Stok takibi*) soru-cevapla kurar. Ayrıntı: "Dosyalar, Yazdırma ve Kurtarma".
+
 ## 12 Ekim 2026
 - Yeni işlevler: **TELEFONGEÇERLİ**, **EPOSTAGEÇERLİ**, **TRTAMİŞGÜNÜ**, **TRİŞGÜNÜ** (Türkiye resmî tatilleriyle iş günü). Ayrıntı: "Türkiye'ye özel işlevler".
 - Excel'de "çok gizli" sayfalar artık dosyada çok gizli olarak korunur. Şablonla üretilen dosyalarda şablon bilgisi çok gizli `_tabcel` sayfasında saklanır; Paylaşım Temizleyici bunu da tarar ve temiz kopyada maskeler.
@@ -349,6 +352,15 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - **Sayfa Düzeni → Sığdır:** *Genişliği tek sayfaya sığdır* ve *Yüksekliği tek sayfaya sığdır* ayrı ayrı ya da birlikte işaretlenebilir (ölçek gerektiği kadar küçülür). **Sayfa Sırası** çok sayfalı çıktıda önce aşağı mı önce sağa mı gidileceğini belirler; Sayfa Yapısı penceresinde de vardır.
 - Sayfa sonları ve sığdır ayarları `.xlsx` dosyasına yazılır; Excel'de hazırlanmış dosyadaki el ile sayfa sonları okunur.
 
+## Şablondan Yeni: hazır tablo düzenleri
+
+**Dosya → Şablondan Yeni…** ne yapmak istediğinizi yazmanızla başlar (ör. *stok takibi yapmak istiyorum*). {APP_NAME} yazdıklarınızı yerelde, anahtar kelimelerle bir şablona eşler (yapay zekâ ve internet kullanılmaz); yazmak istemezseniz kategori düğmelerinden ya da listeden seçebilirsiniz. Sonra birkaç evet/hayır soru sorulur (ör. *birden fazla deponuz var mı?*); emin değilseniz **Emin değilim, siz seçin** işaretlenir ve önerilen cevap kullanılır. Son adımda oluşacak sayfalar ve ilk satırları önizlenir; **Oluştur** yeni bir pencerede sıradan bir kitap açar: başlıklar, biçimler, açılır listeler, veri doğrulama ve hesaplanan sütunlar hazırdır, her şeyi istediğiniz gibi değiştirebilirsiniz. Örnek veriler isteğe bağlıdır.
+
+- Şablonla üretilen dosyada, şablon bilgisi **çok gizli `_tabcel` sayfasında** saklanır (Excel'in Göster listesinde bile çıkmaz). Dosyayı Excel'de düzenleseniz de tablo çalışır; sütunlar silinir ya da başlıkları değişirse {APP_NAME} bunu açılışta fark eder ve bilgi çubuğunda uyarır.
+- **Şablonlar…** düğmesi yüklenen şablonları ve varsa hatalı dosyaları (neden yazılı) gösterir. Kendi şablonlarınızı kullanıcı klasörüne (**Klasörü Aç**) JSON olarak koyabilirsiniz; aynı adlı bir yerleşik şablon varsa ikisi de listelenir.
+- Oluşturulan sayfalarda formüller ilk 200 satıra, açılır liste ve doğrulama ilk 20.000 satıra uygulanır.
+- *Paylaşım Temizleyici* şablon bilgisindeki kişisel verileri de tarar.
+
 <!-- konu: pano | Kopyala ve Yapıştır -->
 # Kopyala ve Yapıştır
 
@@ -422,6 +434,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok); dosyada `TR_NUMBERTOWORDS` ve `TR_VALIDATE_TCKN` adıyla saklanır, Excel'de `#AD?` görünür.
 - **Gizli sayfa:** Excel'de gizli olan sayfa {APP_NAME}'te sekme olarak görünür (gizleme/gösterme komutu yoktur); kaydedince dosyada yine gizli kalır. *Çok gizli* sayfalar (Excel'in Göster listesinde bile çıkmayanlar) dosyada çok gizli kalır. *Paylaşım Temizleyici* gizli sayfadaki ve `_tabcel` şablon bilgisindeki kişisel verileri ayrıca bildirir.
 - **Paylaşım Temizleyici** Excel'de yoktur. Üst/alt bilgi {APP_NAME}'te saklanmadığı için temiz kopyada hiç bulunmaz; resimlerin içi taranamaz.
+- **Şablondan Yeni** Excel'de yoktur. Üretilen dosya sıradan bir .xlsx'tir; şablon bilgisi çok gizli `_tabcel` sayfasındadır (Excel'de düzenlerseniz uyuşmazlığı {APP_NAME} açılışta uyarır). Açılır listeler boş satırları da içerebilir; doğrulama yapıştırılan veriyi denetlemez (Excel'de de böyledir).
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 
 <!-- konu: sorunlar | Sık Sorulanlar ve Sorun Giderme -->

@@ -138,6 +138,7 @@ class DosyaIslemleri:
         def ekle(anahtar, metin, islev):
             self.eylemler["dosya." + anahtar] = menu.addAction(metin, islev)     # eylem kataloğu (5j-3)
         ekle("yeni", "Yeni\tCtrl+N", self.yeni)
+        ekle("sablondan_yeni", "Şablondan Yeni…", self.sablondan_yeni)
         ekle("ac", "Aç…\tCtrl+O", self.ac_penceresi)
         menu.addSeparator()
         ekle("kaydet", "Kaydet\tCtrl+S", self.kaydet)
@@ -181,7 +182,7 @@ class DosyaIslemleri:
 
     def _belge_adi_guncelle(self) -> None:
         kaynak = self.yol or self.kaynak_yol
-        self.belge_adi = os.path.basename(kaynak) if kaynak else "Adsız"
+        self.belge_adi = os.path.basename(kaynak) if kaynak else (getattr(self, "taslak_adi", None) or "Adsız")
         self._baslik_guncelle()
 
     def _isaretle_temiz(self) -> None:
@@ -201,6 +202,28 @@ class DosyaIslemleri:
         DosyaIslemleri._tutulan.append(p)
         p._dosya_gorunur_yap()
         return p
+
+    def sablondan_yeni(self):
+        """Şablon Sihirbazı (Faz 10d): ne yapmak istediğini yaz → şablon → sorular → önizleme → yeni pencerede kitap."""
+        from .window import Pencere
+        d = self._sihirbaz_olustur()
+        if d.exec() != QDialog.Accepted or d.sonuc is None:
+            return None
+        p = Pencere(d.sonuc.kitap)
+        p.taslak_adi = d.secili.etiket
+        p._belge_adi_guncelle()
+        p._gorunum_kirli = True                               # henüz kaydedilmedi: kapatırken sorulur
+        p._baslik_guncelle()
+        DosyaIslemleri._tutulan.append(p)
+        p._dosya_gorunur_yap()
+        if self._bos_ve_temiz() and p is not self:
+            self.close()
+        return p
+
+    def _sihirbaz_olustur(self):
+        """Testlerde yamalanır."""
+        from .sablon_sihirbazi import SihirbazPenceresi
+        return SihirbazPenceresi(None, self)
 
     def _dosya_gorunur_yap(self) -> None:
         self.show()
