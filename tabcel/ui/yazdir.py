@@ -329,8 +329,10 @@ def yazdir(printer: QPrinter, izgaralar: Sequence, baslik: str = "") -> bool:
                     _yazici_ayarla(printer, c.yapi)
                     printer.newPage()
                 ilk = False
-                alan = printer.pageRect(QPrinter.DevicePixel)
-                c.ciz(p, d, QRectF(alan), printer.resolution())
+                # painter başlangıcı zaten kenar boşluğunun içindedir; `pageRect` kağıda göre kaydırılmış gelir (kenar boşluğu iki kez
+                # sayılıyordu — 2026-10-15 elle yazdırma testi: içerik 2× boşlukla basılıyordu). Çizim alanı (0, 0, genişlik, yükseklik).
+                alan = QRectF(0, 0, printer.width(), printer.height())
+                c.ciz(p, d, alan, printer.resolution())
     finally:
         p.end()
     return True

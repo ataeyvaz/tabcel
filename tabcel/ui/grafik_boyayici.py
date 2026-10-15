@@ -18,7 +18,8 @@ from ..model.grafik_verisi import GrafikVerisi
 
 def yazi_tipi(pt: float, kalin: bool = False, aile: Optional[str] = None) -> QFont:
     f = QFont(aile) if aile else QFont()
-    f.setPointSizeF(max(1.0, pt))
+    # piksel boyutu: yazıcıda (1200 dpi, painter 96 dpi mantıksal birimine ölçekli) punto boyutu ×12 büyürdü — 2026-10-15 elle yazdırma testi
+    f.setPixelSize(max(1, round(max(1.0, pt) * 96.0 / 72.0)))
     f.setBold(kalin)
     return f
 
