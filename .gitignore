@@ -12,3 +12,6 @@ araclar/vaka_*.json*
 araclar/*.excel.tsv
 araclar/p*_sonuc.txt
 araclar/tam_test*.txt
+dist_deneme/
+build_deneme/
+araclar/pyinstaller_log.txt

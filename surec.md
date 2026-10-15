@@ -1257,3 +1257,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 ### Eagle Office adı ve iletişim (2026-10-15, kullanıcı isteği)
 - Ürün ailesi ortak adı **Eagle Office** (Sözcük + Tabcel): `tabcel/__init__.py` (`PAKET_ADI`, `PAKET_URUNLERI`, `ILETISIM_EPOSTA = ataeyvaz@gmail.com`); **Hakkında** penceresi: üstte "Eagle Office", "Eagle Office paketi: Sözcük (kelime işlemci) · Tabcel (hesap tablosu)", tıklanabilir `mailto:` iletişim bağlantısı; kurulum (`kurulum/tabcel.iss`) yayıncı adı "Eagle Office" + destek/iletişim `mailto:`; README başlığı. Uygulama adı (APP_NAME = Tabcel) değişmedi (kural 1 korunur). Testler: `test_hakkinda.py` (+2). **Not:** Sözcük klasöründe aynı değişiklik yapılmadı (başka projeye dokunulmaz); Sözcük tarafı ayrı oturumda.
 
+
+### Paketleme denemesi (2026-10-15)
+- PyInstaller onedir derlemesi başarılı; paketli `Tabcel.exe` ile sihirbaz, şablon üretimi, kayıt formu, Hakkında, F1, Kitaptan Şablon + Düzenleyici + Denetle çalıştı (`test.md` §21 satır 10). `tabcel.spec` düzeltmesi gerekmedi. Boyut 84 MB (74→85 artışı Faz 10/11 + hızlı okuyucu; nedeni incelenmedi).
+- Kalan: paketli sürümde PDF dışa aktarma, Inno Setup ile kurulum paketi denemesi (Inno Setup 6 kurulu), fiziksel yazıcı (kullanıcıyla).
