@@ -44,7 +44,8 @@ def test_dosya_menusu_eylemleri_katalogda(pencere):
                                             "bulut_ac_google", "bulut_kaydet_google",         # Faz 7a (klasör yoksa gizli)
                                             "bulut_ac_onedrive", "bulut_kaydet_onedrive",
                                             "parola",                                        # Faz 8b
-                                            "sablondan_yeni")}                               # Faz 10d
+                                            "sablondan_yeni",                                # Faz 10d
+                                            "kitaptan_sablon")}                              # Faz 11
     menu = pencere.dosya_menusu
     assert all(pencere.eylemler[k] in menu.actions() for k in dosya)
 
