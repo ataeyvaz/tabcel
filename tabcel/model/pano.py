@@ -382,3 +382,216 @@ def yapistirma_plani(veri: PanoVerisi, satir: int, sutun: int,
             h = _kaydirilmis(h, r - (veri.kaynak_satir + dr), c - (veri.kaynak_sutun + dc))
         plan[(r, c)] = h
     return plan
+
+
+# ---------------------------------------------------------------- Excel/Word ile biçim sadakati (2026-10-15)
+# Dışarıya: görünen metin + Excel'in anladığı HTML öznitelikleri (`x:num`, `x:fmla`, `mso-number-format`); içeri: Excel HTML'indeki
+# sınıf/satır içi CSS (kalın, italik, renk, dolgu, hizalama, sayı biçimi) ve `x:num`/`x:fmla`. Gerçek Excel 16 (COM) ile denendi.
+_KALIPLAR = {"General": "General", "Standard": "#,##0.00", "Percent": "0%", "Fixed": "0.00", "Scientific": "0.00E+00",
+             "Short Date": "dd.mm.yyyy", "@": "@"}
+
+
+def gorunen_satirlar(v: PanoVerisi) -> List[List[str]]:
+    """`metin_satirlari` gibi, ama sayı biçimi olan hücrelerde (tarih, para, yüzde…) ekranda görünen metni verir (Excel dışarıya
+    biçimli metin verir; tarih seri sayı olarak değil `15.10.2026` olarak gider)."""
+    from .sayi_bicimi import BicimHatasi, bicimle
+    cikti = []
+    for r in range(v.satir_sayisi):
+        satir = []
+        for c in range(v.sutun_sayisi):
+            h = v.hucreler.get((r, c))
+            st = v.stiller.get((r, c))
+            deger = v.sonuclar.get((r, c)) if h is not None and h.formul is not None else (None if h is None else h.deger)
+            if st is not None and st.sayi_bicimi not in ("General", "@") and isinstance(deger, float):
+                try:
+                    satir.append(bicimle(deger, st.sayi_bicimi).metin)
+                    continue
+                except (BicimHatasi, ArithmeticError, OverflowError, ValueError):
+                    pass
+            satir.append(hucre_metni(h, v.sonuclar.get((r, c))))
+        cikti.append(satir)
+    return cikti
+
+
+def _mso_kod(kod: str) -> str:
+    """Kanonik biçim kodu → CSS `mso-number-format` değeri (Excel'in yaptığı gibi `# , . /` ters bölüyle kaçırılır)."""
+    kacis = "".join("\\" + ch if ch in '#,./"' else ch for ch in kod)
+    return '"' + kacis + '"'
+
+
+def html_ayrintilari(v: PanoVerisi) -> Dict[Tuple[int, int], dict]:
+    """Excel'e giden HTML için hücre başına {num, fmla, kod}: sayısal değer, İngilizce formül, kanonik sayı biçimi."""
+    cikti = {}
+    for (r, c), h in v.hucreler.items():
+        d = {}
+        if h.formul is not None:
+            f = v.en_formul.get((r, c))
+            if f:
+                d["fmla"] = f
+            sonuc = v.sonuclar.get((r, c))
+            if isinstance(sonuc, float) and not isinstance(sonuc, bool):
+                d["num"] = sonuc
+        elif isinstance(h.deger, float) and not isinstance(h.deger, bool):
+            d["num"] = h.deger
+        st = v.stiller.get((r, c))
+        if st is not None and st.sayi_bicimi != "General":
+            d["kod"] = st.sayi_bicimi
+        if d:
+            cikti[(r, c)] = d
+    return cikti
+
+
+def html_yaz_excel(satirlar: List[List[str]], stiller: Optional[Dict[Tuple[int, int], Stil]] = None,
+                   ayrinti: Optional[Dict[Tuple[int, int], dict]] = None) -> str:
+    """`html_yaz` + Excel uyumlu öznitelikler. Excel yapıştırınca sayıyı sayı, biçimi biçim, formülü formül olarak alır."""
+    stiller, ayrinti = stiller or {}, ayrinti or {}
+    govde = []
+    for r, s in enumerate(satirlar):
+        hucreler = []
+        for c, m in enumerate(s):
+            d = ayrinti.get((r, c), {})
+            oz = ""
+            if "fmla" in d:
+                oz += f' x:fmla="{escape(d["fmla"], quote=True)}"'
+            if "num" in d:
+                oz += f' x:num="{d["num"]!r}"'
+            css = _css(stiller.get((r, c)))
+            mso = f"mso-number-format:{_mso_kod(d['kod'])}" if "kod" in d else ""
+            if mso:
+                if css:
+                    css = css[:-1] + ";" + escape(mso, quote=True) + '"'
+                else:
+                    css = f' style="{escape(mso, quote=True)}"'
+            hucreler.append(f"<td{oz}{css}>{escape(m).replace(chr(10), '<br>')}</td>")
+        govde.append("<tr>" + "".join(hucreler) + "</tr>")
+    return ('<html xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><body>'
+            f'<table>{"".join(govde)}</table></body></html>')
+
+
+def _kod_coz(deger: str) -> Optional[str]:
+    """CSS `mso-number-format` değeri → kanonik sayı biçimi kodu (None = Genel/çözülemedi)."""
+    d = deger.strip()
+    if len(d) >= 2 and d[0] == d[-1] == '"':
+        d = d[1:-1]
+    d = re.sub(r"\\(.)", r"\1", d)
+    if d in _KALIPLAR:
+        d = _KALIPLAR[d]
+    return None if d in ("", "General") else d
+
+
+_RENKLER = {"black": "#000000", "white": "#FFFFFF", "red": "#FF0000", "green": "#008000", "blue": "#0000FF", "yellow": "#FFFF00"}
+
+
+def _renk(deger: str) -> Optional[str]:
+    d = deger.strip().lower()
+    m = re.match(r"^#([0-9a-f]{6})\b", d)
+    if m:
+        return "#" + m.group(1).upper()
+    m = re.match(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)", d)
+    if m:
+        return "#%02X%02X%02X" % tuple(min(255, int(x)) for x in m.groups())
+    return _RENKLER.get(d.split()[0]) if d else None
+
+
+def _css_kurallari(blok: str) -> Dict[str, Dict[str, str]]:
+    """<style> içeriğinden {sınıf adı: {özellik: değer}} (yalnız `.sinif` seçicileri)."""
+    blok = re.sub(r"<!--|-->", "", blok)
+    cikti: Dict[str, Dict[str, str]] = {}
+    for sec, govde in re.findall(r"([^{}]+)\{([^{}]*)\}", blok):
+        d = dict((k.strip().lower(), v.strip()) for k, _, v in (p.partition(":") for p in govde.split(";")) if k.strip())
+        for ad in re.findall(r"\.([A-Za-z0-9_\-]+)", sec):
+            cikti.setdefault(ad, {}).update(d)
+    return cikti
+
+
+def _stilden(oz: Dict[str, str]) -> Tuple[Optional[Stil], Optional[str]]:
+    """CSS özellikleri → (Stil | None, sayı biçimi kodu | None); varsayılandan farklı bir şey yoksa Stil None."""
+    alan = {}
+    if "font-weight" in oz and (oz["font-weight"].lower() == "bold" or (oz["font-weight"].isdigit() and int(oz["font-weight"]) >= 600)):
+        alan["kalin"] = True
+    if oz.get("font-style", "").lower() == "italic":
+        alan["italik"] = True
+    td = oz.get("text-decoration", "").lower()
+    if "underline" in td:
+        alan["alti_cizili"] = "tek"
+    if "line-through" in td:
+        alan["ustu_cizili"] = True
+    r = _renk(oz["color"]) if "color" in oz else None
+    if r and r != "#000000":
+        alan["yazi_rengi"] = r
+    bg = oz.get("background") or oz.get("background-color") or ""
+    r = _renk(bg) if bg else None
+    if r and r != "#FFFFFF":
+        alan["dolgu"] = r
+    hiza = {"left": "sol", "center": "orta", "right": "sag"}.get(oz.get("text-align", "").lower())
+    if hiza and hiza != "sag":                       # Excel sayıya `align=right` ekler; bu varsayılan davranıştır
+        alan["yatay"] = hiza
+    if oz.get("white-space", "").lower() == "normal":
+        alan["kaydir"] = True
+    kod = _kod_coz(oz["mso-number-format"]) if "mso-number-format" in oz else None
+    if kod:
+        alan["sayi_bicimi"] = kod
+    return (Stil(**alan) if alan else None), kod
+
+
+class _StilliAyristirici(_TabloAyristirici):
+    """`_TabloAyristirici` + hücre başına öznitelikler (`x:num`, `x:fmla`, `x:str`, sınıf ve satır içi CSS)."""
+
+    def __init__(self):
+        super().__init__()
+        self.ayrinti: Dict[Tuple[int, int], dict] = {}
+        self._css_metni: List[str] = []
+        self._stil_ici = False
+        self._gecerli: Optional[dict] = None
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "style":
+            self._stil_ici = True
+        if tag in ("td", "th") and self._tablo == 1 and self._satir is not None:
+            self._gecerli = {k.lower(): (v or "") for k, v in attrs}
+        super().handle_starttag(tag, attrs)
+
+    def handle_endtag(self, tag):
+        if tag == "style":
+            self._stil_ici = False
+        if tag in ("td", "th") and self._tablo == 1 and self._hucre is not None and self._satir is not None:
+            self.ayrinti[(len(self.satirlar), len(self._satir))] = self._gecerli or {}
+            self._gecerli = None
+        super().handle_endtag(tag)
+
+    def handle_data(self, data):
+        if self._stil_ici:
+            self._css_metni.append(data)
+        super().handle_data(data)
+
+
+def html_tablo_stilli(html: str):
+    """`(satırlar, {(r, c): {"num": float|None, "fmla": str|None, "str": bool, "stil": Stil|None, "kod": str|None}})`.
+    Excel HTML'inden okunur; çözülemeyen/bozuk HTML için `([], {})`."""
+    p = _StilliAyristirici()
+    try:
+        p.feed(html)
+        p.close()
+    except Exception:
+        return [], {}
+    kurallar = _css_kurallari("".join(p._css_metni))
+    cikti: Dict[Tuple[int, int], dict] = {}
+    for anahtar, oz in p.ayrinti.items():
+        css: Dict[str, str] = {}
+        for sinif in oz.get("class", "").split():
+            css.update(kurallar.get(sinif, {}))
+        for parca in oz.get("style", "").split(";"):
+            k, _, v = parca.partition(":")
+            if k.strip():
+                css[k.strip().lower()] = v.strip()
+        if oz.get("align") and "text-align" not in css:
+            css["text-align"] = oz["align"]
+        stil, kod = _stilden(css)
+        d = {"stil": stil, "kod": kod, "str": "x:str" in oz}
+        try:
+            d["num"] = float(oz["x:num"]) if oz.get("x:num", "") != "" else None
+        except ValueError:
+            d["num"] = None
+        d["fmla"] = oz.get("x:fmla") or None
+        cikti[anahtar] = d
+    return p.satirlar, cikti

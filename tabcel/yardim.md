@@ -405,6 +405,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - `Ctrl+C`, `Ctrl+X`, `Ctrl+V` hücre içeriğini, biçimi ve formülü birlikte taşır. Kopyalanan formülün başvuruları göreli kayar; kesip yapıştırınca başvurular yeni yere uyar.
 - Kopyalanan alan kesikli çerçeveyle gösterilir; `Esc` kaldırır.
 - {APP_NAME} içinden Excel ya da Word'e yapıştırdığınızda tablo, sayı ve temel biçimler korunur; Excel, Word ve web sayfalarından gelen tablolar da hücrelere yerleşir. Dışarıdan yapıştırılan `=` ile başlayan metin formül olarak anlaşılır.
+- **Excel ve Word ile biçim korunur** (gerçek Excel 16'da denendi): {APP_NAME}'ten kopyalanan tarih, para ve yüzde Excel'de **sayı + aynı biçimle** gelir, formüller formül olarak, kalın/renk/dolgu biçimiyle; Word'e tablo olarak, ekranda göründüğü metinle yapışır. Excel'den kopyalanan tablodaki tarih/yüzde/para değerleri sayı olarak ve biçimiyle (`gg.aa.yyyy`, `0,0%`, `#.##0,00`), kalın ve dolgu rengiyle yapışır. Excel'den yapıştırılan **formüller değer olarak** gelir (Excel panoya yalnız sonucu koyar); formüllü bloğu taşımak için dosyayı kaydedip açın.
 - Kopyalanan veya kesilen hücreyi bir birleşimin içine kısmen yapıştırmak uyarıyla reddedilir.
 
 <!-- konu: kisayollar | Klavye Kısayolları -->

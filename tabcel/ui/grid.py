@@ -2226,12 +2226,12 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
         for anahtar, h in veri.hucreler.items():
             if h.formul is not None:
                 veri.en_formul[anahtar] = ceviri.disa(h.formul, self.sayfa.kitap)
-        satirlar = pano.metin_satirlari(veri)
+        satirlar = pano.gorunen_satirlar(veri)               # tarih/para/yüzde ekranda göründüğü gibi dışarı gider (Excel gibi)
         jeton = uuid.uuid4().hex
         Izgara._pano_durumu = {"sayfa": self.sayfa, "aralik": ar, "kesildi": kesilen, "jeton": jeton}
         md = QMimeData()
         md.setText(pano.tsv_yaz(satirlar))
-        md.setHtml(pano.html_yaz(satirlar, veri.stiller))
+        md.setHtml(pano.html_yaz_excel(satirlar, veri.stiller, pano.html_ayrintilari(veri)))     # Excel: sayı/biçim/formül korunur
         md.setData(self.MIME_HUCRELER, veri.json_yaz().encode("utf-8"))
         md.setData(self.MIME_JETON, jeton.encode("ascii"))
         QApplication.clipboard().setMimeData(md)
@@ -2263,14 +2263,53 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
                     veri = self._baska_oturumdan(veri)
                 return veri
             if md.hasHtml() and "<table" in md.html().lower():
-                satirlar = pano.html_tablo_coz(md.html())
+                satirlar, ayrinti = pano.html_tablo_stilli(md.html())
                 if satirlar:
-                    return pano.metinden_pano_verisi(satirlar, self._dis_girdi)
+                    return self._dis_pano_verisi(satirlar, ayrinti)
             if md.hasText() and md.text() != "":
-                return pano.metinden_pano_verisi(pano.tsv_coz(md.text()), self._dis_girdi)
+                return self._dis_pano_verisi(pano.tsv_coz(md.text()), {})
         except (ValueError, KeyError, TypeError):
             return None
         return None
+
+    def _dis_pano_verisi(self, satirlar, ayrinti) -> Optional["pano.PanoVerisi"]:
+        """Dışarıdan (Excel, Word, web, TSV) gelen tablo: metin hücreye elle yazılmış gibi **akıllı** çözülür (`15.10.2026` tarih,
+        `%25,5` yüzde, `1.234,50` sayı + uygun biçim); Excel HTML'indeki `x:num`/`x:fmla` (sayı, formül), sınıf/satır içi CSS
+        (kalın, italik, renk, dolgu, hizalama, sayı biçimi) korunur. Gerçek Excel 16 HTML'iyle denendi."""
+        from dataclasses import replace as _degistir
+        from ..model.stil import Stil
+        if not satirlar:
+            return None
+        v = pano.PanoVerisi(len(satirlar), max(len(s) for s in satirlar))
+        kitap = self.sayfa.kitap
+        for r, satir in enumerate(satirlar):
+            for c, metin in enumerate(satir):
+                oz = ayrinti.get((r, c), {})
+                kod = oz.get("kod")
+                h = None
+                if oz.get("fmla"):
+                    try:
+                        h = Hucre(None, ceviri.iceri(oz["fmla"], kitap))
+                    except (KeyError, FormulHatasi):
+                        h = None
+                if h is None and oz.get("num") is not None:
+                    h = Hucre(float(oz["num"]))
+                if h is None and oz.get("str"):
+                    h = Hucre(metin) if metin != "" else None
+                if h is None:
+                    try:
+                        h, akilli_kod = hucre_girdisi_akilli(metin, kitap)
+                    except FormulHatasi:
+                        h, akilli_kod = Hucre(metin), None
+                    kod = kod or akilli_kod
+                if h is not None:
+                    v.hucreler[(r, c)] = h
+                st = oz.get("stil")
+                if kod and h is not None and isinstance(h.deger, float) and (st is None or st.sayi_bicimi == "General"):
+                    st = _degistir(st or Stil(), sayi_bicimi=kod)
+                if st is not None and not st.varsayilan_mi():
+                    v.stiller[(r, c)] = st
+        return v
 
     def _dis_girdi(self, metin: str):
         """Dışarıdan gelen metin hücreye elle yazılmış gibi çözülür; `=…` Türkçe formül saklanan
@@ -2338,8 +2377,9 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
                 kaldir = s.birlesim_kesisen(hedef)
                 if ekle or kaldir:                      # Excel "Tümü": birleşim de yapışır / eskisi kalkar
                     komutlar.append(BirlesimDegis(s, ekle, kaldir))
-            if veri.kaynak_satir is not None and (veri.stiller or s._stil or s.satir_stil or s.sutun_stil):
-                # kendi biçimimiz: içerik + biçim (Excel "Tümü"); dışarıdan gelen metin biçime dokunmaz
+            if (veri.kaynak_satir is not None and (veri.stiller or s._stil or s.satir_stil or s.sutun_stil)) or veri.stiller:
+                # kendi biçimimiz ya da biçim bilgisi taşıyan dış veri (Excel HTML'i, akıllı tarih/yüzde biçimi): içerik + biçim (Excel "Tümü");
+                # biçimsiz dış metin (TSV, web) hedefin biçimine dokunmaz
                 komutlar.append(BicimDegis(s, hucreler=pano.yapistirma_stilleri(
                     veri, sec.ilk_satir, sec.ilk_sutun, sec, s.havuz)))
             not_plani = pano.yapistirma_notlari(veri, s, sec.ilk_satir, sec.ilk_sutun, sec)
