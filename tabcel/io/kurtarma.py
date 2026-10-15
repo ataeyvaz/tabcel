@@ -116,10 +116,42 @@ def sil(kimlik: str) -> None:
             pass
 
 
+def artiklari_temizle(simdi: Optional[float] = None) -> int:
+    """Kurtarma klasöründeki artıkları siler (yalnız uygulamanın kendi geçici dosyaları): `.json.tmp` (1 saatten eski; yazım yarıda
+    kalmış), eşi `.xlsx` olmayan `.json` (1 günden eski) ve eşi `.json` olmayan `.xlsx` (1 günden eski). Sahibi canlı süreçse dokunulmaz.
+    Silinen dosya sayısını döndürür. 2026-10-15 elle test: gerçek klasörde yüzlerce artık birikmişti."""
+    simdi = time.time() if simdi is None else simdi
+    sayi = 0
+    try:
+        adlar = os.listdir(klasor())
+    except OSError:
+        return 0
+    kumeler = set(adlar)
+    for a in adlar:
+        yol = os.path.join(klasor(), a)
+        try:
+            yas = simdi - os.path.getmtime(yol)
+            if a.endswith(".json.tmp"):
+                sil_ = yas > 3600
+            elif a.endswith(".json"):
+                sil_ = a[:-5] + ".xlsx" not in kumeler and yas > 86400
+            elif a.endswith(".xlsx"):
+                sil_ = a[:-5] + ".json" not in kumeler and yas > 86400
+            else:
+                sil_ = False
+            if sil_:
+                os.remove(yol)
+                sayi += 1
+        except OSError:
+            continue
+    return sayi
+
+
 def bekleyenler() -> List[Kurtarilabilir]:
     """Sahibi çalışmayan (çökmüş/öldürülmüş) süreçlerden kalan kopyalar, en yeni önce. Bozuk üst veri atlanır
     (dosyaya dokunulmaz)."""
     sonuc: List[Kurtarilabilir] = []
+    artiklari_temizle()
     try:
         adlar = os.listdir(klasor())
     except OSError:
