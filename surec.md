@@ -1261,3 +1261,4 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 ### Paketleme denemesi (2026-10-15)
 - PyInstaller onedir derlemesi başarılı; paketli `Tabcel.exe` ile sihirbaz, şablon üretimi, kayıt formu, Hakkında, F1, Kitaptan Şablon + Düzenleyici + Denetle çalıştı (`test.md` §21 satır 10). `tabcel.spec` düzeltmesi gerekmedi. Boyut 84 MB (74→85 artışı Faz 10/11 + hızlı okuyucu; nedeni incelenmedi).
 - Kalan: paketli sürümde PDF dışa aktarma, Inno Setup ile kurulum paketi denemesi (Inno Setup 6 kurulu), fiziksel yazıcı (kullanıcıyla).
+- **Kurulum paketi denendi (2026-10-15):** `kurulum/tabcel.iss` Inno Setup 6 ile derlendi (27,4 MB, paketli `dist_deneme` kaynağıyla); sessiz kurulum (geçici klasör, kullanıcı bazlı) → 88 MB, `Tabcel.exe` başladı; kaldırma temiz (klasör silindi). Not: betik `..\dist\Tabcel` okur, yani kurulum öncesi PyInstaller çıktısı `dist`'e alınmalı. Kısayol/ilişkilendirme görev seçenekleri elle denenmedi.
