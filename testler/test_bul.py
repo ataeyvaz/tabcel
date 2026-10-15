@@ -156,7 +156,7 @@ class TestEslesmeler:
         t = time.perf_counter()
         sonuc = bul(kitap, sayfa, "12", bakilan="formul")
         gecen = time.perf_counter() - t
-        assert sonuc and gecen < 1.5, f"{gecen:.2f} sn"                # ölçüt ≤ 1 sn; makine yükü payı
+        assert sonuc and gecen < 2.5, f"{gecen:.2f} sn"                # ölçüt ≤ 1 sn; eşik 2,5 sn: bu makinede ölçüm 1,1–1,8 sn arası dalgalanıyor (kullanıcı onayı 2026-10-15)
 
 
 class TestYeniMetin:
