@@ -452,3 +452,83 @@ def test_yeni_urun_eklerken_modul_degisirse_donus_iptal(p):
     f._ilk = f._mevcut_metinler()
     f.modul_kutusu.setCurrentIndex(f.modul_kutusu.findData("stok_hareketleri"))
     assert f._donus is None
+
+
+# ---------------------------------------------------------------- varyant matrisi (10h)
+@pytest.fixture
+def pv(app, depo):
+    w = pencere(depo, cevaplar={"varyant": True})
+    w.show()
+    yield w
+    f = getattr(w, "_sablon_formu", None)
+    if f is not None:
+        f._ilk = f._mevcut_metinler()
+        f.close()
+    w.degisti_mi = lambda: False
+    w.close()
+
+
+def varyant_formu(pv):
+    pv.sekmeler.setCurrentIndex([s.ad for s in pv.kitap.sayfalar].index("Varyantlar"))
+    pv.kayit_formu_ac()
+    f = pv._sablon_formu
+    assert f.g.modul.kimlik == "varyantlar"
+    return f
+
+
+def test_matris_dugmesi_yalniz_matrisli_modulde(pv):
+    f = varyant_formu(pv)
+    assert not f.matris_dugme.isHidden()
+    f.modul_kutusu.setCurrentIndex(f.modul_kutusu.findData("urunler"))
+    assert f.matris_dugme.isHidden()
+
+
+def test_matris_girisi_ayri_satirlar_tek_geri_al(pv):
+    f = varyant_formu(pv)
+    pen = f.matris_ac({"urun": "U001"}, ["S", "M"], ["Kırmızı", "Mavi"],
+                      {("S", "Kırmızı"): "5", ("S", "Mavi"): "3", ("M", "Kırmızı"): "2"}, sessiz=True)
+    assert pen.kaydet() is True
+    s = sayfa(pv, "Varyantlar")
+    satirlar = [(s.deger(r, 2), s.deger(r, 3), s.deger(r, 4)) for r in range(2, 6) if s.deger(r, 1)]
+    assert sorted(satirlar) == [("M", "Kırmızı", 2.0), ("S", "Kırmızı", 5.0), ("S", "Mavi", 3.0)]        # boş hücre yazılmadı
+    assert "3 yeni kayıt" in pen.ileti.text()
+    pv.izgara().yigin.geri_al()                                      # tek adımda hepsi geri
+    assert all(s.deger(r, 1) is None for r in range(2, 6))
+
+
+def test_matris_mevcut_kayitlari_getirir_ve_gunceller(pv):
+    f = varyant_formu(pv)
+    pen = f.matris_ac({"urun": "U001"}, ["S"], ["Kırmızı"], {("S", "Kırmızı"): "5"}, sessiz=True)
+    assert pen.kaydet()
+    pen2 = f.matris_ac({"urun": "U001"}, [], [], None, sessiz=True)
+    pen2.tablo_kur()
+    assert pen2.etiketler_satir == ["S"] and pen2.etiketler_sutun == ["Kırmızı"]
+    assert pen2.tablo.item(0, 0).text() == "5"
+    pen2.hucre_yaz("S", "Kırmızı", "9")
+    assert pen2.kaydet()
+    s = sayfa(pv, "Varyantlar")
+    assert s.deger(2, 4) == 9.0 and s.deger(3, 1) is None             # yeni satır açılmadı
+
+
+def test_matris_ihlal_hicbir_sey_yazmaz(pv):
+    f = varyant_formu(pv)
+    pen = f.matris_ac({"urun": "U001"}, ["S", "M"], ["Kırmızı"], {("S", "Kırmızı"): "5", ("M", "Kırmızı"): "-1"}, sessiz=True)
+    assert pen.kaydet() is False
+    assert "Beden M / Renk Kırmızı" in pen.ileti.text()
+    assert sayfa(pv, "Varyantlar").deger(2, 1) is None
+
+
+def test_matris_ortak_alan_zorunlu(pv):
+    f = varyant_formu(pv)
+    pen = f.matris_ac({}, ["S"], ["Kırmızı"], {("S", "Kırmızı"): "5"}, sessiz=True)
+    assert pen.kaydet() is False and "boş bırakılamaz" in pen.ileti.text()
+
+
+def test_matris_excelden_yapistirma(pv):
+    from PySide6.QtWidgets import QApplication as QA
+    f = varyant_formu(pv)
+    pen = f.matris_ac({"urun": "U001"}, ["S", "M"], ["Kırmızı", "Mavi"], {}, sessiz=True)
+    pen.tablo.setCurrentCell(0, 0)
+    pen.tablo.yapistir("1\t2\n3\t4\n")
+    assert pen.degerler() == {("s", "kırmızı"): "1", ("s", "mavi"): "2", ("m", "kırmızı"): "3", ("m", "mavi"): "4"}
+    assert pen.kaydet() and sayfa(pv, "Varyantlar").deger(5, 4) == 4.0

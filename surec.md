@@ -15,7 +15,7 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | 7a ✅ bulut · 7b ✅ Hakkında+ikon · 7c ✅ yazım denetimi (F7) · 7d ✅ PyInstaller+Inno Setup (kurulum/kaldırma denendi) · 7e ✅ README · ✅ Hızlı Erişim | 🔄 **Açık:** GitHub deposu (kullanıcı onayı), tam test koşusu, elle testler |
 | 8 | .xls/.ods, pivot, dinamik diziler… | 8a ✅ .xls okuma (xlrd) | 🔄 8b ✅ parolalı .xlsx · 8c ✅ .ods · 8d ✅ Özet Tablo (anlık görüntü) · 8e ✅ dinamik diziler (işlevler + taşma + LET) |
 | 9 | Güven ve denetim araçları (kural 17–20) | 9a ✅ kimlik altyapısı · 9b ✅ Hesap İzleme · 9c ✅ Tablo Sağlığı · 9d ✅ Paylaşım Temizleyici (KVKK) | ✅ Faz 9 bitti (9d elle/arayüz testi yapıldı 2026-10-11) |
-| 10 | Şablon Sihirbazı + Veri Giriş Formları (`plan.md` Faz 10, `sablon_tasarim.md`) | 10-ön ✅ · 10a ✅ · 10b ✅ · 10c ✅ saklama · 10d ✅ sihirbaz · 10e ✅ 6 akış · 10f ✅ kural motoru + kayıt formu | 🔄 sıradaki: 10g barkod, 10h varyant matrisi |
+| 10 | Şablon Sihirbazı + Veri Giriş Formları (`plan.md` Faz 10, `sablon_tasarim.md`) | 10-ön ✅ · 10a ✅ · 10b ✅ · 10c ✅ saklama · 10d ✅ sihirbaz · 10e ✅ 6 akış · 10f ✅ kural motoru + kayıt formu · 10g ✅ barkod · 10h ✅ varyant matrisi | ✅ Faz 10 bitti; sıradaki Faz 11 (Şablon Düzenleyici) |
 
 Testler: ≈5220 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
@@ -1226,4 +1226,12 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Testler:** `test_sablon_kayitlar.py` (+2), `test_sablon_formu.py` (+9: okutma, baştaki sıfır, ürün kodu, bilinmeyen barkod, yeni ürün–kaydet–geri dön–hareket kaydı, kayıtlı barkod → kayda git, modül değişince dönüş iptali). Yardım güncellendi.
 - **Elle kalan:** gerçek USB okuyucuyla deneme (okuyucu yoksa klavyeyle benzetildi; karakterler arası süre koşulu aranmıyor, yalnız Enter). Çok hızlı tuş dizisinden otomatik algılama yok (karar: gereksiz, `Ctrl+B` ve alan odağı yeterli).
 - Sıradaki: 10h (varyant matrisi).
+
+### Faz 10h — varyant matrisi (2026-10-15, Sonnet 5.5)
+- **Şema/tanım:** `Varyantlar` modülüne `miktar` (Stok adedi, tam sayı ≥ 0) sütunu ve `"matris": {"satir":"beden","sutun":"renk","deger":"miktar"}` eklendi (sema zaten `matris` alanını doğruluyordu). **Karar:** matris, değer alanı olan bir modülde çalışır (tasarım §8); `Varyantlar` bu yüzden adet kazandı; Stok Durumu varyant adetlerini toplamaz (ürün düzeyi stok hareketlerinden gelir) — çeşit bazlı stok ayrı bilgi olarak tutulur.
+- **Mantık (Qt'siz, `kayitlar.py`):** `matris_tanimi`, `matris_ortak_alanlari` (satır/sütun/değer dışı, benzersiz olmayan alanlar: ürün kodu; barkod çeşide özgü → matrisle girilmez), `matris_mevcut`, `matris_plani`. Her dolu hücre = bir kayıt (ortak + etiketler + değer); aynı (ortak, satır, sütun) varsa (Türkçe harf duyarsız) yalnız değer güncellenir, yoksa sıradaki boş satıra yeni kayıt; boş hücre yazılmaz; her kayıt alan + satır kurallarından geçer, **tek ihlal = hiçbir şey yazılmaz**; hesaplanan sütun formülleri yeni satırlara tamamlanır.
+- **Arayüz:** formda **Matris giriş…** (yalnız matrisli modülde): ortak alan kutuları, satır/sütun etiket kutuları (virgülle), “Tabloyu kur / mevcut kayıtları getir”, ızgara (`Ctrl+V` ile Excel'den sekmeli yapıştırma, `Delete` boşaltır), Kaydet = tek `HucrelerDegis` = **tek geri al adımı**; hata iletisi “Beden M / Renk Mavi: …” biçiminde.
+- **Karar/sınır:** ızgarada boşalttığınız hücre kayıtlı bir değeri silmez (boş = değişiklik yok); silmek için formdaki Sil ya da tablo. Matris yalnız tek değer alanı destekler.
+- **Testler:** `test_sablon_kayitlar.py` (+5), `test_sablon_formu.py` (+6: düğme görünürlüğü, ayrı satırlar + tek geri al, güncelleme, ihlalde yazmama, zorunlu ortak alan, yapıştırma). Şablon test kümesi (222) geçti; ekranlı pencerede görsel kontrol yapıldı.
+- **Faz 10 bitti** (10-ön…10h). Sıradaki: Faz 11 (Şablon Düzenleyici).
 

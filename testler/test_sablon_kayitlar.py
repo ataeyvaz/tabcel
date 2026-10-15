@@ -229,3 +229,65 @@ def test_baglanti_degeri_barkoddan_urun_kodu(depo):
     assert kayitlar.baglanti_degeri(b, urun, "8690000000011") == "U002"
     assert kayitlar.baglanti_degeri(b, urun, "u001") == "U001"       # ürün kodu da kabul (Türkçe harf duyarsız)
     assert kayitlar.baglanti_degeri(b, urun, "0000") is None
+
+
+# ---------------------------------------------------------------- varyant matrisi (10h)
+def _varyant(depo):
+    kitap, b = kur(depo, cevaplar={"varyant": True})
+    return kitap, b, b.gorunum("varyantlar")
+
+
+def _h(v):
+    return Hucre(v)
+
+
+def test_matris_tanimi_ve_ortak_alanlar(depo):
+    _, b, g = _varyant(depo)
+    sa, su, de = kayitlar.matris_tanimi(g)
+    assert (sa.kimlik, su.kimlik, de.kimlik) == ("beden", "renk", "miktar")
+    assert [s.kimlik for s in kayitlar.matris_ortak_alanlari(g)] == ["urun"]      # barkod benzersiz → matrisle girilmez
+    _, b2 = kur(depo)
+    assert kayitlar.matris_tanimi(b2.gorunum("urunler")) is None
+
+
+def test_matris_plani_dolu_hucreler_ayri_satir_bos_hucre_yazilmaz(depo):
+    kitap, b, g = _varyant(depo)
+    ortak = {"urun": _h("U001")}
+    plan = kayitlar.matris_plani(b, g, ortak, {("S", "Kırmızı"): _h(5.0), ("S", "Mavi"): _h(3.0), ("M", "Kırmızı"): _h(2.0),
+                                              ("M", "Mavi"): None})
+    assert plan.tamam and plan.yeni == 3 and plan.guncellenen == 0
+    assert sorted({r for r, _ in plan.yazimlar}) == [2, 3, 4]                    # üç ayrı satır
+    for (r, c), h in plan.yazimlar.items():
+        if c == g.sutunlar["urun"]:
+            assert h.deger == "U001"
+
+
+def test_matris_ikinci_giriste_degeri_gunceller_yeni_satir_acmaz(depo):
+    from tabcel.model.komutlar import HucrelerDegis
+    kitap, b, g = _varyant(depo)
+    ortak = {"urun": _h("U001")}
+    plan = kayitlar.matris_plani(b, g, ortak, {("S", "Kırmızı"): _h(5.0), ("M", "Mavi"): _h(3.0)})
+    HucrelerDegis(g.sayfa, plan.yazimlar).yap()
+    g.sayfa.ata(2, g.sutunlar["barkod"], Hucre("111"))
+    plan2 = kayitlar.matris_plani(b, g, ortak, {("s", "kırmızı"): _h(9.0), ("M", "Mavi"): _h(3.0), ("L", "Mavi"): _h(1.0)})
+    assert (plan2.yeni, plan2.guncellenen, plan2.degismeyen) == (1, 1, 1)         # Türkçe harf duyarsız eşleşme
+    HucrelerDegis(g.sayfa, plan2.yazimlar).yap()
+    assert g.sayfa.deger(2, g.sutunlar["miktar"]) == 9.0
+    assert g.sayfa.deger(2, g.sutunlar["barkod"]) == "111"                        # güncellemede diğer alanlara dokunulmadı
+    assert kayitlar.matris_mevcut(g, ortak)[("S", "Kırmızı")][0] == 2
+    assert g.sayfa.deger(4, g.sutunlar["beden"]) == "L"
+
+
+def test_matris_ihlalde_hicbir_sey_yazilmaz(depo):
+    kitap, b, g = _varyant(depo)
+    plan = kayitlar.matris_plani(b, g, {"urun": _h("U001")}, {("S", "Kırmızı"): _h(5.0), ("M", "Mavi"): _h(-2.0)})
+    assert not plan.tamam and plan.yazimlar == {} and plan.yeni == 0
+    assert plan.ihlaller[0][0] == "Beden M / Renk Mavi" and plan.ihlaller[0][1].alan == "miktar"
+
+
+def test_matris_zorunlu_ortak_alan_bos_ya_da_gecersiz(depo):
+    _, b, g = _varyant(depo)
+    plan = kayitlar.matris_plani(b, g, {"urun": None}, {("S", "Kırmızı"): _h(1.0)})
+    assert not plan.tamam and plan.ihlaller[0][1].alan == "urun"
+    plan = kayitlar.matris_plani(b, g, {"urun": _h("YOK")}, {("S", "Kırmızı"): _h(1.0)})
+    assert not plan.tamam                                                         # listede olmayan ürün

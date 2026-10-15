@@ -10,8 +10,9 @@ from typing import Dict, List, Optional
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QCalendarWidget, QCheckBox, QComboBox, QCompleter, QDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
-    QMessageBox, QPushButton, QScrollArea, QToolButton, QVBoxLayout, QWidget, QWidgetAction,
+    QApplication, QCalendarWidget, QCheckBox, QComboBox, QCompleter, QDialog, QFormLayout, QHBoxLayout, QLabel, QLineEdit, QMenu,
+    QMessageBox, QPushButton, QScrollArea, QTableWidget, QTableWidgetItem, QToolButton, QVBoxLayout, QWidget,
+    QWidgetAction,
 )
 
 from ..formul import kosul
@@ -128,6 +129,9 @@ class SablonFormu(QDialog):
         alt = QHBoxLayout()
         self.sil_dugme = QPushButton("Sil")
         self.sil_dugme.clicked.connect(self.sil)
+        self.matris_dugme = QPushButton("Matris giriş…")
+        self.matris_dugme.setToolTip("Beden × renk gibi çeşitleri tek tabloda girin; her dolu hücre ayrı kayıt olur")
+        self.matris_dugme.clicked.connect(lambda: self.matris_ac())
         self.ornek_dugme = QPushButton("Örnek verileri temizle")
         self.ornek_dugme.setToolTip("Şablonla gelen örnek kayıtları siler (kendi değiştirdiğiniz satırlara dokunmaz)")
         self.ornek_dugme.clicked.connect(self.ornekleri_temizle)
@@ -139,6 +143,7 @@ class SablonFormu(QDialog):
         kapat = QPushButton("Kapat")
         kapat.clicked.connect(self.close)
         alt.addWidget(self.sil_dugme)
+        alt.addWidget(self.matris_dugme)
         alt.addWidget(self.ornek_dugme)
         alt.addStretch(1)
         for w in (self.kaydet_dugme, self.kaydet_yeni_dugme, kapat):
@@ -348,6 +353,7 @@ class SablonFormu(QDialog):
         self.sonraki.setEnabled(i >= 0 and i < n - 1)
         self.sil_dugme.setEnabled(self.satir is not None)
         self.ornek_dugme.setVisible(self.b is not None and bool(kayitlar.ornek_satirlari(self.b)))
+        self.matris_dugme.setVisible(self.g is not None and kayitlar.matris_tanimi(self.g) is not None)
 
     def _yukle(self, satir: Optional[int]) -> None:
         self._yukleniyor = True
@@ -700,6 +706,26 @@ class SablonFormu(QDialog):
             if a.sutun.tur == "hesaplanan":
                 a.kutu.setText(kayitlar.gorunen(self.g, self.satir, k))
 
+    # ------------------------------------------------------------------ varyant matrisi (Faz 10h)
+    def matris_ac(self, ortak_metinler=None, satirlar=None, sutunlar=None, degerler=None, sessiz: bool = False):
+        """Matris giriş penceresi (modül `matris` tanımlıysa). `sessiz` + parametreler testler içindir (pencere gösterilmeden
+        doldurulup kaydedilir); döner: pencere. Yarım düzenleme varsa önce sorulur."""
+        if self.g is None or kayitlar.matris_tanimi(self.g) is None:
+            return None
+        if not self._kayit_birak():
+            return None
+        pen = MatrisPenceresi(self, ortak_metinler)
+        if satirlar is not None:
+            pen.satir_kutusu.setText(", ".join(satirlar))
+            pen.sutun_kutusu.setText(", ".join(sutunlar or []))
+            pen.tablo_kur()
+            for (e, c), v in (degerler or {}).items():
+                pen.hucre_yaz(e, c, v)
+        if sessiz:
+            return pen
+        pen.exec()
+        return pen
+
     def ornekleri_temizle(self) -> bool:
         """Üretimdeki örnek kayıtları (hâlâ değişmemiş olanları) siler; tek geri al adımı. Sonradan eklenen kayıtlara dokunmaz."""
         from ..model.komutlar import Grup
@@ -776,6 +802,207 @@ class EslemePenceresi(QDialog):
             if c.currentText() != self.YOK:
                 h.setdefault(mk, {})[sk] = c.currentText()
         return h
+
+
+class _MatrisTablosu(QTableWidget):
+    """Matris ızgarası: Excel'den kopyalanan sekmeli metni (Ctrl+V) etkin hücreden başlayarak yapıştırır; Delete boşaltır."""
+
+    def keyPressEvent(self, olay):
+        if olay.matches(QKeySequence.Paste):
+            self.yapistir(QApplication.clipboard().text())
+            return
+        if olay.key() == Qt.Key_Delete:
+            for oge in self.selectedItems():
+                oge.setText("")
+            return
+        super().keyPressEvent(olay)
+
+    def yapistir(self, metin: str) -> None:
+        r0, c0 = max(self.currentRow(), 0), max(self.currentColumn(), 0)
+        for i, satir in enumerate(metin.replace("\r", "").split("\n")):
+            if satir == "" and i == len(metin.replace("\r", "").split("\n")) - 1:
+                continue
+            for j, deger in enumerate(satir.split("\t")):
+                if r0 + i < self.rowCount() and c0 + j < self.columnCount():
+                    self.item(r0 + i, c0 + j).setText(deger.strip())
+
+
+class MatrisPenceresi(QDialog):
+    """Beden × renk gibi iki boyutlu giriş: ortak alanlar (ör. ürün) + satır/sütun etiketleri + ızgara. Her dolu hücre ayrı kayıt olur;
+    mevcut kayıt varsa değeri güncellenir; boş hücre yazılmaz. Kaydet = tek geri al adımı; tek ihlal bile varsa hiçbir şey yazılmaz."""
+
+    def __init__(self, form: "SablonFormu", ortak_metinler=None):
+        super().__init__(form)
+        self.form = form
+        self.g = form.g
+        self.sa, self.su, self.de = kayitlar.matris_tanimi(self.g)
+        self.setWindowTitle(f"{self.g.modul.ad} — Matris giriş")
+        self.setMinimumSize(560, 440)
+        self.ortak = {s.kimlik: s for s in kayitlar.matris_ortak_alanlari(self.g)}
+        self.ortak_kutulari: Dict[str, QWidget] = {}
+        self.etiketler_satir: List[str] = []
+        self.etiketler_sutun: List[str] = []
+        d = QVBoxLayout(self)
+        ust = QFormLayout()
+        for k, s in self.ortak.items():
+            kutu = form._kutu_olustur(s)
+            self.ortak_kutulari[k] = kutu
+            ust.addRow(s.ad + (" *" if s.zorunlu else ""), kutu)
+            if ortak_metinler and k in ortak_metinler:
+                self._kutu_yaz(kutu, ortak_metinler[k])
+        self.satir_kutusu = QLineEdit()
+        self.satir_kutusu.setPlaceholderText(f"virgülle: ör. S, M, L, XL")
+        self.sutun_kutusu = QLineEdit()
+        self.sutun_kutusu.setPlaceholderText("virgülle: ör. Kırmızı, Mavi")
+        ust.addRow(f"{self.sa.ad} (satırlar)", self.satir_kutusu)
+        ust.addRow(f"{self.su.ad} (sütunlar)", self.sutun_kutusu)
+        d.addLayout(ust)
+        sat = QHBoxLayout()
+        self.kur_dugme = QPushButton("Tabloyu kur / mevcut kayıtları getir")
+        self.kur_dugme.clicked.connect(self.tablo_kur)
+        sat.addWidget(self.kur_dugme)
+        sat.addStretch(1)
+        d.addLayout(sat)
+        self.tablo = _MatrisTablosu(0, 0)
+        d.addWidget(self.tablo, 1)
+        self.ileti = QLabel("")
+        self.ileti.setWordWrap(True)
+        self.ileti.setStyleSheet(f"color: {HATA_RENGI};")
+        d.addWidget(self.ileti)
+        alt = QHBoxLayout()
+        alt.addStretch(1)
+        self.kaydet_dugme = QPushButton("Kaydet")
+        kapat = QPushButton("Kapat")
+        self.kaydet_dugme.clicked.connect(lambda: self.kaydet())
+        kapat.clicked.connect(self.reject)
+        alt.addWidget(self.kaydet_dugme)
+        alt.addWidget(kapat)
+        d.addLayout(alt)
+        for dugme in self.findChildren(QPushButton):
+            dugme.setAutoDefault(False)
+
+    @staticmethod
+    def _kutu_yaz(kutu, metin: str) -> None:
+        if isinstance(kutu, QComboBox):
+            i = kutu.findText(metin, Qt.MatchFixedString)
+            kutu.setCurrentIndex(i) if i >= 0 else kutu.setCurrentText(metin)
+        elif isinstance(kutu, QCheckBox):
+            kutu.setChecked(kucuk(metin) in ("evet", "e", "1"))
+        else:
+            kutu.setText(metin)
+
+    @staticmethod
+    def _kutu_oku(kutu) -> str:
+        if isinstance(kutu, QComboBox):
+            return kutu.currentText()
+        if isinstance(kutu, QCheckBox):
+            return "Evet" if kutu.isChecked() else "Hayır"
+        return kutu.text()
+
+    def _ortak_hucreler(self) -> Dict[str, object]:
+        satir = kayitlar.yeni_satir(self.g) or self.g.ilk_satir
+        return {k: kayitlar.metinden_hucre(self.g, satir, k, self._kutu_oku(kutu)) for k, kutu in self.ortak_kutulari.items()}
+
+    @staticmethod
+    def _etiketler(metin: str) -> List[str]:
+        gorulen, cikti = set(), []
+        for p in metin.replace(";", ",").split(","):
+            p = p.strip()
+            if p and kucuk(p) not in gorulen:
+                gorulen.add(kucuk(p))
+                cikti.append(p)
+        return cikti
+
+    def tablo_kur(self) -> None:
+        """Yazılan etiketler + seçili ortak alanlara (ürün) ait mevcut kayıtların etiketleriyle ızgarayı kurar; mevcut değerleri doldurur.
+        Izgaradaki girilmiş ama kaydedilmemiş değerler korunur."""
+        eski = self.degerler()
+        mevcut = kayitlar.matris_mevcut(self.g, self._ortak_hucreler())
+        satirlar, sutunlar = self._etiketler(self.satir_kutusu.text()), self._etiketler(self.sutun_kutusu.text())
+        for (e, c) in mevcut:
+            if kucuk(e) not in {kucuk(x) for x in satirlar}:
+                satirlar.append(e)
+            if kucuk(c) not in {kucuk(x) for x in sutunlar}:
+                sutunlar.append(c)
+        self.etiketler_satir, self.etiketler_sutun = satirlar, sutunlar
+        self.satir_kutusu.setText(", ".join(satirlar))
+        self.sutun_kutusu.setText(", ".join(sutunlar))
+        self.tablo.clear()
+        self.tablo.setRowCount(len(satirlar))
+        self.tablo.setColumnCount(len(sutunlar))
+        self.tablo.setVerticalHeaderLabels(satirlar)
+        self.tablo.setHorizontalHeaderLabels(sutunlar)
+        for i in range(len(satirlar)):
+            for j in range(len(sutunlar)):
+                self.tablo.setItem(i, j, QTableWidgetItem(""))
+        kucuk_mevcut = {(kucuk(e), kucuk(c)): h for (e, c), (_r, h) in mevcut.items()}
+        for i, e in enumerate(satirlar):
+            for j, c in enumerate(sutunlar):
+                v = eski.get((kucuk(e), kucuk(c)))
+                if v:
+                    self.tablo.item(i, j).setText(v)
+                else:
+                    h = kucuk_mevcut.get((kucuk(e), kucuk(c)))
+                    if h is not None and h.deger is not None:
+                        self.tablo.item(i, j).setText(kayitlar._metin(h))
+        self.ileti.setText("")
+
+    def hucre_yaz(self, satir_etiketi: str, sutun_etiketi: str, metin: str) -> None:
+        i = [kucuk(x) for x in self.etiketler_satir].index(kucuk(satir_etiketi))
+        j = [kucuk(x) for x in self.etiketler_sutun].index(kucuk(sutun_etiketi))
+        self.tablo.item(i, j).setText(str(metin))
+
+    def degerler(self) -> Dict[tuple, str]:
+        """{(satır etiketi, sütun etiketi) küçük harf: ızgaradaki metin} (boşlar dâhil değil)."""
+        cikti = {}
+        for i, e in enumerate(self.etiketler_satir):
+            for j, c in enumerate(self.etiketler_sutun):
+                oge = self.tablo.item(i, j)
+                if oge is not None and oge.text().strip():
+                    cikti[(kucuk(e), kucuk(c))] = oge.text().strip()
+        return cikti
+
+    def plan(self):
+        satir = kayitlar.yeni_satir(self.g) or self.g.ilk_satir
+        hucreler = {}
+        for i, e in enumerate(self.etiketler_satir):
+            for j, c in enumerate(self.etiketler_sutun):
+                oge = self.tablo.item(i, j)
+                metin = oge.text().strip() if oge is not None else ""
+                hucreler[(e, c)] = kayitlar.metinden_hucre(self.g, satir, self.de.kimlik, metin) if metin else None
+        return kayitlar.matris_plani(self.form.b, self.g, self._ortak_hucreler(), hucreler)
+
+    def kaydet(self) -> bool:
+        if not self.etiketler_satir or not self.etiketler_sutun:
+            self.ileti.setText("Önce satır ve sütun etiketlerini yazıp tabloyu kurun.")
+            return False
+        plan = self.plan()
+        self.ileti.setStyleSheet(f"color: {HATA_RENGI};")
+        if not plan.tamam:
+            self.ileti.setText("\n".join(f"{e}: {i.ileti}" for e, i in plan.ihlaller[:8]) +
+                               ("\n…" if len(plan.ihlaller) > 8 else ""))
+            return False
+        if not plan.yazimlar:
+            self.ileti.setText("Yazılacak değişiklik yok.")
+            return False
+        izgara = self.form.pencere.izgara()
+        if izgara.sayfa is not self.g.sayfa:
+            self.form.pencere.sekmeler.setCurrentIndex(self.form.pencere.kitap.sayfalar.index(self.g.sayfa))
+            izgara = self.form.pencere.izgara()
+        self.form._kaydediyor = True
+        try:
+            izgara.yigin.calistir(HucrelerDegis(self.g.sayfa, plan.yazimlar))        # tek geri al adımı
+            izgara._guncelle()
+        finally:
+            self.form._kaydediyor = False
+        self.form.kayit_satirlari = kayitlar.kayit_satirlari(self.g)
+        self.form.kaydedildi.emit()
+        self.form._yukle(self.form.satir if self.form.satir in self.form.kayit_satirlari else None)
+        self.tablo_kur()                                    # ızgara kayıtlı değerlerle yenilenir
+        self.ileti.setStyleSheet(f"color: {theme.ACCENT};")
+        self.ileti.setText(f"Kaydedildi: {plan.yeni} yeni kayıt, {plan.guncellenen} güncelleme"
+                           + (f", {plan.degismeyen} değişmeyen." if plan.degismeyen else "."))
+        return True
 
 
 class _TarihKutusu(QWidget):

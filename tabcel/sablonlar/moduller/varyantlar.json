@@ -10,6 +10,9 @@
     {"kimlik": "urun", "ad": "Ürün kodu", "tur": "baglanti", "zorunlu": true, "baglanti": {"modul": "urunler", "alan": "urun_kodu"}},
     {"kimlik": "beden", "ad": "Beden", "tur": "metin"},
     {"kimlik": "renk", "ad": "Renk", "tur": "metin"},
+    {"kimlik": "miktar", "ad": "Stok adedi", "tur": "tam_sayi", "kisit": {"min": 0},
+     "aciklama": "Bu çeşitten eldeki adet. Beden × renk matrisinden toplu girilebilir."},
     {"kimlik": "barkod", "ad": "Barkod", "tur": "metin", "benzersiz": true, "barkod": true}
-  ]
+  ],
+  "matris": {"satir": "beden", "sutun": "renk", "deger": "miktar"}
 }

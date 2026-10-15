@@ -466,3 +466,106 @@ def baglanti_degeri(b: Baglam, sutun: Sutun, kod: str) -> Optional[str]:
         if v and esit_mi(v, kod):
             return v
     return None
+
+
+# ---------------------------------------------------------------- varyant matrisi (Faz 10h)
+@dataclass
+class MatrisPlani:
+    """`matris_plani` sonucu: yazılacak hücreler + ihlaller. İhlal varsa hiçbir şey yazılmaz (hepsi ya da hiçbiri)."""
+    yazimlar: Dict[Tuple[int, int], Optional[Hucre]] = field(default_factory=dict)
+    ihlaller: List[Tuple[str, Ihlal]] = field(default_factory=list)       # (“Beden M / Renk Mavi”, ihlal)
+    yeni: int = 0
+    guncellenen: int = 0
+    degismeyen: int = 0
+
+    @property
+    def tamam(self) -> bool:
+        return not any(i.siddet == DURDUR for _, i in self.ihlaller)
+
+
+def matris_tanimi(g: ModulGorunumu) -> Optional[Tuple[Sutun, Sutun, Sutun]]:
+    """Modülün `matris` tanımı: (satır alanı, sütun alanı, değer alanı); tanım yoksa ya da bir sütun kapalıysa None."""
+    m = g.modul.matris
+    if not m:
+        return None
+    s = [g.modul.sutun(m.get(k)) for k in ("satir", "sutun", "deger")]
+    if any(x is None or x.kimlik not in g.sutunlar for x in s):
+        return None
+    return s[0], s[1], s[2]
+
+
+def matris_ortak_alanlari(g: ModulGorunumu) -> List[Sutun]:
+    """Matrisin tüm hücreleri için ortak olan alanlar (ör. Ürün kodu): satır/sütun/değer dışındaki, benzersiz olmayan girdi
+    alanları. Benzersiz alanlar (barkod) her çeşide özgüdür; matrisle girilmez."""
+    t = matris_tanimi(g)
+    ayri = {x.kimlik for x in t} if t else set()
+    return [s for s in g.girdi_alanlari() if s.kimlik not in ayri and not s.benzersiz]
+
+
+def _anahtar_metni(h: Optional[Hucre]) -> str:
+    return kucuk(_metin(h))
+
+
+def matris_mevcut(g: ModulGorunumu, ortak: Dict[str, Optional[Hucre]]):
+    """Ortak alanları aynı olan mevcut kayıtlar: `{(satır etiketi, sütun etiketi): (satır no, değer)}` (etiketler kayıtlı yazımıyla)."""
+    t = matris_tanimi(g)
+    if t is None:
+        return {}
+    sa, su, de = t
+    ort = matris_ortak_alanlari(g)
+    cikti = {}
+    for r in kayit_satirlari(g):
+        if all(_anahtar_metni(g.sayfa.hucre(r, g.sutunlar[s.kimlik])) == _anahtar_metni(ortak.get(s.kimlik)) for s in ort):
+            e, c = _metin(g.sayfa.hucre(r, g.sutunlar[sa.kimlik])), _metin(g.sayfa.hucre(r, g.sutunlar[su.kimlik]))
+            if e and c:
+                cikti[(e, c)] = (r, g.sayfa.hucre(r, g.sutunlar[de.kimlik]))
+    return cikti
+
+
+def matris_plani(b: Baglam, g: ModulGorunumu, ortak: Dict[str, Optional[Hucre]],
+                 hucreler: Dict[Tuple[str, str], Optional[Hucre]]) -> MatrisPlani:
+    """Matristeki her dolu hücre bir kayıttır: ortak alanlar + satır etiketi + sütun etiketi + değer. Aynı (ortak, satır, sütun)
+    kaydı varsa yalnız değeri güncellenir (diğer alanlara — barkod gibi — dokunulmaz), yoksa yeni satır eklenir. Boş hücre yazılmaz.
+    Her kayıt form kuralları (alan + satır kuralları) ile denetlenir; tek ihlal bile varsa plan boş kalır. Hepsi tek `HucrelerDegis` yapılır."""
+    plan = MatrisPlani()
+    t = matris_tanimi(g)
+    if t is None:
+        return plan
+    sa, su, de = t
+    mevcut = matris_mevcut(g, ortak)
+    mevcut_kucuk = {(kucuk(e), kucuk(c)): (e, c, r, h) for (e, c), (r, h) in mevcut.items()}
+    sonraki = yeni_satir(g)
+    yazimlar: Dict[Tuple[int, int], Optional[Hucre]] = {}
+    for (e, c), deger in hucreler.items():
+        if deger is None or _bos(deger):
+            continue
+        etiket = f"{sa.ad} {e} / {su.ad} {c}"
+        var = mevcut_kucuk.get((kucuk(e), kucuk(c)))
+        taslak = dict(ortak)
+        taslak[sa.kimlik] = Hucre(var[0] if var else e)
+        taslak[su.kimlik] = Hucre(var[1] if var else c)
+        taslak[de.kimlik] = deger
+        if var is not None:
+            satir = var[2]
+            if var[3] is not None and var[3].deger == deger.deger:
+                plan.degismeyen += 1
+                continue
+        else:
+            if sonraki is None:
+                plan.ihlaller.append((etiket, Ihlal("matris:dolu", None, "Tablonun veri bölgesi dolu.", DURDUR)))
+                continue
+            satir = sonraki
+        for i in kayit_denetle(b, g, satir, taslak):
+            plan.ihlaller.append((etiket, i))
+        if var is not None:
+            yazimlar[(satir, g.sutunlar[de.kimlik])] = deger
+            plan.guncellenen += 1
+        else:
+            yazimlar.update(yazim_haritasi(b, g, satir, taslak))
+            plan.yeni += 1
+            sonraki = satir + 1 if satir + 1 <= g.son_satir else None
+    if plan.tamam:
+        plan.yazimlar = yazimlar
+    else:
+        plan.yeni = plan.guncellenen = 0
+    return plan
