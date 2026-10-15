@@ -3,7 +3,7 @@
 Bu dosya klasörün kökünde durur; Claude Code otomatik okur. Güncel durum: `surec.md`. Fazlar ve ayrıntılı kapsam: `plan.md`.
 
 ## Proje nedir
-Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü hesap tablosu). Sözcük'ün (Word alternatifi, `C:\Users\Ata\Desktop\sozcuk`) kardeş uygulaması; aynı görünüm dili ve ilkeler. Python 3.11 + PySide6. Çalıştırma: `Tabcel.bat` ya da `.venv\Scripts\python main.py`.
+Microsoft Excel'e sade, Türkçe, yerel çalışan bir alternatif (masaüstü hesap tablosu). Sözcük'ün (Word alternatifi, `C:\Users\Ata\Desktop\sozcuk`) kardeş uygulaması; aynı görünüm dili ve ilkeler. **Ürün ailesinin ortak adı "Eagle Office"** (Sözcük + Tabcel): `tabcel/__init__.py` → `PAKET_ADI`, `PAKET_URUNLERI`, `ILETISIM_EPOSTA` (Hakkında penceresi, kurulum yayıncı adı, README). Python 3.11 + PySide6. Çalıştırma: `Tabcel.bat` ya da `.venv\Scripts\python main.py`.
 
 ## Kesin kurallar (değiştirme, önce kullanıcıya sor)
 1. **Ad geçicidir.** Kullanıcıya görünen ad yalnızca `tabcel/__init__.py` içindeki `APP_NAME` sabitinden okunur; pencere başlığı, menüler, mesajlar, yardım metni, `%APPDATA%` klasörü dahil. Arayüz metnine "Tabcel" sözcüğünü elle yazma. (Python paket adı `tabcel` (ad değişirse paket adının değişmesi gerekmez).) Kullanıcı verisi klasörü `QApplication.setOrganizationName` ile **değiştirilmez** — Sözcük'te bu, ayarları öksüz bırakmıştı.

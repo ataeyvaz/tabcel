@@ -1254,3 +1254,6 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Doğruluk:** `testler/test_xlsx_hizli.py` (38): tüm örnek .xlsx dosyaları + özel durumlar (tür/kaçış/formül/yorum/köprü/birleşim/1904/gizli sayfa/write-only satır içi metin/Tabcel kaydı/`_tabcel`/bozuk XML) özgün okuyucuyla **birebir aynı kitap** (hücre, biçim, boyut, birleşim, not, doğrulama/koşullu sayıları, sayfa yapısı); hız gerileme testi (≥1,8×). Önceki 3 düşen test (başka `load_workbook` çağrılarının demet görmesi) demet izniyle çözüldü.
 - **Ölçüm aracı:** `araclar/xlsx_acilis_olcum.py dosya.xlsx` (özgün ↔ hızlı).
 
+### Eagle Office adı ve iletişim (2026-10-15, kullanıcı isteği)
+- Ürün ailesi ortak adı **Eagle Office** (Sözcük + Tabcel): `tabcel/__init__.py` (`PAKET_ADI`, `PAKET_URUNLERI`, `ILETISIM_EPOSTA = ataeyvaz@gmail.com`); **Hakkında** penceresi: üstte "Eagle Office", "Eagle Office paketi: Sözcük (kelime işlemci) · Tabcel (hesap tablosu)", tıklanabilir `mailto:` iletişim bağlantısı; kurulum (`kurulum/tabcel.iss`) yayıncı adı "Eagle Office" + destek/iletişim `mailto:`; README başlığı. Uygulama adı (APP_NAME = Tabcel) değişmedi (kural 1 korunur). Testler: `test_hakkinda.py` (+2). **Not:** Sözcük klasöründe aynı değişiklik yapılmadı (başka projeye dokunulmaz); Sözcük tarafı ayrı oturumda.
+
