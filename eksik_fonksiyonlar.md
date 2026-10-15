@@ -24,3 +24,8 @@ Kaynak: gerçek Excel 16, Türkçe arayüz (COM `FormulaLocal`, 2026-10-15) — 
 | `REDUCE` | `REDUCE` |
 | `SCAN` | `SCAN` |
 
+
+## Bilinçli ertelenenler (2026-10-15 kararı)
+- **MAP, REDUCE, SCAN, MAKEARRAY** `LAMBDA` ister; `LAMBDA` ve taşma başvurusu (`A1#`) ayrı bir faz.
+- **VDB** (DAB), **CELL** (HÜCRE), **INFO** (BİLGİ) — kullanım sıklığı düşük.
+- **EĞİLİM/BÜYÜME/DOT** yalnız tek bağımsız değişkenle.
