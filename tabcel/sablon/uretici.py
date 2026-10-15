@@ -21,6 +21,7 @@ from ..model.adres import Aralik, sutun_harfe
 from ..model.dogrulama import Dogrulama, liste_sabiti_yaz
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa
 from ..model.stil import Stil
+from . import saklama
 from .sema import Akis, Modul, Sutun
 from .yukleyici import Sablon
 
@@ -302,6 +303,8 @@ def uret(sablon: Sablon, cevaplar: Optional[Dict[str, bool]] = None, ornek_veri:
     # 5) Nasıl Kullanılır
     if nasil_sayfasi is not None:
         _nasil_yaz(nasil_sayfasi, akis)
+    # 6) şablon bilgisi (kitapta saklanır; .xlsx'te çok gizli `_tabcel`)
+    kitap.sablon = saklama.kayit_olustur(sablon, sonuc)
     return sonuc
 
 

@@ -36,7 +36,7 @@ En yenisi en üstte.
 
 ## 12 Ekim 2026
 - Yeni işlevler: **TELEFONGEÇERLİ**, **EPOSTAGEÇERLİ**, **TRTAMİŞGÜNÜ**, **TRİŞGÜNÜ** (Türkiye resmî tatilleriyle iş günü). Ayrıntı: "Türkiye'ye özel işlevler".
-- Excel'de "çok gizli" sayfalar artık dosyada çok gizli olarak korunur.
+- Excel'de "çok gizli" sayfalar artık dosyada çok gizli olarak korunur. Şablonla üretilen dosyalarda şablon bilgisi çok gizli `_tabcel` sayfasında saklanır; Paylaşım Temizleyici bunu da tarar ve temiz kopyada maskeler.
 
 ## 11 Ekim 2026
 
@@ -420,7 +420,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - **Sayfa Sonu Önizleme** görünümü (mavi sınırı sürükleyerek sayfa sonu koyma) yoktur; sayfa sonları yalnız Kesmeler menüsünden eklenir. Sayfa sonu çizgilerini göstermek dosyaya yazılmaz (Excel'de de ayrı bir görünüm ayarıdır), ama el ile sayfa sonları yazılır. Üst/alt bilgi ve sayfa numarası henüz yoktur.
 - Elle yazılan bazı nadir girdiler Excel'den farklı anlaşılır: `$5` (Excel Türkçe ayarında metin bırakır, burada para birimli sayı olur), tek haneli yıllı `1/2/3`, `1/13`, `1-2-3`, `12:3`, `25:00` ve `- 5` (Excel sayıya/tarihe çevirir, burada metin kalır).
 - `YAZIYLA` ve `TCKİMLİKDOĞRULA` işlevleri yalnız bu uygulamaya özgüdür (Excel'de karşılığı yok); dosyada `TR_NUMBERTOWORDS` ve `TR_VALIDATE_TCKN` adıyla saklanır, Excel'de `#AD?` görünür.
-- **Gizli sayfa:** Excel'de gizli olan sayfa {APP_NAME}'te sekme olarak görünür (gizleme/gösterme komutu yoktur); kaydedince dosyada yine gizli kalır. *Paylaşım Temizleyici* gizli sayfadaki kişisel verileri ayrıca bildirir.
+- **Gizli sayfa:** Excel'de gizli olan sayfa {APP_NAME}'te sekme olarak görünür (gizleme/gösterme komutu yoktur); kaydedince dosyada yine gizli kalır. *Çok gizli* sayfalar (Excel'in Göster listesinde bile çıkmayanlar) dosyada çok gizli kalır. *Paylaşım Temizleyici* gizli sayfadaki ve `_tabcel` şablon bilgisindeki kişisel verileri ayrıca bildirir.
 - **Paylaşım Temizleyici** Excel'de yoktur. Üst/alt bilgi {APP_NAME}'te saklanmadığı için temiz kopyada hiç bulunmaz; resimlerin içi taranamaz.
 - Veri bulutta tutulmaz; bulut yapay zekâ, hesap girişi ve telemetri yoktur.
 

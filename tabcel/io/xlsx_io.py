@@ -405,6 +405,41 @@ def _adlari_yaz(wb, kitap) -> None:
             wb[sayfa.ad].defined_names[tanim.ad] = d
 
 
+def _sablon_yaz(wb, kitap, rapor) -> None:
+    """Şablon bilgisini çok gizli `_tabcel` sayfasına yazar (Faz 10c). Okunamayan bilgi (`sablon_ham`) olduğu gibi geri yazılır."""
+    from ..sablon import saklama
+    satirlar = saklama.satirlar(kitap.sablon) if kitap.sablon is not None else kitap.sablon_ham
+    if not satirlar:
+        return
+    if saklama.SAYFA_ADI in wb.sheetnames:
+        rapor.ekle(f"“{saklama.SAYFA_ADI}” adlı bir sayfa zaten var; şablon bilgisi dosyaya yazılmadı (form bu dosyada çalışmaz).", True)
+        return
+    ws = wb.create_sheet(saklama.SAYFA_ADI)
+    ws.sheet_state = "veryHidden"
+    for r, satir in enumerate(satirlar, 1):
+        for c, v in enumerate(satir, 1):
+            hucre = ws.cell(r, c)
+            hucre.value = v
+            if isinstance(v, str):
+                hucre.data_type = "s"                    # "=" ile başlayan JSON parçası formül sayılmasın
+
+
+def _sablon_oku(ws, kitap, rapor) -> None:
+    """`_tabcel` sayfasını okur, kitapla uyuşmasını denetler. Sorun varsa form devre dışı kalır (tablo çalışır); çökme yok."""
+    from ..sablon import saklama
+    satirlar = [[c.value for c in satir[:5]] for satir in ws.iter_rows()]
+    kayit, neden = saklama.coz(satirlar)
+    if kayit is None:
+        kitap.sablon_ham = satirlar
+        kitap.sablon_denetim = saklama.Denetim(neden=neden or "şablon bilgisi okunamadı")
+        rapor.ekle(f"Şablon formu kapalı: {kitap.sablon_denetim.neden}. Tablo ve formüller çalışır; şablon bilgisi dosyada korunur.")
+        return
+    kitap.sablon = kayit
+    kitap.sablon_denetim = saklama.denetle(kitap, kayit)
+    if not kitap.sablon_denetim.aktif:
+        rapor.ekle("Şablon formu kapalı: sütunlar şablonla uyuşmuyor. Tablo ve formüller çalışır.\n" + kitap.sablon_denetim.metin())
+
+
 def _adlari_oku(wb, kitap, sayfalar, rapor) -> None:
     """Dosyadaki tanımlı adları kitaba alır; çevrilemeyen (dış kitap başvurusu vb.) ya da geçersiz adlar
     atlanır ve raporlanır. `_xlnm.*` (yazdırma alanı vb.) sayfa yapısında işlenir."""
@@ -683,6 +718,7 @@ def kaydet(kitap: CalismaKitabi, yol: str, parola: Optional[str] = None) -> Rapo
     xlsx_grafik.im_yaz(wb)
     _yoksay_yaz(wb, kitap)
     _adlari_yaz(wb, kitap)
+    _sablon_yaz(wb, kitap, rapor)
     ozel = _tabcel_ozel_kullanimi(kitap)
     if ozel:
         rapor.ekle(f"{', '.join(sorted(ozel))} işlev(ler)i yalnızca {APP_NAME}'e özgüdür; Excel ve diğer programlarda "
@@ -1216,7 +1252,10 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
     _yoksay_oku(wb, kitap)
     havuz = kitap.stil_havuzu
     sayfalar = []
-    for i, ws in enumerate(wb.worksheets):
+    from ..sablon import saklama as _saklama
+    sablon_ws = next((w for w in wb.worksheets if w.title == _saklama.SAYFA_ADI), None)
+    calisma = [w for w in wb.worksheets if w is not sablon_ws] or list(wb.worksheets)
+    for i, ws in enumerate(calisma):
         s = kitap.sayfalar[0] if i == 0 else None
         ad = ws.title
         if s is None:
@@ -1362,6 +1401,8 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
         for i, n in enumerate(xlsx_grafik.nesneleri_oku(ws, s, kitap)):
             nesne_toplam[i] += n
     _adlari_oku(wb, kitap, sayfalar, rapor)
+    if sablon_ws is not None and sablon_ws not in [w for w, _ in sayfalar]:
+        _sablon_oku(sablon_ws, kitap, rapor)
     _nesne_uyarilari(yol, rapor, *nesne_toplam)
     if bozuk_formul:
         rapor.ekle(f"{bozuk_formul} formül çevrilemedi, metin olarak bırakıldı.")

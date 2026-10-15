@@ -943,6 +943,10 @@ class CalismaKitabi:
         self._dinleyiciler: List[Callable[[Olay], None]] = []
         self._sonraki_kimlik = 1
         self.adlar: Dict[Tuple[Optional[int], str], TanimliAd] = {}   # tanımlı adlar (faz5_tasarim.md §4)
+        # Şablon bilgisi (Faz 10c; `sablon/saklama.py`): .xlsx'te çok gizli `_tabcel` sayfası, modelde sayfa değil nesne.
+        self.sablon: Optional[Any] = None             # SablonKaydi (okunabilen bilgi)
+        self.sablon_ham: Optional[list] = None        # okunamayan/bozuk bilgi: ham satırlar, olduğu gibi geri yazılır
+        self.sablon_denetim: Optional[Any] = None     # açılışta yapılan uyuşma denetimi (Denetim); None = şablon yok
         self._baglan(Sayfa("Sayfa1"))
 
     # --- olaylar ---

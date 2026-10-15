@@ -555,7 +555,7 @@ def test_cok_gizli_sayfa_korunur(tmp_path):
     wb = Workbook()
     wb.active["A1"] = 1
     wb.create_sheet("G").sheet_state = "hidden"
-    wb.create_sheet("_tabcel").sheet_state = "veryHidden"
+    wb.create_sheet("VeriGizli").sheet_state = "veryHidden"      # "_tabcel" adı artık şablon bilgisine ayrılmış (10c)
     yol = str(tmp_path / "cg.xlsx")
     wb.save(yol)
     k, rapor = xlsx_io.ac(yol)

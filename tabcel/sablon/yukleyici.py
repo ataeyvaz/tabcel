@@ -121,6 +121,11 @@ def tanim_yukle(yol: Path, beklenen_tur: str) -> Tuple[Optional[Any], List[Hata]
     d, hatalar = json_oku(yol)
     if d is None:
         return None, hatalar
+    return tanim_ayristir(d, beklenen_tur)
+
+
+def tanim_ayristir(d: Any, beklenen_tur: str) -> Tuple[Optional[Any], List[Hata]]:
+    """Bellekteki sözlüğü (ör. kitaptan okunan) aynı yoldan geçirir: göç + doğrulama."""
     if not isinstance(d, dict):
         return None, [Hata("", "dosyanın en dışı nesne ({…}) olmalı")]
     d, goc_hata = goc_et(d, beklenen_tur)
@@ -128,6 +133,8 @@ def tanim_yukle(yol: Path, beklenen_tur: str) -> Tuple[Optional[Any], List[Hata]
         return None, goc_hata
     ayristir = sema.modul_ayristir if beklenen_tur == "modul" else sema.akis_ayristir
     tanim, h = ayristir(d)
+    if tanim is not None:
+        tanim.ham = d
     return tanim, h
 
 

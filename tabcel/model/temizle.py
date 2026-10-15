@@ -22,10 +22,10 @@ from .sayfa import CalismaKitabi, Hucre, TasmaHucre, sayfa_adi_dogrula
 from .deger import Hata
 
 # --- yer türleri ---
-HUCRE, FORMUL, NOT, NOT_YAZAR, AD, SAYFA_ADI, GRAFIK, DOGRULAMA = (
-    "hucre", "formul", "not", "not_yazar", "ad", "sayfa_adi", "grafik", "dogrulama")
+HUCRE, FORMUL, NOT, NOT_YAZAR, AD, SAYFA_ADI, GRAFIK, DOGRULAMA, SABLON = (
+    "hucre", "formul", "not", "not_yazar", "ad", "sayfa_adi", "grafik", "dogrulama", "sablon")
 YER_ADLARI = {HUCRE: "Hücre", FORMUL: "Formüldeki metin", NOT: "Not", NOT_YAZAR: "Not yazarı", AD: "Tanımlı ad",
-              SAYFA_ADI: "Sayfa adı", GRAFIK: "Grafik", DOGRULAMA: "Veri doğrulama"}
+              SAYFA_ADI: "Sayfa adı", GRAFIK: "Grafik", DOGRULAMA: "Veri doğrulama", SABLON: "Şablon bilgisi"}
 
 # --- eylemler ---
 MASKELE, SIL, BIRAK = "maskele", "sil", "birak"
@@ -231,6 +231,11 @@ class Tarayici:
                 yer = Yer(AD, tanim.kapsam, "", f"Ad değeri ({tanim.ad})", (anahtar, "formul", bas, son),
                           "gizli ad" if tanim.gizli else "")
                 yield from self._ekle(yer, icerik, kapsam, kimlik.tara_metin(icerik))
+        if kitap.sablon is not None:                       # Faz 10c: çok gizli `_tabcel` sayfasının içeriği (örnek veri, açıklamalar…)
+            from ..sablon import saklama
+            metin = saklama.json_yaz(kitap.sablon)
+            yield from self._ekle(Yer(SABLON, None, "", "Şablon bilgisi (_tabcel)", ("json",), "çok gizli sayfa"), metin, "",
+                                  kimlik.tara_metin(metin))
         yield ("ilerleme", 1.0, "Tarama bitti")
 
 
@@ -419,6 +424,12 @@ def temiz_kopya(kitap: CalismaKitabi, kayitlar: List[Kayit], plan: Plan, motor_k
                 h[2 if alan == "hata_baslik" else 3] = yeni_metin
                 dv = dataclasses.replace(dv, hata=tuple(h))
             sayfa.dogrulamalar[sira] = dv
+        elif tur == SABLON:
+            from ..sablon import saklama
+            try:
+                kopya.sablon = saklama.json_oku(_yeni_metin(grup, plan))
+            except (ValueError, KeyError, TypeError, AttributeError):
+                kopya.sablon = None                         # metin değişimi JSON'u bozduysa şablon bilgisi korunmaz (veri sızmasın)
         elif tur == SAYFA_ADI and plan.sayfa_adlarini_degistir:
             yeni = _yeni_metin(grup, plan, maske_karakteri="x").strip().strip("'")
             if not yeni or any(x is not sayfa and x.ad.casefold() == yeni.casefold() for x in kopya.sayfalar):
@@ -435,6 +446,10 @@ def temiz_kopya(kitap: CalismaKitabi, kayitlar: List[Kayit], plan: Plan, motor_k
                 yeni = f"Sayfa{i}"
             kopya.yeniden_adlandir(sayfa, yeni)
         degisen += 1
+    if kopya.sablon is not None:
+        kopya.sablon.uretici = ""                           # üretici/sürüm bilgisi paylaşılan kopyaya yazılmaz
+    kopya.sablon_ham = None                                  # okunamayan şablon bilgisi temizlenemez → kopyaya taşınmaz
+    kopya.sablon_denetim = None
     yasak = yasak_degerler(kayitlar, plan)
     tk = TemizKopya(kopya, yasak, [], degisen)
     if motor_kur:

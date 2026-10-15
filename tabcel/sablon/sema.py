@@ -81,6 +81,7 @@ class Modul:
     form_gruplari: List[Tuple[str, List[str]]] = field(default_factory=list)
     matris: Optional[Dict[str, str]] = None
     ornek_veri: List[Dict[str, Any]] = field(default_factory=list)
+    ham: dict = field(default_factory=dict, repr=False, compare=False)      # göçü yapılmış kaynak JSON sözlüğü (kitapta saklanır)
 
     def sutun(self, kimlik: str) -> Optional[Sutun]:
         return next((s for s in self.sutunlar if s.kimlik == kimlik), None)
@@ -113,6 +114,7 @@ class Akis:
     ayarlar: List[Ayar]
     nasil_kullanilir: List[Tuple[str, str]]
     ornek_veri: bool = False
+    ham: dict = field(default_factory=dict, repr=False, compare=False)
 
 
 # ---------------------------------------------------------------- yardımcılar
