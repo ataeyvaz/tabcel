@@ -1,0 +1,81 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "aidat_durumu",
+  "ad": "Aidat durumu",
+  "tekil_ad": "Aidat durumu",
+  "aciklama": "Her dairenin beklenen, ödenen ve kalan aidatı; kendiliğinden hesaplanır.",
+  "sayfa_adi": "Aidat Durumu",
+  "sutunlar": [
+    {
+      "kimlik": "daire_no",
+      "ad": "Daire no",
+      "tur": "hesaplanan",
+      "formul": "=IFERROR(INDEX([daireler.daire_no], ROW()-1)&\"\",\"\")"
+    },
+    {
+      "kimlik": "sahip",
+      "ad": "Daire sahibi",
+      "tur": "hesaplanan",
+      "formul": "=IF([@daire_no]=\"\",\"\",INDEX([daireler.sahip],ROW()-1)&\"\")"
+    },
+    {
+      "kimlik": "aylik",
+      "ad": "Aylık aidat",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@daire_no]=\"\",\"\",INDEX([daireler.aylik_aidat],ROW()-1))"
+    },
+    {
+      "kimlik": "ek",
+      "ad": "Aylık ek ödeme",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "eger": "ek_odeme_var",
+      "formul": "=IF([@daire_no]=\"\",\"\",INDEX([daireler.ek_odeme],ROW()-1))"
+    },
+    {
+      "kimlik": "beklenen",
+      "ad": "Beklenen",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "aciklama": "(Aylık aidat + varsa ek ödeme) × Ayarlar'daki işlenen ay sayısı.",
+      "formul": "=IF([@daire_no]=\"\",\"\",([@aylik]+[@ek?])*AYAR.islenen_ay)"
+    },
+    {
+      "kimlik": "odenen",
+      "ad": "Ödenen",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@daire_no]=\"\",\"\",SUMIFS([aidat_odemeleri.tutar],[aidat_odemeleri.daire],[@daire_no]))"
+    },
+    {
+      "kimlik": "kalan",
+      "ad": "Kalan borç",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@daire_no]=\"\",\"\",[@beklenen]-[@odenen])"
+    },
+    {
+      "kimlik": "gecikme",
+      "ad": "Gecikme zammı",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "eger": "gecikme_zammi",
+      "aciklama": "Basit hesap: kalan borç × aylık oran. Yasal faiz hesabı değildir.",
+      "formul": "=IF([@daire_no]=\"\",\"\",IF([@kalan]>0,ROUND([@kalan]*AYAR.gecikme_orani,2),0))"
+    },
+    {
+      "kimlik": "durum",
+      "ad": "Durum",
+      "tur": "hesaplanan",
+      "formul": "=IF([@daire_no]=\"\",\"\",IF([@kalan]>0,\"Borçlu\",IF([@kalan]<0,\"Fazla ödeme\",\"Güncel\")))"
+    }
+  ]
+}

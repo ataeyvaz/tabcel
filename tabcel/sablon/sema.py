@@ -13,10 +13,12 @@ KIMLIK_RE = re.compile(r"^[a-z][a-z0-9_]{0,39}$")
 EGER_RE = re.compile(r"^!?[a-z][a-z0-9_]{0,39}$")
 TURLER = ("metin", "tam_sayi", "ondalik", "para", "yuzde", "tarih", "evet_hayir", "liste", "baglanti", "hesaplanan",
           "tc_kimlik", "vergi_no", "iban", "telefon", "eposta")
+BICIMLER = ("tam_sayi", "ondalik", "para", "yuzde", "tarih")      # hesaplanan sütunun sayı biçimi
 AYAR_TURLERI = ("metin", "tam_sayi", "ondalik", "para", "yuzde", "tarih", "evet_hayir")
 SIDDETLER = ("durdur", "uyar")
 EN_COK_SORU = 7
 SAYFA_ADI_YASAK = set("[]:*?/\\")
+EN_COK_FORMUL_SATIRI = 20_000
 YER_TUTUCU_RE = re.compile(r"\[([^\[\]]*)\]|\bAYAR\.([A-Za-z_][A-Za-z0-9_]*)")
 
 
@@ -46,6 +48,7 @@ class Sutun:
     eger: Optional[str] = None
     barkod: bool = False
     aciklama: str = ""
+    bicim: Optional[str] = None                # yalnız hesaplanan: sonucun sayı biçimi (BICIMLER)
 
 
 @dataclass
@@ -65,6 +68,7 @@ class Ayar:
     tur: str
     varsayilan: Any = None
     aciklama: str = ""
+    eger: Optional[str] = None                 # bayrak ifadesi; yanlışsa ayar hiç üretilmez
 
 
 @dataclass
@@ -82,6 +86,7 @@ class Modul:
     matris: Optional[Dict[str, str]] = None
     ornek_veri: List[Dict[str, Any]] = field(default_factory=list)
     ham: dict = field(default_factory=dict, repr=False, compare=False)      # göçü yapılmış kaynak JSON sözlüğü (kitapta saklanır)
+    formul_satiri: Optional[int] = None        # hesaplanan sütunların formülle doldurulacağı satır sayısı (None = üreticinin varsayılanı)
 
     def sutun(self, kimlik: str) -> Optional[Sutun]:
         return next((s for s in self.sutunlar if s.kimlik == kimlik), None)
@@ -218,7 +223,7 @@ def sayfa_adi_hatasi(ad: str) -> Optional[str]:
 
 
 def yer_tutucular(formul: str):
-    """Formüldeki yer tutucular: [('sutun', kimlik) | ('modul', modul, alan|None) | ('ayar', kimlik)] ve söz dizimi hataları."""
+    """Formüldeki yer tutucular: [('sutun', kimlik, opsiyonel) | ('modul', modül, alan|None, opsiyonel) | ('ayar', kimlik)] ve söz dizimi hataları."""
     sonuc, hatalar = [], []
     if formul.count('"') % 2:
         hatalar.append("kapanmamış tırnak")
@@ -233,15 +238,17 @@ def yer_tutucular(formul: str):
             sonuc.append(("ayar", m.group(2)))
             continue
         ic = m.group(1)
-        if ic.startswith("@"):
-            if KIMLIK_RE.match(ic[1:]):
-                sonuc.append(("sutun", ic[1:]))
+        opsiyonel = ic.endswith("?")               # [@x?] / [m.x?]: sütun kapalıysa 0 (kapalı isteğe bağlı sütuna dayanan formül)
+        govde_ic = ic[:-1] if opsiyonel else ic
+        if govde_ic.startswith("@"):
+            if KIMLIK_RE.match(govde_ic[1:]):
+                sonuc.append(("sutun", govde_ic[1:], opsiyonel))
             else:
                 hatalar.append(f"geçersiz yer tutucu [{ic}]")
         else:
-            parca = ic.split(".")
-            if len(parca) in (1, 2) and all(KIMLIK_RE.match(p) for p in parca):
-                sonuc.append(("modul", parca[0], parca[1] if len(parca) == 2 else None))
+            parca = govde_ic.split(".")
+            if len(parca) in (1, 2) and all(KIMLIK_RE.match(p) for p in parca) and not (opsiyonel and len(parca) == 1):
+                sonuc.append(("modul", parca[0], parca[1] if len(parca) == 2 else None, opsiyonel))
             else:
                 hatalar.append(f"geçersiz yer tutucu [{ic}]")
     return sonuc, hatalar
@@ -271,7 +278,7 @@ def _sutun(c: _Denetci, yol: str, d: Any) -> Optional[Sutun]:
     if not c.sozluk(yol, d):
         return None
     c.bilinmeyen(yol, d, {"kimlik", "ad", "tur", "zorunlu", "benzersiz", "varsayilan", "kisit", "para_birimi",
-                          "secenekler", "baglanti", "formul", "eger", "barkod", "aciklama"})
+                          "secenekler", "baglanti", "formul", "eger", "barkod", "aciklama", "bicim"})
     kimlik, ad = c.kimlik(yol, d), c.metin(yol, d, "ad")
     tur = d.get("tur")
     if tur not in TURLER:
@@ -282,10 +289,18 @@ def _sutun(c: _Denetci, yol: str, d: Any) -> Optional[Sutun]:
     s.varsayilan = d.get("varsayilan")
     s.kisit = _kisit(c, yol, d)
     s.eger = c.eger(yol, d)
+    bic = d.get("bicim")
+    if bic is not None:
+        if tur != "hesaplanan":
+            c.hata(f"{yol}.bicim", 'yalnız "hesaplanan" türünde kullanılır')
+        elif bic not in BICIMLER:
+            c.hata(f"{yol}.bicim", f'geçersiz biçim "{bic}" (geçerli: {", ".join(BICIMLER)})')
+        else:
+            s.bicim = bic
     pb = d.get("para_birimi")
     if pb is not None:
-        if tur != "para":
-            c.hata(f"{yol}.para_birimi", 'yalnız "para" türünde kullanılır')
+        if tur != "para" and not (tur == "hesaplanan" and bic == "para"):
+            c.hata(f"{yol}.para_birimi", 'yalnız "para" türünde (ya da bicim "para" olan hesaplanan sütunda) kullanılır')
         elif not isinstance(pb, str) or not (re.fullmatch(r"[A-Z]{3}", pb) or re.fullmatch(r"ayar:[a-z][a-z0-9_]*", pb)):
             c.hata(f"{yol}.para_birimi", 'üç harfli kod (TRY) ya da "ayar:<kimlik>" olmalı')
         else:
@@ -358,7 +373,7 @@ def modul_ayristir(d: Any) -> Tuple[Optional[Modul], List[Hata]]:
     if not isinstance(d, dict):
         return None, [Hata("", "dosyanın en dışı nesne ({…}) olmalı")]
     c.bilinmeyen("", d, {"surum", "tur", "kimlik", "ad", "tekil_ad", "aciklama", "sayfa_adi", "gorunen", "sutunlar",
-                         "kurallar", "form", "matris", "ornek_veri"})
+                         "kurallar", "form", "matris", "ornek_veri", "formul_satiri"})
     surum = _surum_denetle(c, d, "modul")
     kimlik, ad, tekil, aciklama = c.kimlik("", d), c.metin("", d, "ad"), c.metin("", d, "tekil_ad"), c.metin("", d, "aciklama")
     sayfa_adi = c.metin("", d, "sayfa_adi")
@@ -366,6 +381,10 @@ def modul_ayristir(d: Any) -> Tuple[Optional[Modul], List[Hata]]:
         h = sayfa_adi_hatasi(sayfa_adi)
         if h:
             c.hata("sayfa_adi", h)
+    fs = d.get("formul_satiri")
+    if fs is not None and (isinstance(fs, bool) or not isinstance(fs, int) or not 1 <= fs <= EN_COK_FORMUL_SATIRI):
+        c.hata("formul_satiri", f"1 ile {EN_COK_FORMUL_SATIRI} arasında tam sayı olmalı")
+        fs = None
     sutunlar: List[Sutun] = []
     gorulen: Set[str] = set()
     for i, sd in enumerate(c.liste("", d, "sutunlar", bos_olamaz=True)):
@@ -427,7 +446,7 @@ def modul_ayristir(d: Any) -> Tuple[Optional[Modul], List[Hata]]:
     if c.ciddi() or surum is None or not (kimlik and ad and tekil and aciklama and sayfa_adi):
         return None, c.hatalar
     return Modul(surum, kimlik, ad, tekil, aciklama, sayfa_adi, sutunlar, list(gorunen), kurallar, gruplar, matris,
-                 ornekler), c.hatalar
+                 ornekler, formul_satiri=fs), c.hatalar
 
 
 # ---------------------------------------------------------------- akış
@@ -516,14 +535,16 @@ def akis_ayristir(d: Any) -> Tuple[Optional[Akis], List[Hata]]:
         yol = f"ayarlar[{i}]"
         if not c.sozluk(yol, a):
             continue
-        c.bilinmeyen(yol, a, {"kimlik", "ad", "tur", "varsayilan", "aciklama"})
-        ak_, aa, at = c.kimlik(yol, a), c.metin(yol, a, "ad"), a.get("tur")
+        c.bilinmeyen(yol, a, {"kimlik", "ad", "tur", "varsayilan", "aciklama", "eger"})
+        ak_, aa, at, aeg = c.kimlik(yol, a), c.metin(yol, a, "ad"), a.get("tur"), c.eger(yol, a)
+        if aeg and aeg.lstrip("!") not in gecerli:
+            c.hata(f"{yol}.eger", f'"{aeg}" bilinmeyen bayrak')
         if at not in AYAR_TURLERI:
             c.hata(f"{yol}.tur", f'bilinmeyen ayar türü "{at}"')
         if ak_ and any(x.kimlik == ak_ for x in ayarlar):
             c.hata(f"{yol}.kimlik", f'"{ak_}" kimliği yinelendi')
         if ak_ and aa and at in AYAR_TURLERI:
-            ayarlar.append(Ayar(ak_, aa, at, a.get("varsayilan"), a.get("aciklama") or ""))
+            ayarlar.append(Ayar(ak_, aa, at, a.get("varsayilan"), a.get("aciklama") or "", aeg))
     nasil: List[Tuple[str, str]] = []
     for i, n in enumerate(c.liste("", d, "nasil_kullanilir", zorunlu=False)):
         if c.sozluk(f"nasil_kullanilir[{i}]", n):

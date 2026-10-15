@@ -1,0 +1,90 @@
+{
+  "surum": 1,
+  "tur": "akis",
+  "kimlik": "cari_hesap",
+  "ad": "Cari hesap takibi",
+  "kategori": "Ticaret",
+  "aciklama": "Müşteri ve tedarikçilerle borç-alacak hareketlerini ve bakiyeyi izleyin.",
+  "anahtar_kelimeler": {
+    "kokler": [
+      "cari",
+      "borç",
+      "alacak",
+      "bakiye",
+      "tedarikçi",
+      "veresiye"
+    ],
+    "es_anlamlilar": [
+      "cari takip",
+      "borç alacak",
+      "veresiye defteri",
+      "hesap takibi",
+      "tahsilat takibi",
+      "müşteri hesabı"
+    ],
+    "agirlik": 1.0
+  },
+  "sorular": [
+    {
+      "kimlik": "vade",
+      "metin": "Hareketler için vade tarihi de tutulsun mu?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Evet derseniz her harekete vade tarihi sütunu eklenir."
+    },
+    {
+      "kimlik": "iletisim",
+      "metin": "Carilerin telefon ve e-posta bilgileri de saklansın mı?",
+      "varsayilan": true,
+      "emin_degilim": true,
+      "aciklama": "Cari kartlara iletişim sütunları eklenir."
+    },
+    {
+      "kimlik": "vergi",
+      "metin": "Vergi numarası da kaydedilsin mi?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Geçerli vergi kimlik numarası denetlenir."
+    }
+  ],
+  "moduller": [
+    {
+      "modul": "cari_kartlari"
+    },
+    {
+      "modul": "cari_hareketleri"
+    },
+    {
+      "modul": "cari_bakiye"
+    }
+  ],
+  "bayraklar": {
+    "vade_takibi": "vade",
+    "iletisim_bilgisi": "iletisim",
+    "vergi_bilgisi": "vergi"
+  },
+  "ayarlar": [
+    {
+      "kimlik": "para_birimi",
+      "ad": "Para birimi",
+      "tur": "metin",
+      "varsayilan": "TRY",
+      "aciklama": "Üç harfli para birimi kodu (TRY, USD, EUR…)."
+    }
+  ],
+  "nasil_kullanilir": [
+    {
+      "baslik": "Cari ekleme",
+      "metin": "Cari Kartlar sayfasına her müşteri ya da tedarikçi için bir satır yazın; ad benzersiz olmalıdır."
+    },
+    {
+      "baslik": "Hareket girme",
+      "metin": "Cari Hareketler sayfasına her fatura için Borç, her tahsilat/ödeme için Alacak tutarı yazın; carileri listeden seçin."
+    },
+    {
+      "baslik": "Bakiye",
+      "metin": "Cari Bakiye sayfası kendiliğinden hesaplanır; elle değiştirmeyin. Pozitif bakiye: cari size borçlu."
+    }
+  ],
+  "ornek_veri": true
+}

@@ -33,9 +33,14 @@ class Eslesme:
     nedenler: List[str]
 
 
+def _ifade_var(parcalar, soz) -> bool:
+    """Ardışık sözcüklerin her biri, metindeki sözcüğün **öneki** ise eşleşir (`teklif hazırla` ↔ `teklif hazırlamak`)."""
+    n = len(parcalar)
+    return any(all(soz[i + j].startswith(parcalar[j]) for j in range(n)) for i in range(len(soz) - n + 1))
+
+
 def puanla(metin: str, akis: Akis) -> Eslesme:
     soz = sozcukler(metin)
-    bosluklu = " " + " ".join(soz) + " "
     puan, nedenler = 0.0, []
     for kok in akis.kokler:
         k = katla(kok)
@@ -46,7 +51,7 @@ def puanla(metin: str, akis: Akis) -> Eslesme:
         e = " ".join(sozcukler(es))
         if not e:
             continue
-        if (" " + e + " " in bosluklu) if " " in e else any(s.startswith(e) for s in soz):
+        if _ifade_var(e.split(), soz):
             puan += akis.agirlik
             nedenler.append(es)
     return Eslesme(akis, puan, nedenler)

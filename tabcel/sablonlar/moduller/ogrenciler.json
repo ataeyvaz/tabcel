@@ -1,0 +1,64 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "ogrenciler",
+  "ad": "Öğrenciler",
+  "tekil_ad": "Öğrenci",
+  "aciklama": "Sınıftaki her öğrenci için bir satır.",
+  "sayfa_adi": "Öğrenciler",
+  "gorunen": [
+    "okul_no",
+    "ad_soyad"
+  ],
+  "formul_satiri": 500,
+  "ornek_veri": [
+    {
+      "okul_no": "101",
+      "ad_soyad": "Örnek Öğrenci A",
+      "sinif": "5-A",
+      "devamsizlik": 2
+    },
+    {
+      "okul_no": "102",
+      "ad_soyad": "Örnek Öğrenci B",
+      "sinif": "5-A",
+      "devamsizlik": 12
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "okul_no",
+      "ad": "Okul no",
+      "tur": "metin",
+      "zorunlu": true,
+      "benzersiz": true
+    },
+    {
+      "kimlik": "ad_soyad",
+      "ad": "Ad soyad",
+      "tur": "metin",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "sinif",
+      "ad": "Sınıf",
+      "tur": "metin"
+    },
+    {
+      "kimlik": "devamsizlik",
+      "ad": "Devamsızlık (gün)",
+      "tur": "tam_sayi",
+      "kisit": {
+        "min": 0
+      },
+      "eger": "devamsizlik_takibi"
+    },
+    {
+      "kimlik": "devamsizlik_durumu",
+      "ad": "Devamsızlık durumu",
+      "tur": "hesaplanan",
+      "eger": "devamsizlik_takibi",
+      "formul": "=IF([@okul_no]=\"\",\"\",IF([@devamsizlik]>AYAR.devamsizlik_siniri,\"Sınırı aştı\",\"\"))"
+    }
+  ]
+}

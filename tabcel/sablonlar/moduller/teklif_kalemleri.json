@@ -1,0 +1,87 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "teklif_kalemleri",
+  "ad": "Teklif kalemleri",
+  "tekil_ad": "Teklif kalemi",
+  "aciklama": "Tekliflerdeki her ürün ya da hizmet için bir satır.",
+  "sayfa_adi": "Teklif Kalemleri",
+  "formul_satiri": 1000,
+  "ornek_veri": [
+    {
+      "teklif_no": "T-2026-001",
+      "aciklama": "Örnek ürün",
+      "miktar": 10,
+      "birim": "adet",
+      "birim_fiyat": 250
+    },
+    {
+      "teklif_no": "T-2026-001",
+      "aciklama": "Örnek hizmet",
+      "miktar": 1,
+      "birim": "adet",
+      "birim_fiyat": 1200
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "teklif_no",
+      "ad": "Teklif no",
+      "tur": "baglanti",
+      "zorunlu": true,
+      "baglanti": {
+        "modul": "teklifler",
+        "alan": "teklif_no"
+      }
+    },
+    {
+      "kimlik": "aciklama",
+      "ad": "Ürün / hizmet",
+      "tur": "metin",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "miktar",
+      "ad": "Miktar",
+      "tur": "ondalik",
+      "zorunlu": true,
+      "kisit": {
+        "min": 0
+      }
+    },
+    {
+      "kimlik": "birim",
+      "ad": "Birim",
+      "tur": "metin",
+      "varsayilan": "adet"
+    },
+    {
+      "kimlik": "birim_fiyat",
+      "ad": "Birim fiyat",
+      "tur": "para",
+      "zorunlu": true,
+      "kisit": {
+        "min": 0
+      },
+      "para_birimi": "ayar:para_birimi"
+    },
+    {
+      "kimlik": "iskonto",
+      "ad": "İskonto",
+      "tur": "yuzde",
+      "kisit": {
+        "min": 0,
+        "max": 1
+      },
+      "eger": "iskonto_var"
+    },
+    {
+      "kimlik": "tutar",
+      "ad": "Tutar",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@teklif_no]=\"\",\"\",ROUND([@miktar]*[@birim_fiyat]*(1-IF([@iskonto?]=\"\",0,[@iskonto?])),2))"
+    }
+  ]
+}

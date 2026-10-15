@@ -121,7 +121,7 @@ def test_sayi_bicimleri(sablon):
     r = uret(sablon)
     urun = sayfa_(r, "Ürünler")
     kod = lambda sutun: urun.havuz.stil(urun.sutun_stil.get(sutun, 0)).sayi_bicimi              # noqa: E731
-    assert kod(3) == "@" and kod(5) == '"₺"#,##0.00' and kod(7) == "#,##0" and kod(1) == "General"
+    assert kod(3) == "@" and kod(5) == '"₺"#,##0.00' and kod(7) == "#,##0" and kod(4) == "General" and kod(1) == "@"        # benzersiz metin (kod) alanı Metin biçimli
     h = sayfa_(r, "Stok Hareketleri")
     assert h.havuz.stil(h.sutun_stil[1]).sayi_bicimi == "dd.mm.yyyy"
     # para birimi ayarı üretimde okunur

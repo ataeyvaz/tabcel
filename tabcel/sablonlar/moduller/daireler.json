@@ -1,0 +1,75 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "daireler",
+  "ad": "Daireler",
+  "tekil_ad": "Daire",
+  "aciklama": "Her daire için bir satır: sahibi ve aylık aidat tutarı.",
+  "sayfa_adi": "Daireler",
+  "gorunen": [
+    "daire_no",
+    "sahip"
+  ],
+  "ornek_veri": [
+    {
+      "daire_no": "1",
+      "sahip": "Örnek Sahip 1",
+      "aylik_aidat": 500,
+      "ek_odeme": 150
+    },
+    {
+      "daire_no": "2",
+      "sahip": "Örnek Sahip 2",
+      "aylik_aidat": 500,
+      "ek_odeme": 150
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "daire_no",
+      "ad": "Daire no",
+      "tur": "metin",
+      "zorunlu": true,
+      "benzersiz": true
+    },
+    {
+      "kimlik": "sahip",
+      "ad": "Daire sahibi",
+      "tur": "metin",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "telefon",
+      "ad": "Telefon",
+      "tur": "telefon",
+      "eger": "iletisim_bilgisi"
+    },
+    {
+      "kimlik": "eposta",
+      "ad": "E-posta",
+      "tur": "eposta",
+      "eger": "iletisim_bilgisi"
+    },
+    {
+      "kimlik": "aylik_aidat",
+      "ad": "Aylık aidat",
+      "tur": "para",
+      "zorunlu": true,
+      "kisit": {
+        "min": 0
+      },
+      "para_birimi": "ayar:para_birimi"
+    },
+    {
+      "kimlik": "ek_odeme",
+      "ad": "Aylık ek ödeme",
+      "tur": "para",
+      "kisit": {
+        "min": 0
+      },
+      "eger": "ek_odeme_var",
+      "para_birimi": "ayar:para_birimi",
+      "aciklama": "Yakıt, asansör gibi aylık ek ödeme tutarı."
+    }
+  ]
+}

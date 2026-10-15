@@ -35,7 +35,7 @@ Yazım kuralları:
 En yenisi en üstte.
 
 ## 15 Ekim 2026
-- **Dosya → Şablondan Yeni…:** ne yapmak istediğinizi yazın, {APP_NAME} uygun hazır tabloyu (şimdilik *Stok takibi*) soru-cevapla kurar. Ayrıntı: "Dosyalar, Yazdırma ve Kurtarma".
+- **Dosya → Şablondan Yeni…:** ne yapmak istediğinizi yazın, {APP_NAME} uygun hazır tabloyu soru-cevapla kurar. Hazır şablonlar: *Stok takibi*, *Cari hesap takibi*, *Apartman / site aidat takibi*, *Teklif hazırlama*, *Çek ve senet takibi*, *Not çizelgesi*. Ayrıntı: "Dosyalar, Yazdırma ve Kurtarma".
 
 ## 12 Ekim 2026
 - Yeni işlevler: **TELEFONGEÇERLİ**, **EPOSTAGEÇERLİ**, **TRTAMİŞGÜNÜ**, **TRİŞGÜNÜ** (Türkiye resmî tatilleriyle iş günü). Ayrıntı: "Türkiye'ye özel işlevler".
@@ -358,7 +358,10 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 - Şablonla üretilen dosyada, şablon bilgisi **çok gizli `_tabcel` sayfasında** saklanır (Excel'in Göster listesinde bile çıkmaz). Dosyayı Excel'de düzenleseniz de tablo çalışır; sütunlar silinir ya da başlıkları değişirse {APP_NAME} bunu açılışta fark eder ve bilgi çubuğunda uyarır.
 - **Şablonlar…** düğmesi yüklenen şablonları ve varsa hatalı dosyaları (neden yazılı) gösterir. Kendi şablonlarınızı kullanıcı klasörüne (**Klasörü Aç**) JSON olarak koyabilirsiniz; aynı adlı bir yerleşik şablon varsa ikisi de listelenir.
-- Oluşturulan sayfalarda formüller ilk 200 satıra, açılır liste ve doğrulama ilk 20.000 satıra uygulanır.
+- Oluşturulan sayfalarda hesaplanan sütunların formülleri ilk 200–1.000 satıra (şablona göre), açılır liste ve doğrulama ilk 20.000 satıra uygulanır; hesaplanan sütunların altındaki satırlara formül yazılmaz.
+- **Hazır şablonlar:** *Stok takibi* (ürünler, giriş/çıkış, stok durumu, varyant/depo/cari isteğe bağlı) · *Cari hesap takibi* (cari kartlar, borç/alacak hareketleri, bakiye) · *Apartman / site aidat takibi* (daireler, ödemeler, kalan borç; ek ödeme ve basit gecikme zammı isteğe bağlı) · *Teklif hazırlama* (müşteriler, teklifler, kalemler; KDV, iskonto ve toplamı yazıyla gösterme isteğe bağlı) · *Çek ve senet takibi* (vade, kalan gün, vade uyarısı; isteğe bağlı iş günü vadesi) · *Not çizelgesi* (öğrenciler, notlar, ağırlıklı ortalama, geçti/kaldı, devamsızlık).
+- *Toplamı yazıyla gösterme* (Teklif) ve *iş günü vadesi* (Çek-senet) {APP_NAME}'e özgü işlevleri kullanır: dosyayı .xlsx olarak kaydedince Excel'de çalışmazlar (kaydederken uyarılırsınız). Resmî tatil verisi 2024–2028'i kapsar; dini bayram tarihleri henüz doğrulanmadı.
+- Apartman aidatındaki gecikme zammı basit bir hesaptır (kalan borç × aylık oran), yasal faiz hesabı değildir; oranı kendiniz belirlersiniz.
 - *Paylaşım Temizleyici* şablon bilgisindeki kişisel verileri de tarar.
 
 <!-- konu: pano | Kopyala ve Yapıştır -->

@@ -1,0 +1,86 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "notlar",
+  "ad": "Notlar",
+  "tekil_ad": "Not",
+  "aciklama": "Her öğrenci ve ders için bir satır; ortalama kendiliğinden hesaplanır.",
+  "sayfa_adi": "Notlar",
+  "formul_satiri": 1000,
+  "ornek_veri": [
+    {
+      "okul_no": "101",
+      "ders": "Matematik",
+      "sinav1": 80,
+      "sinav2": 70,
+      "sozlu": 90
+    },
+    {
+      "okul_no": "102",
+      "ders": "Matematik",
+      "sinav1": 45,
+      "sinav2": 50,
+      "sozlu": 40
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "okul_no",
+      "ad": "Okul no",
+      "tur": "baglanti",
+      "zorunlu": true,
+      "baglanti": {
+        "modul": "ogrenciler",
+        "alan": "okul_no"
+      }
+    },
+    {
+      "kimlik": "ders",
+      "ad": "Ders",
+      "tur": "metin",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "sinav1",
+      "ad": "1. sınav",
+      "tur": "ondalik",
+      "kisit": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "kimlik": "sinav2",
+      "ad": "2. sınav",
+      "tur": "ondalik",
+      "kisit": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "kimlik": "sozlu",
+      "ad": "Sözlü / ödev",
+      "tur": "ondalik",
+      "kisit": {
+        "min": 0,
+        "max": 100
+      }
+    },
+    {
+      "kimlik": "ortalama",
+      "ad": "Ortalama",
+      "tur": "hesaplanan",
+      "bicim": "ondalik",
+      "aciklama": "Üç not da girilince hesaplanır; ağırlıklar Ayarlar sayfasındadır.",
+      "formul": "=IF(OR([@sinav1]=\"\",[@sinav2]=\"\",[@sozlu]=\"\"),\"\",ROUND(([@sinav1]*AYAR.sinav1_agirlik+[@sinav2]*AYAR.sinav2_agirlik+[@sozlu]*AYAR.sozlu_agirlik)/(AYAR.sinav1_agirlik+AYAR.sinav2_agirlik+AYAR.sozlu_agirlik),2))"
+    },
+    {
+      "kimlik": "durum",
+      "ad": "Durum",
+      "tur": "hesaplanan",
+      "eger": "gecme_goster",
+      "formul": "=IF([@ortalama]=\"\",\"\",IF([@ortalama]>=AYAR.gecme_notu,\"Geçti\",\"Kaldı\"))"
+    }
+  ]
+}

@@ -1,0 +1,99 @@
+{
+  "surum": 1,
+  "tur": "akis",
+  "kimlik": "teklif_formu",
+  "ad": "Teklif hazırlama",
+  "kategori": "Satış",
+  "aciklama": "Müşterilere verdiğiniz fiyat tekliflerini kalem kalem hazırlayın ve toplamlarını görün.",
+  "anahtar_kelimeler": {
+    "kokler": [
+      "teklif",
+      "proforma"
+    ],
+    "es_anlamlilar": [
+      "fiyat teklifi",
+      "teklif formu",
+      "teklif hazırla",
+      "fiyat verme"
+    ],
+    "agirlik": 1.0
+  },
+  "sorular": [
+    {
+      "kimlik": "kdv",
+      "metin": "Tekliflerde KDV hesaplansın mı?",
+      "varsayilan": true,
+      "emin_degilim": true,
+      "aciklama": "KDV oranı Ayarlar sayfasından değişir."
+    },
+    {
+      "kimlik": "iskonto",
+      "metin": "Kalemlerde iskonto uygulanacak mı?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Evet derseniz kalemlere iskonto yüzdesi sütunu eklenir."
+    },
+    {
+      "kimlik": "yaziyla",
+      "metin": "Genel toplam yazıyla da gösterilsin mi?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Bu özellik yalnızca bu programa özgüdür; .xlsx olarak kaydedince Excel'de çalışmaz."
+    }
+  ],
+  "moduller": [
+    {
+      "modul": "teklif_musterileri"
+    },
+    {
+      "modul": "teklifler"
+    },
+    {
+      "modul": "teklif_kalemleri"
+    }
+  ],
+  "bayraklar": {
+    "kdv_hesapla": "kdv",
+    "iskonto_var": "iskonto",
+    "yaziyla_toplam": "yaziyla"
+  },
+  "ayarlar": [
+    {
+      "kimlik": "para_birimi",
+      "ad": "Para birimi",
+      "tur": "metin",
+      "varsayilan": "TRY",
+      "aciklama": "Üç harfli para birimi kodu (TRY, USD, EUR…)."
+    },
+    {
+      "kimlik": "kdv_orani",
+      "ad": "KDV oranı",
+      "tur": "yuzde",
+      "varsayilan": 0.2,
+      "eger": "kdv_hesapla",
+      "aciklama": "Tekliflere uygulanacak KDV oranı."
+    },
+    {
+      "kimlik": "gecerlilik_gun",
+      "ad": "Geçerlilik süresi (gün)",
+      "tur": "tam_sayi",
+      "varsayilan": 15,
+      "aciklama": "Teklifin kaç gün geçerli olduğu."
+    }
+  ],
+  "nasil_kullanilir": [
+    {
+      "baslik": "Müşteri kaydı",
+      "metin": "Müşteriler sayfasına teklif vereceğiniz firmaları yazın."
+    },
+    {
+      "baslik": "Teklif",
+      "metin": "Teklifler sayfasına her teklif için numara, tarih ve müşteri girin."
+    },
+    {
+      "baslik": "Kalemler",
+      "metin": "Teklif Kalemleri sayfasına her ürün/hizmet için bir satır ekleyin; teklif numarasını listeden seçin. Toplamlar Teklifler sayfasında kendiliğinden hesaplanır."
+    }
+  ],
+  "ornek_veri": true
+}

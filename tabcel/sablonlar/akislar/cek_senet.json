@@ -1,0 +1,97 @@
+{
+  "surum": 1,
+  "tur": "akis",
+  "kimlik": "cek_senet",
+  "ad": "Çek ve senet takibi",
+  "kategori": "Finans",
+  "aciklama": "Alınan ve verilen çek/senetlerin vadelerini ve durumlarını izleyin.",
+  "anahtar_kelimeler": {
+    "kokler": [
+      "çek",
+      "senet",
+      "vade",
+      "portföy"
+    ],
+    "es_anlamlilar": [
+      "çek takibi",
+      "senet takibi",
+      "vadesi gelen",
+      "vade takibi",
+      "çek senet"
+    ],
+    "agirlik": 1.0
+  },
+  "sorular": [
+    {
+      "kimlik": "yon",
+      "metin": "Hem aldığınız hem verdiğiniz çek ve senetleri takip edecek misiniz?",
+      "varsayilan": true,
+      "emin_degilim": true,
+      "aciklama": "Evet derseniz her satıra Alınan/Verilen yönü eklenir."
+    },
+    {
+      "kimlik": "banka",
+      "metin": "Banka ve şube bilgisi de tutulsun mu?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Çekler için banka/şube sütunu eklenir."
+    },
+    {
+      "kimlik": "uyari",
+      "metin": "Vadesi yaklaşan ve geçenler işaretlensin mi?",
+      "varsayilan": true,
+      "emin_degilim": true,
+      "aciklama": "Uyarı sütunu eklenir; kaç gün önce uyarılacağı Ayarlar'dadır."
+    },
+    {
+      "kimlik": "tatil",
+      "metin": "Vade günü resmî tatile ya da hafta sonuna denk gelirse ilk iş günü de gösterilsin mi?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Resmî tatil verisi 2024–2028 yıllarını kapsar; dini bayram tarihleri doğrulanmamıştır. Bu özellik yalnızca bu programa özgüdür; .xlsx olarak kaydedince Excel'de çalışmaz."
+    }
+  ],
+  "moduller": [
+    {
+      "modul": "cek_senetler"
+    }
+  ],
+  "bayraklar": {
+    "iki_yonlu": "yon",
+    "banka_bilgisi": "banka",
+    "vade_uyarisi": "uyari",
+    "is_gunu_vade": "tatil"
+  },
+  "ayarlar": [
+    {
+      "kimlik": "para_birimi",
+      "ad": "Para birimi",
+      "tur": "metin",
+      "varsayilan": "TRY",
+      "aciklama": "Üç harfli para birimi kodu (TRY, USD, EUR…)."
+    },
+    {
+      "kimlik": "uyari_gun",
+      "ad": "Uyarı süresi (gün)",
+      "tur": "tam_sayi",
+      "varsayilan": 7,
+      "eger": "vade_uyarisi",
+      "aciklama": "Vadeye kaç gün kala 'Vadesi yaklaşıyor' uyarısı verilsin?"
+    }
+  ],
+  "nasil_kullanilir": [
+    {
+      "baslik": "Kayıt",
+      "metin": "Çek ve Senetler sayfasına her çek/senet için bir satır yazın; numara benzersiz olmalıdır."
+    },
+    {
+      "baslik": "Durum",
+      "metin": "Çek tahsil edilince ya da ödenince Durum sütununu güncelleyin; böylece vade uyarısı kalkar."
+    },
+    {
+      "baslik": "İzleme",
+      "metin": "Kalan gün sütunu bugüne göre kendiliğinden hesaplanır."
+    }
+  ],
+  "ornek_veri": true
+}

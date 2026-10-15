@@ -105,7 +105,7 @@ def para_kodu(sutun: Sutun, ayar_degerleri: Dict[str, Any]) -> str:
 
 
 def sayi_bicimi(sutun: Sutun, ayar_degerleri: Dict[str, Any]) -> str:
-    t = sutun.tur
+    t = sutun.bicim if sutun.tur == "hesaplanan" and sutun.bicim else sutun.tur
     if t == "para":
         return para_kodu(sutun, ayar_degerleri)
     if t == "tam_sayi":
@@ -116,8 +116,8 @@ def sayi_bicimi(sutun: Sutun, ayar_degerleri: Dict[str, Any]) -> str:
         return "0%"
     if t == "tarih":
         return "dd.mm.yyyy"
-    if t in _METIN_TURLERI or t == "eposta" or sutun.barkod:
-        return "@"
+    if t in _METIN_TURLERI or t == "eposta" or sutun.barkod or (t == "metin" and sutun.benzersiz):
+        return "@"                                  # kimlik/kod benzeri alanlar: baştaki sıfır korunur, sayı sanılmaz
     return "General"
 
 
@@ -193,18 +193,27 @@ def _dogrulama(sutun: Sutun, harf: str, c: int, kapasite: int, ilk: int = 2) -> 
 
 
 # ---------------------------------------------------------------- formül genişletme
-def genislet(formul: str, satir: Optional[int], bu_modul: ModulYeri, yerler: Dict[str, ModulYeri], yol: str) -> str:
-    """Yer tutucuları kanonik İngilizce, sıradan başvuru/ad biçimine çevirir (kitapta yer tutucu kalmaz)."""
+def genislet(formul: str, satir: Optional[int], bu_modul: ModulYeri, yerler: Dict[str, ModulYeri], yol: str,
+             ayarlar: Optional[set] = None) -> str:
+    """Yer tutucuları kanonik İngilizce, sıradan başvuru/ad biçimine çevirir (kitapta yer tutucu kalmaz).
+    `[@x?]` / `[m.x?]` (isteğe bağlı): sütun kapalıysa `0` olur. `ayarlar`: üretilen (açık) ayar kimlikleri; None = denetleme yok."""
     def degistir(m):
         t = m.group(0)
         if t.startswith('"'):
             return t
         if t.startswith("AYAR."):
+            if ayarlar is not None and t[5:] not in ayarlar:
+                raise UretimHatasi(f"{yol}: {t} ayarı bu çalıştırmada kapalı")
             return "TR_AYAR_" + t[5:]
         ic = t[1:-1]
+        opsiyonel = ic.endswith("?")
+        if opsiyonel:
+            ic = ic[:-1]
         if ic.startswith("@"):
             sutun = bu_modul.sutunlar.get(ic[1:])
             if sutun is None:
+                if opsiyonel and bu_modul.modul.sutun(ic[1:]) is not None:
+                    return "0"
                 raise UretimHatasi(f'{yol}: [@{ic[1:]}] başvurusu bu çalıştırmada kapalı ya da olmayan bir sütun')
             if satir is None:
                 raise UretimHatasi(f"{yol}: [@{ic[1:]}] yalnız satır düzeyinde formülde kullanılır")
@@ -212,10 +221,14 @@ def genislet(formul: str, satir: Optional[int], bu_modul: ModulYeri, yerler: Dic
         modul, _, alan = ic.partition(".")
         hedef = yerler.get(modul)
         if hedef is None:
+            if opsiyonel:
+                return "0"
             raise UretimHatasi(f'{yol}: [{ic}] başvurusundaki "{modul}" modülü bu çalıştırmada kapalı')
         if not alan:
             return f"TR_V_{modul}"
         if alan not in hedef.sutunlar:
+            if opsiyonel and hedef.modul.sutun(alan) is not None:
+                return "0"
             raise UretimHatasi(f'{yol}: [{ic}] başvurusundaki "{alan}" sütunu bu çalıştırmada kapalı')
         return f"TR_M_{modul}_{alan}"
     return _TOKEN.sub(degistir, formul)
@@ -251,13 +264,14 @@ def uret(sablon: Sablon, cevaplar: Optional[Dict[str, bool]] = None, ornek_veri:
     bayrak = bayraklari_coz(akis, cevaplar)
     kitap = CalismaKitabi()
     sonuc = UretimSonucu(kitap, akis, bayrak)
-    ayar_degerleri = {a.kimlik: a.varsayilan for a in akis.ayarlar}
+    acik_ayarlar = [a for a in akis.ayarlar if _eger(a.eger, bayrak)]
+    ayar_degerleri = {a.kimlik: a.varsayilan for a in acik_ayarlar}
 
     aktif: List[Modul] = []
     for mk, eg in akis.moduller:
         if _eger(eg, bayrak):
             aktif.append(sablon.moduller[mk])
-    adlar_ = [m.sayfa_adi for m in aktif] + ([AYARLAR_SAYFASI] if akis.ayarlar else []) + \
+    adlar_ = [m.sayfa_adi for m in aktif] + ([AYARLAR_SAYFASI] if acik_ayarlar else []) + \
              ([NASIL_SAYFASI] if akis.nasil_kullanilir else [])
     gorulen = set()
     for a in adlar_:
@@ -276,9 +290,10 @@ def uret(sablon: Sablon, cevaplar: Optional[Dict[str, bool]] = None, ornek_veri:
             sayfa = kitap.sayfa_ekle(m.sayfa_adi)
         etkin = [s for s in m.sutunlar if _eger(s.eger, bayrak)]
         yer = ModulYeri(m, sayfa.kimlik, {s.kimlik: i + 1 for i, s in enumerate(etkin)}, kapasite=kapasite,
-                        formul_satiri=formul_satiri if any(s.tur == "hesaplanan" for s in etkin) else 0)
+                        formul_satiri=min(m.formul_satiri or formul_satiri, kapasite)
+                        if any(s.tur == "hesaplanan" for s in etkin) else 0)
         sonuc.yerler[m.kimlik] = yer
-    ayar_sayfasi = kitap.sayfa_ekle(AYARLAR_SAYFASI) if akis.ayarlar else None
+    ayar_sayfasi = kitap.sayfa_ekle(AYARLAR_SAYFASI) if acik_ayarlar else None
     nasil_sayfasi = kitap.sayfa_ekle(NASIL_SAYFASI) if akis.nasil_kullanilir else None
 
     # bağlantı hedefi kapalıysa erken, anlaşılır hata
@@ -291,11 +306,11 @@ def uret(sablon: Sablon, cevaplar: Optional[Dict[str, bool]] = None, ornek_veri:
 
     # 2) Ayarlar
     if ayar_sayfasi is not None:
-        _ayarlar_yaz(ayar_sayfasi, akis, sonuc)
+        _ayarlar_yaz(ayar_sayfasi, acik_ayarlar, sonuc)
     # 3) modül sayfaları
     for m in aktif:
         yer = sonuc.yerler[m.kimlik]
-        _modul_yaz(kitap, kitap.sayfa_kimlikle(yer.sayfa_kimligi), yer, sonuc, ayar_degerleri)
+        _modul_yaz(kitap, kitap.sayfa_kimlikle(yer.sayfa_kimligi), yer, sonuc, ayar_degerleri, set(ayar_degerleri))
     # 4) örnek veri
     if akis.ornek_veri if ornek_veri is None else ornek_veri:
         for m in aktif:
@@ -312,7 +327,7 @@ def _stil_id(kitap: CalismaKitabi, **alan) -> int:
     return kitap.stil_havuzu.kimlik(Stil(**alan))
 
 
-def _ayarlar_yaz(sayfa: Sayfa, akis: Akis, sonuc: UretimSonucu):
+def _ayarlar_yaz(sayfa: Sayfa, ayarlar: list, sonuc: UretimSonucu):
     kitap = sonuc.kitap
     baslik = _stil_id(kitap, kalin=True, yazi_rengi="#FFFFFF", dolgu=BASLIK_DOLGU)
     hucreler, stiller = {}, {}
@@ -320,7 +335,7 @@ def _ayarlar_yaz(sayfa: Sayfa, akis: Akis, sonuc: UretimSonucu):
         hucreler[(1, c)] = Hucre(t)
         stiller[(1, c)] = baslik
     kod = {"yuzde": "0%", "tam_sayi": "#,##0", "ondalik": "#,##0.00", "tarih": "dd.mm.yyyy", "para": '"₺"#,##0.00'}
-    for i, a in enumerate(akis.ayarlar, 2):
+    for i, a in enumerate(ayarlar, 2):
         hucreler[(i, 1)] = Hucre(a.ad)
         v = a.varsayilan
         if a.tur == "evet_hayir":
@@ -362,7 +377,8 @@ def _nasil_yaz(sayfa: Sayfa, akis: Akis):
     sayfa.gorunum_yaz(kilavuz=False)
 
 
-def _modul_yaz(kitap: CalismaKitabi, sayfa: Sayfa, yer: ModulYeri, sonuc: UretimSonucu, ayar_degerleri: Dict[str, Any]):
+def _modul_yaz(kitap: CalismaKitabi, sayfa: Sayfa, yer: ModulYeri, sonuc: UretimSonucu, ayar_degerleri: Dict[str, Any],
+               acik_ayarlar: set):
     m = yer.modul
     etkin = [s for s in m.sutunlar if s.kimlik in yer.sutunlar]
     son_harf = sutun_harfe(len(etkin))
@@ -386,7 +402,7 @@ def _modul_yaz(kitap: CalismaKitabi, sayfa: Sayfa, yer: ModulYeri, sonuc: Uretim
         kitap.ad_yaz(TanimliAd(f"TR_M_{m.kimlik}_{s.kimlik}", f"=[{sayfa.kimlik}]!${harf}${yer.ilk_satir}:${harf}${yer.son_satir}", None, s.ad))
         if s.tur == "hesaplanan":
             for r in range(yer.ilk_satir, yer.ilk_satir + yer.formul_satiri):
-                hucreler[(r, c)] = Hucre(formul=genislet(s.formul, r, yer, sonuc.yerler, f"{m.sayfa_adi}/{s.ad}"))
+                hucreler[(r, c)] = Hucre(formul=genislet(s.formul, r, yer, sonuc.yerler, f"{m.sayfa_adi}/{s.ad}", acik_ayarlar))
     kitap.ad_yaz(TanimliAd(f"TR_MOD_{m.kimlik}", f"=[{sayfa.kimlik}]!$A$1:${son_harf}$1", None, m.ad))
     kitap.ad_yaz(TanimliAd(f"TR_V_{m.kimlik}", f"=[{sayfa.kimlik}]!$A${yer.ilk_satir}:${son_harf}${yer.son_satir}", None, m.ad))
     sayfa.toplu_yaz(hucreler)

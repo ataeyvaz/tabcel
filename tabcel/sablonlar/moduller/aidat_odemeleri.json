@@ -1,0 +1,66 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "aidat_odemeleri",
+  "ad": "Aidat ödemeleri",
+  "tekil_ad": "Aidat ödemesi",
+  "aciklama": "Her ödeme için bir satır.",
+  "sayfa_adi": "Aidat Ödemeleri",
+  "ornek_veri": [
+    {
+      "tarih": "2026-01-05",
+      "daire": "1",
+      "tutar": 650,
+      "odeme_turu": "Nakit"
+    },
+    {
+      "tarih": "2026-01-07",
+      "daire": "2",
+      "tutar": 300,
+      "odeme_turu": "Havale/EFT"
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "tarih",
+      "ad": "Tarih",
+      "tur": "tarih",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "daire",
+      "ad": "Daire no",
+      "tur": "baglanti",
+      "zorunlu": true,
+      "baglanti": {
+        "modul": "daireler",
+        "alan": "daire_no"
+      }
+    },
+    {
+      "kimlik": "tutar",
+      "ad": "Tutar",
+      "tur": "para",
+      "zorunlu": true,
+      "kisit": {
+        "min": 0
+      },
+      "para_birimi": "ayar:para_birimi"
+    },
+    {
+      "kimlik": "odeme_turu",
+      "ad": "Ödeme türü",
+      "tur": "liste",
+      "secenekler": [
+        "Nakit",
+        "Havale/EFT",
+        "Kredi kartı"
+      ]
+    },
+    {
+      "kimlik": "aciklama",
+      "ad": "Açıklama",
+      "tur": "metin"
+    }
+  ]
+}

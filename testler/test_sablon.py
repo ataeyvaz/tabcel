@@ -9,6 +9,8 @@ import pytest
 from tabcel.sablon import eslestirici, sema, yukleyici
 
 YERLESIK = yukleyici.yerlesik_klasor()
+YERLESIK_KIMLIKLER = ["yerlesik:apartman_aidat", "yerlesik:cari_hesap", "yerlesik:cek_senet", "yerlesik:not_cizelgesi",
+                      "yerlesik:stok_takibi", "yerlesik:teklif_formu"]          # Faz 10e: 6 akış
 
 
 def _json(yol):
@@ -37,8 +39,8 @@ def hatalar_(h):
 # ---------------------------------------------------------------- yerleşik tanımlar
 def test_yerlesik_temiz_yuklenir(depo):
     assert depo.rapor.temiz, depo.rapor.metin()
-    assert [s.ic_kimlik for s in depo.sablonlar] == ["yerlesik:stok_takibi"]
-    s = depo.sablonlar[0]
+    assert [s.ic_kimlik for s in depo.sablonlar] == YERLESIK_KIMLIKLER
+    s = depo.bul("yerlesik:stok_takibi")
     assert s.etiket == "Stok takibi" and len(s.akis.sorular) == 4 and len(s.moduller) == 6
     assert s.moduller["urunler"].sutun("alis_fiyati").para_birimi == "ayar:para_birimi"
     assert s.moduller["stok_hareketleri"].kurallar[0].siddet == "durdur"
@@ -245,7 +247,7 @@ def test_kullanici_klasoru_hatali_dosya_atlanir_digerleri_yuklenir(tmp_path):
     yaz(kul / "akislar" / "iyi.json", iyi)
     yaz(kul / "akislar" / "not.txt", "json değil")                                         # yok sayılır
     depo = yukleyici.depo_yukle(YERLESIK, kul)
-    assert {s.ic_kimlik for s in depo.sablonlar} == {"yerlesik:stok_takibi", "kullanici:kendi_stok"}
+    assert {s.ic_kimlik for s in depo.sablonlar} == set(YERLESIK_KIMLIKLER) | {"kullanici:kendi_stok"}
     metin = depo.rapor.metin()
     assert "kullanici/akislar/bozuk.json — JSON bozuk" in metin
     assert "kullanici/akislar/eksik.json — ad: zorunlu alan eksik" in metin
@@ -258,8 +260,8 @@ def test_ayni_kimlik_ikisi_de_listelenir(tmp_path):
     benim = degistir(AKIS, "aciklama", deger="Benim sürümüm")
     yaz(kul / "akislar" / "stok_takibi.json", benim)
     depo = yukleyici.depo_yukle(YERLESIK, kul)
-    assert [(s.ic_kimlik, s.etiket) for s in depo.sablonlar] == [("yerlesik:stok_takibi", "Stok takibi"),
-                                                                 ("kullanici:stok_takibi", "Stok takibi (benim sürümüm)")]
+    assert [(s.ic_kimlik, s.etiket) for s in depo.sablonlar if "stok_takibi" in s.ic_kimlik] == [
+        ("yerlesik:stok_takibi", "Stok takibi"), ("kullanici:stok_takibi", "Stok takibi (benim sürümüm)")]
     assert depo.bul("yerlesik:stok_takibi").akis.aciklama != "Benim sürümüm"           # yerleşik değişmedi
     assert depo.bul("kullanici:stok_takibi").moduller["urunler"].kimlik == "urunler"    # yerleşik modüle düşer
     assert depo.rapor.temiz
@@ -285,7 +287,7 @@ def test_ayni_kimlik_iki_dosyada(tmp_path):
 
 def test_kullanici_klasoru_yoksa_sorun_degil(tmp_path):
     depo = yukleyici.depo_yukle(YERLESIK, tmp_path / "hic_yok")
-    assert depo.rapor.temiz and len(depo.sablonlar) == 1
+    assert depo.rapor.temiz and len(depo.sablonlar) == len(YERLESIK_KIMLIKLER)
 
 
 def test_kullanici_klasoru_veri_klasorunden(tmp_path, monkeypatch):
@@ -298,7 +300,7 @@ def test_daha_yeni_surum_reddedilir(tmp_path):
     kul = tmp_path / "kul"
     yaz(kul / "akislar" / "yeni.json", degistir(AKIS, "surum", deger=sema.SURUM + 1))
     depo = yukleyici.depo_yukle(YERLESIK, kul)
-    assert len(depo.sablonlar) == 1
+    assert len(depo.sablonlar) == len(YERLESIK_KIMLIKLER)
     assert "uygulamayı güncelleyin" in depo.rapor.metin()
 
 
@@ -361,7 +363,7 @@ def test_eslestirme_turkce_harf_ve_kati_koku(akislar):
     assert eslestirici.katla("İSTANBUL ŞUBESİ") == "istanbul subesi"            # İ → i, I → ı → i
     assert eslestirici.katla("ILIK ÇORUM") == "ilik corum"
     assert eslestirici.sozcukler("Stoğu, stok-ta; ürün!") == ["stogu", "stok", "ta", "urun"]
-    e = eslestirici.puanla("stoğu", akislar[0])
+    e = eslestirici.puanla("stoğu", next(a for a in akislar if a.kimlik == "stok_takibi"))
     assert e.puan == 1.0 and e.nedenler == ["stoğ"]
 
 

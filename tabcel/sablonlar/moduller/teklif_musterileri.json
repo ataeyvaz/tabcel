@@ -1,0 +1,42 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "teklif_musterileri",
+  "ad": "Teklif müşterileri",
+  "tekil_ad": "Müşteri",
+  "aciklama": "Teklif verdiğiniz firmalar ve kişiler.",
+  "sayfa_adi": "Müşteriler",
+  "gorunen": [
+    "firma"
+  ],
+  "ornek_veri": [
+    {
+      "firma": "Örnek Müşteri A.Ş.",
+      "yetkili": "Örnek Yetkili"
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "firma",
+      "ad": "Firma / kişi",
+      "tur": "metin",
+      "zorunlu": true,
+      "benzersiz": true
+    },
+    {
+      "kimlik": "yetkili",
+      "ad": "Yetkili",
+      "tur": "metin"
+    },
+    {
+      "kimlik": "telefon",
+      "ad": "Telefon",
+      "tur": "telefon"
+    },
+    {
+      "kimlik": "eposta",
+      "ad": "E-posta",
+      "tur": "eposta"
+    }
+  ]
+}

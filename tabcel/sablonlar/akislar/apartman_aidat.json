@@ -1,0 +1,103 @@
+{
+  "surum": 1,
+  "tur": "akis",
+  "kimlik": "apartman_aidat",
+  "ad": "Apartman / site aidat takibi",
+  "kategori": "Site ve Apartman",
+  "aciklama": "Dairelerin aidat ödemelerini ve kalan borcunu izleyin.",
+  "anahtar_kelimeler": {
+    "kokler": [
+      "aidat",
+      "apartman",
+      "daire",
+      "kat malik",
+      "yönetici"
+    ],
+    "es_anlamlilar": [
+      "site yönetimi",
+      "kat malikleri",
+      "apartman gideri",
+      "aidat takibi",
+      "site aidatı"
+    ],
+    "agirlik": 1.0
+  },
+  "sorular": [
+    {
+      "kimlik": "ek_odeme",
+      "metin": "Aidatın yanında yakıt, asansör gibi aylık ek ödemeler de alınıyor mu?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Evet derseniz dairelere ek ödeme sütunu eklenir."
+    },
+    {
+      "kimlik": "gecikme",
+      "metin": "Geç ödemelere gecikme zammı hesaplansın mı?",
+      "varsayilan": false,
+      "emin_degilim": true,
+      "aciklama": "Kalan borç üzerinden basit bir aylık oranla hesaplanır."
+    },
+    {
+      "kimlik": "iletisim",
+      "metin": "Daire sahiplerinin telefon ve e-posta bilgileri tutulsun mu?",
+      "varsayilan": true,
+      "emin_degilim": true,
+      "aciklama": "Dairelere iletişim sütunları eklenir."
+    }
+  ],
+  "moduller": [
+    {
+      "modul": "daireler"
+    },
+    {
+      "modul": "aidat_odemeleri"
+    },
+    {
+      "modul": "aidat_durumu"
+    }
+  ],
+  "bayraklar": {
+    "ek_odeme_var": "ek_odeme",
+    "gecikme_zammi": "gecikme",
+    "iletisim_bilgisi": "iletisim"
+  },
+  "ayarlar": [
+    {
+      "kimlik": "para_birimi",
+      "ad": "Para birimi",
+      "tur": "metin",
+      "varsayilan": "TRY",
+      "aciklama": "Üç harfli para birimi kodu (TRY, USD, EUR…)."
+    },
+    {
+      "kimlik": "islenen_ay",
+      "ad": "İşlenen ay sayısı",
+      "tur": "tam_sayi",
+      "varsayilan": 1,
+      "aciklama": "Yıl başından bugüne kaç aylık aidat tahakkuk etti? Her ay 1 artırın."
+    },
+    {
+      "kimlik": "gecikme_orani",
+      "ad": "Aylık gecikme oranı",
+      "tur": "yuzde",
+      "varsayilan": 0.05,
+      "eger": "gecikme_zammi",
+      "aciklama": "Kalan borca uygulanacak aylık oran (karar kurulunuzun belirlediği oranı yazın)."
+    }
+  ],
+  "nasil_kullanilir": [
+    {
+      "baslik": "Daire ekleme",
+      "metin": "Daireler sayfasına her daire için bir satır yazın; daire numarası benzersiz olmalıdır."
+    },
+    {
+      "baslik": "Ödeme girme",
+      "metin": "Aidat Ödemeleri sayfasına her ödeme için bir satır ekleyin; daireyi listeden seçin."
+    },
+    {
+      "baslik": "Her ay",
+      "metin": "Ayarlar sayfasındaki İşlenen ay sayısını ay başında 1 artırın; Aidat Durumu kendiliğinden güncellenir."
+    }
+  ],
+  "ornek_veri": true
+}

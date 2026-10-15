@@ -1,0 +1,77 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "cari_hareketleri",
+  "ad": "Cari hareketler",
+  "tekil_ad": "Cari hareket",
+  "aciklama": "Her fatura, tahsilat ve ödeme için bir satır. Borç: carinin size borçlandığı tutar (satış, fatura); alacak: carinin ödediği ya da alacaklandığı tutar (tahsilat, iade).",
+  "sayfa_adi": "Cari Hareketler",
+  "ornek_veri": [
+    {
+      "tarih": "2026-01-10",
+      "cari": "Örnek Ticaret Ltd.",
+      "belge_no": "F-001",
+      "aciklama": "Satış faturası",
+      "borc": 1500
+    },
+    {
+      "tarih": "2026-01-20",
+      "cari": "Örnek Ticaret Ltd.",
+      "belge_no": "T-001",
+      "aciklama": "Tahsilat",
+      "alacak": 500
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "tarih",
+      "ad": "Tarih",
+      "tur": "tarih",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "cari",
+      "ad": "Cari adı",
+      "tur": "baglanti",
+      "zorunlu": true,
+      "baglanti": {
+        "modul": "cari_kartlari",
+        "alan": "cari_adi"
+      }
+    },
+    {
+      "kimlik": "belge_no",
+      "ad": "Belge no",
+      "tur": "metin"
+    },
+    {
+      "kimlik": "aciklama",
+      "ad": "Açıklama",
+      "tur": "metin"
+    },
+    {
+      "kimlik": "borc",
+      "ad": "Borç",
+      "tur": "para",
+      "kisit": {
+        "min": 0
+      },
+      "para_birimi": "ayar:para_birimi"
+    },
+    {
+      "kimlik": "alacak",
+      "ad": "Alacak",
+      "tur": "para",
+      "kisit": {
+        "min": 0
+      },
+      "para_birimi": "ayar:para_birimi"
+    },
+    {
+      "kimlik": "vade",
+      "ad": "Vade tarihi",
+      "tur": "tarih",
+      "eger": "vade_takibi"
+    }
+  ]
+}

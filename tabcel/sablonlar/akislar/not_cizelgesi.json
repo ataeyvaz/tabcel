@@ -1,0 +1,108 @@
+{
+  "surum": 1,
+  "tur": "akis",
+  "kimlik": "not_cizelgesi",
+  "ad": "Not çizelgesi",
+  "kategori": "Eğitim",
+  "aciklama": "Öğrenci notlarını girin; ortalama ve geçme durumu kendiliğinden hesaplansın.",
+  "anahtar_kelimeler": {
+    "kokler": [
+      "not",
+      "karne",
+      "sınav",
+      "öğrenci",
+      "ders",
+      "öğretmen"
+    ],
+    "es_anlamlilar": [
+      "not çizelgesi",
+      "not defteri",
+      "sınav sonuçları",
+      "not ortalaması",
+      "sınıf listesi"
+    ],
+    "agirlik": 1.0
+  },
+  "sorular": [
+    {
+      "kimlik": "devamsizlik",
+      "metin": "Devamsızlık da takip edilsin mi?",
+      "varsayilan": false,
+      "emin_degilim": false,
+      "aciklama": "Öğrencilere devamsızlık günü ve sınır uyarısı eklenir."
+    },
+    {
+      "kimlik": "gecme",
+      "metin": "Geçti / Kaldı durumu gösterilsin mi?",
+      "varsayilan": true,
+      "emin_degilim": true,
+      "aciklama": "Geçme notu Ayarlar sayfasındadır."
+    }
+  ],
+  "moduller": [
+    {
+      "modul": "ogrenciler"
+    },
+    {
+      "modul": "notlar"
+    }
+  ],
+  "bayraklar": {
+    "devamsizlik_takibi": "devamsizlik",
+    "gecme_goster": "gecme"
+  },
+  "ayarlar": [
+    {
+      "kimlik": "sinav1_agirlik",
+      "ad": "1. sınav ağırlığı",
+      "tur": "yuzde",
+      "varsayilan": 0.3,
+      "aciklama": "Ortalamadaki payı."
+    },
+    {
+      "kimlik": "sinav2_agirlik",
+      "ad": "2. sınav ağırlığı",
+      "tur": "yuzde",
+      "varsayilan": 0.3,
+      "aciklama": "Ortalamadaki payı."
+    },
+    {
+      "kimlik": "sozlu_agirlik",
+      "ad": "Sözlü / ödev ağırlığı",
+      "tur": "yuzde",
+      "varsayilan": 0.4,
+      "aciklama": "Ortalamadaki payı."
+    },
+    {
+      "kimlik": "gecme_notu",
+      "ad": "Geçme notu",
+      "tur": "tam_sayi",
+      "varsayilan": 50,
+      "eger": "gecme_goster",
+      "aciklama": "Ortalaması bu nota eşit ya da büyük olan geçer."
+    },
+    {
+      "kimlik": "devamsizlik_siniri",
+      "ad": "Devamsızlık sınırı (gün)",
+      "tur": "tam_sayi",
+      "varsayilan": 10,
+      "eger": "devamsizlik_takibi",
+      "aciklama": "Bu günden fazla devamsızlık yapanlar işaretlenir."
+    }
+  ],
+  "nasil_kullanilir": [
+    {
+      "baslik": "Öğrenci listesi",
+      "metin": "Öğrenciler sayfasına sınıf listesini yazın; okul numarası benzersiz olmalıdır."
+    },
+    {
+      "baslik": "Not girme",
+      "metin": "Notlar sayfasına her öğrenci ve ders için bir satır ekleyin; okul numarasını listeden seçin."
+    },
+    {
+      "baslik": "Ortalama",
+      "metin": "Üç not girilince ortalama kendiliğinden hesaplanır; ağırlıkları Ayarlar'dan değiştirebilirsiniz."
+    }
+  ],
+  "ornek_veri": true
+}

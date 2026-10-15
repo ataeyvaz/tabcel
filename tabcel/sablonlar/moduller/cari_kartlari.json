@@ -1,0 +1,59 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "cari_kartlari",
+  "ad": "Cari kartlar",
+  "tekil_ad": "Cari",
+  "aciklama": "Müşteri ve tedarikçilerin kayıtları.",
+  "sayfa_adi": "Cari Kartlar",
+  "gorunen": [
+    "cari_adi"
+  ],
+  "ornek_veri": [
+    {
+      "cari_adi": "Örnek Ticaret Ltd.",
+      "cari_turu": "Müşteri"
+    },
+    {
+      "cari_adi": "Örnek Tedarik A.Ş.",
+      "cari_turu": "Tedarikçi"
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "cari_adi",
+      "ad": "Cari adı",
+      "tur": "metin",
+      "zorunlu": true,
+      "benzersiz": true
+    },
+    {
+      "kimlik": "cari_turu",
+      "ad": "Türü",
+      "tur": "liste",
+      "secenekler": [
+        "Müşteri",
+        "Tedarikçi",
+        "Her ikisi"
+      ]
+    },
+    {
+      "kimlik": "telefon",
+      "ad": "Telefon",
+      "tur": "telefon",
+      "eger": "iletisim_bilgisi"
+    },
+    {
+      "kimlik": "eposta",
+      "ad": "E-posta",
+      "tur": "eposta",
+      "eger": "iletisim_bilgisi"
+    },
+    {
+      "kimlik": "vergi_no",
+      "ad": "Vergi no",
+      "tur": "vergi_no",
+      "eger": "vergi_bilgisi"
+    }
+  ]
+}

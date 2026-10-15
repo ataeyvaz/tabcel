@@ -1,0 +1,47 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "cari_bakiye",
+  "ad": "Cari bakiye",
+  "tekil_ad": "Cari bakiye",
+  "aciklama": "Her carinin toplam borcu, alacağı ve bakiyesi; kendiliğinden hesaplanır.",
+  "sayfa_adi": "Cari Bakiye",
+  "sutunlar": [
+    {
+      "kimlik": "cari_adi",
+      "ad": "Cari adı",
+      "tur": "hesaplanan",
+      "formul": "=IFERROR(INDEX([cari_kartlari.cari_adi], ROW()-1)&\"\",\"\")"
+    },
+    {
+      "kimlik": "toplam_borc",
+      "ad": "Toplam borç",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@cari_adi]=\"\",\"\",SUMIFS([cari_hareketleri.borc],[cari_hareketleri.cari],[@cari_adi]))"
+    },
+    {
+      "kimlik": "toplam_alacak",
+      "ad": "Toplam alacak",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@cari_adi]=\"\",\"\",SUMIFS([cari_hareketleri.alacak],[cari_hareketleri.cari],[@cari_adi]))"
+    },
+    {
+      "kimlik": "bakiye",
+      "ad": "Bakiye",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@cari_adi]=\"\",\"\",[@toplam_borc]-[@toplam_alacak])"
+    },
+    {
+      "kimlik": "durum",
+      "ad": "Durum",
+      "tur": "hesaplanan",
+      "formul": "=IF([@cari_adi]=\"\",\"\",IF([@bakiye]>0,\"Cari size borçlu\",IF([@bakiye]<0,\"Siz cariye borçlusunuz\",\"Hesap kapalı\")))"
+    }
+  ]
+}

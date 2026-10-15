@@ -1,0 +1,85 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "teklifler",
+  "ad": "Teklifler",
+  "tekil_ad": "Teklif",
+  "aciklama": "Her teklif için bir satır; toplamlar kalemlerden kendiliğinden hesaplanır.",
+  "sayfa_adi": "Teklifler",
+  "gorunen": [
+    "teklif_no"
+  ],
+  "formul_satiri": 500,
+  "ornek_veri": [
+    {
+      "teklif_no": "T-2026-001",
+      "tarih": "2026-02-02",
+      "musteri": "Örnek Müşteri A.Ş."
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "teklif_no",
+      "ad": "Teklif no",
+      "tur": "metin",
+      "zorunlu": true,
+      "benzersiz": true
+    },
+    {
+      "kimlik": "tarih",
+      "ad": "Tarih",
+      "tur": "tarih",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "musteri",
+      "ad": "Müşteri",
+      "tur": "baglanti",
+      "zorunlu": true,
+      "baglanti": {
+        "modul": "teklif_musterileri",
+        "alan": "firma"
+      }
+    },
+    {
+      "kimlik": "son_gecerlilik",
+      "ad": "Son geçerlilik",
+      "tur": "hesaplanan",
+      "bicim": "tarih",
+      "formul": "=IF([@tarih]=\"\",\"\",[@tarih]+AYAR.gecerlilik_gun)"
+    },
+    {
+      "kimlik": "ara_toplam",
+      "ad": "Ara toplam",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@teklif_no]=\"\",\"\",SUMIFS([teklif_kalemleri.tutar],[teklif_kalemleri.teklif_no],[@teklif_no]))"
+    },
+    {
+      "kimlik": "kdv_tutari",
+      "ad": "KDV",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "eger": "kdv_hesapla",
+      "formul": "=IF([@teklif_no]=\"\",\"\",ROUND([@ara_toplam]*AYAR.kdv_orani,2))"
+    },
+    {
+      "kimlik": "genel_toplam",
+      "ad": "Genel toplam",
+      "tur": "hesaplanan",
+      "bicim": "para",
+      "para_birimi": "ayar:para_birimi",
+      "formul": "=IF([@teklif_no]=\"\",\"\",[@ara_toplam]+[@kdv_tutari?])"
+    },
+    {
+      "kimlik": "yazi",
+      "ad": "Yazıyla",
+      "tur": "hesaplanan",
+      "eger": "yaziyla_toplam",
+      "aciklama": "Bu işlev yalnızca bu programa özgüdür; .xlsx olarak kaydedince Excel'de çalışmaz.",
+      "formul": "=IF([@teklif_no]=\"\",\"\",TR_NUMBERTOWORDS([@genel_toplam]))"
+    }
+  ]
+}

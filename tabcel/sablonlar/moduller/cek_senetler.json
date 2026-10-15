@@ -1,0 +1,134 @@
+{
+  "surum": 1,
+  "tur": "modul",
+  "kimlik": "cek_senetler",
+  "ad": "Çek ve senetler",
+  "tekil_ad": "Çek / senet",
+  "aciklama": "Her çek ya da senet için bir satır.",
+  "sayfa_adi": "Çek ve Senetler",
+  "formul_satiri": 1000,
+  "ornek_veri": [
+    {
+      "no": "Ç-001",
+      "tur": "Çek",
+      "yon": "Alınan",
+      "cari": "Örnek Müşteri",
+      "banka": "Örnek Banka",
+      "duzenleme": "2026-01-15",
+      "vade": "2026-03-15",
+      "tutar": 10000,
+      "durum": "Portföyde"
+    },
+    {
+      "no": "S-001",
+      "tur": "Senet",
+      "yon": "Verilen",
+      "cari": "Örnek Tedarikçi",
+      "duzenleme": "2026-01-20",
+      "vade": "2026-04-20",
+      "tutar": 5000,
+      "durum": "Portföyde"
+    }
+  ],
+  "sutunlar": [
+    {
+      "kimlik": "no",
+      "ad": "Çek / senet no",
+      "tur": "metin",
+      "zorunlu": true,
+      "benzersiz": true
+    },
+    {
+      "kimlik": "tur",
+      "ad": "Türü",
+      "tur": "liste",
+      "zorunlu": true,
+      "secenekler": [
+        "Çek",
+        "Senet"
+      ]
+    },
+    {
+      "kimlik": "yon",
+      "ad": "Yönü",
+      "tur": "liste",
+      "zorunlu": true,
+      "secenekler": [
+        "Alınan",
+        "Verilen"
+      ],
+      "eger": "iki_yonlu"
+    },
+    {
+      "kimlik": "cari",
+      "ad": "Kimden / kime",
+      "tur": "metin",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "banka",
+      "ad": "Banka / şube",
+      "tur": "metin",
+      "eger": "banka_bilgisi"
+    },
+    {
+      "kimlik": "duzenleme",
+      "ad": "Düzenleme tarihi",
+      "tur": "tarih"
+    },
+    {
+      "kimlik": "vade",
+      "ad": "Vade tarihi",
+      "tur": "tarih",
+      "zorunlu": true
+    },
+    {
+      "kimlik": "tutar",
+      "ad": "Tutar",
+      "tur": "para",
+      "zorunlu": true,
+      "kisit": {
+        "min": 0
+      },
+      "para_birimi": "ayar:para_birimi"
+    },
+    {
+      "kimlik": "durum",
+      "ad": "Durum",
+      "tur": "liste",
+      "zorunlu": true,
+      "secenekler": [
+        "Portföyde",
+        "Bankada",
+        "Ciro edildi",
+        "Tahsil edildi",
+        "Ödendi",
+        "Karşılıksız",
+        "İade"
+      ]
+    },
+    {
+      "kimlik": "kalan_gun",
+      "ad": "Kalan gün",
+      "tur": "hesaplanan",
+      "bicim": "tam_sayi",
+      "formul": "=IF([@vade]=\"\",\"\",[@vade]-TODAY())"
+    },
+    {
+      "kimlik": "vade_is_gunu",
+      "ad": "Vade (iş günü)",
+      "tur": "hesaplanan",
+      "bicim": "tarih",
+      "eger": "is_gunu_vade",
+      "aciklama": "Vade hafta sonuna ya da resmî tatile denk gelirse ilk iş günü. Tatil verisi yalnız 2024–2028 için vardır; dışında vade günü aynen yazılır.",
+      "formul": "=IF([@vade]=\"\",\"\",IFERROR(TR_WORKDAY([@vade]-1,1),[@vade]))"
+    },
+    {
+      "kimlik": "uyari",
+      "ad": "Uyarı",
+      "tur": "hesaplanan",
+      "eger": "vade_uyarisi",
+      "formul": "=IF(OR([@vade]=\"\",[@durum]=\"Tahsil edildi\",[@durum]=\"Ödendi\",[@durum]=\"Ciro edildi\",[@durum]=\"İade\"),\"\",IF([@vade]<TODAY(),\"Vadesi geçti\",IF([@vade]-TODAY()<=AYAR.uyari_gun,\"Vadesi yaklaşıyor\",\"\")))"
+    }
+  ]
+}
