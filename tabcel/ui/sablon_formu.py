@@ -77,6 +77,8 @@ class SablonFormu(QDialog):
         self._ilk: Dict[str, str] = {}             # yüklendiği andaki metinler (çakışma + kirli denetimi)
         self._yukleniyor = False
         self._kaydediyor = False                   # kendi yazımımızın olayı formu yeniden yüklemesin
+        self._donus = None                         # barkod: “yeni kayıt olarak ekle” sonrası geri dönülecek form durumu
+        self._yeni_dugmeleri: Dict[str, QPushButton] = {}
         self._kur()
 
     # ------------------------------------------------------------------ kurulum
@@ -147,7 +149,8 @@ class SablonFormu(QDialog):
             dugme.setDefault(False)
         for tus, islev in (("Ctrl+Return", lambda: self.kaydet(yeni=True)), ("Ctrl+Enter", lambda: self.kaydet(yeni=True)),
                            ("Ctrl+PgUp", lambda: self.git(-1)), ("Ctrl+PgDown", lambda: self.git(1)),
-                           ("Ctrl+F", lambda: (self.ara_kutusu.setFocus(), self.ara_kutusu.selectAll()))):
+                           ("Ctrl+F", lambda: (self.ara_kutusu.setFocus(), self.ara_kutusu.selectAll())),
+                           ("Ctrl+B", lambda: self.barkod_alanina_git())):
             QShortcut(QKeySequence(tus), self, activated=islev, context=Qt.WindowShortcut)
 
     # ------------------------------------------------------------------ açma
@@ -185,6 +188,7 @@ class SablonFormu(QDialog):
             self.modul_kutusu.setCurrentIndex(self.modul_kutusu.findData(self.g.modul.kimlik))
             self._yukleniyor = False
             return
+        self._donus = None
         self._modul_kur(self.modul_kutusu.currentData(), None)
 
     def _modul_kur(self, modul: str, satir: Optional[int]) -> None:
@@ -203,6 +207,7 @@ class SablonFormu(QDialog):
         while self.form.rowCount():
             self.form.removeRow(0)
         self.alanlar = {}
+        self._yeni_dugmeleri = {}
         onceki = None
         for s in self.g.alanlar():
             kutu = self._kutu_olustur(s)
@@ -216,6 +221,13 @@ class SablonFormu(QDialog):
             v.setSpacing(1)
             v.addWidget(kutu)
             v.addWidget(hata)
+            if s.tur == "baglanti" and s.baglanti and self._hedef_barkodlu(s):
+                dugme = QPushButton(f"Yeni {self.b.moduller[s.baglanti[0]].tekil_ad or 'kayıt'} olarak ekle")
+                dugme.setAutoDefault(False)
+                dugme.setVisible(False)
+                dugme.clicked.connect(lambda _=False, k=s.kimlik: self.yeni_olarak_ekle(k))
+                v.addWidget(dugme)
+                self._yeni_dugmeleri[s.kimlik] = dugme
             etiket = s.ad + (" *" if s.zorunlu else "")
             if s.aciklama:
                 kutu.setToolTip(s.aciklama)
@@ -442,7 +454,110 @@ class SablonFormu(QDialog):
         return False
 
     # ------------------------------------------------------------------ kaydetme
+    # ------------------------------------------------------------------ barkod (Faz 10g)
+    def _hedef_barkodlu(self, s) -> bool:
+        h = self.b.gorunum(s.baglanti[0]) if self.b is not None else None
+        return h is not None and bool(kayitlar.barkod_sutunlari(h))
+
+    def barkod_alanlari(self) -> List[str]:
+        """Barkod okutulabilen alanlar: kendi barkod alanları + barkodlu modüle bağlanan alanlar (form sırasıyla)."""
+        kendi = {s.kimlik for s in kayitlar.barkod_sutunlari(self.g)}
+        bagli = {s.kimlik for s in kayitlar.barkodlu_baglantilar(self.b, self.g)}
+        return [k for k in self.alanlar if k in kendi or k in bagli]
+
+    def barkod_alanina_git(self) -> bool:
+        """`Ctrl+B`: odağı barkod okutulacak alana taşır (okuyucu klavye gibi yazıp Enter gönderir)."""
+        alanlar = self.barkod_alanlari()
+        if not alanlar:
+            return False
+        a = self.alanlar[alanlar[0]]
+        a.kutu.setFocus()
+        kutu = a.kutu.lineEdit() if isinstance(a.kutu, QComboBox) and a.kutu.isEditable() else a.kutu
+        if hasattr(kutu, "selectAll"):
+            kutu.selectAll()
+        return True
+
+    def barkod_isle(self, kimlik: str) -> Optional[bool]:
+        """Alana Enter basılınca barkod kuralı. None = bu alan barkod alanı değil/işlem yok (normal Enter);
+        True = barkod çözüldü (sonraki alana geçilebilir); False = çözülemedi (alan başında kalınır)."""
+        a = self.alanlar[kimlik]
+        kod = a.metin().strip()
+        if not kod:
+            return None
+        s = a.sutun
+        if s.barkod:                                              # kendi barkod alanı: kayıtlı barkodsa o kayda git
+            r = kayitlar.barkod_ara(self.g, kod, haric=self.satir)
+            if r is None:
+                return None
+            a.yaz("")
+            self._ilk = self._mevcut_metinler()
+            self.kayda_git(r)
+            self.durum.setText(f"Barkod {kod} kayıtlı: kayda gidildi.")
+            return False
+        if s.tur == "baglanti" and s.baglanti and self._hedef_barkodlu(s):
+            if kosul_uyumlu(a.kutu, kod):
+                self._yeni_dugmeleri[kimlik].setVisible(False)
+                return True
+            v = kayitlar.baglanti_degeri(self.b, s, kod)
+            if v is not None:
+                a.yaz(v)
+                a.hata_yaz("")
+                self._yeni_dugmeleri[kimlik].setVisible(False)
+                self.durum.setText(f"Barkod okundu: {v}")
+                return True
+            ad = self.b.moduller[s.baglanti[0]].tekil_ad or "kayıt"
+            a.hata_yaz(f"“{kod}” barkoduyla kayıtlı {ad.lower()} bulunamadı.")
+            self._yeni_dugmeleri[kimlik].setVisible(True)
+            return False
+        return None
+
+    def yeni_olarak_ekle(self, kimlik: str) -> bool:
+        """Okunan barkod bulunamadı: hedef modülün yeni kayıt formu barkod önceden dolu açılır; kaydedince bu forma dönülür."""
+        a = self.alanlar[kimlik]
+        s = a.sutun
+        kod = a.metin().strip()
+        hedef = s.baglanti[0]
+        bark = kayitlar.barkod_sutunlari(self.b.gorunum(hedef))
+        if not kod or not bark:
+            return False
+        self._donus = {"modul": self.g.modul.kimlik, "satir": self.satir, "metinler": self._mevcut_metinler(),
+                       "alan": kimlik, "hedef_alan": s.baglanti[1], "hedef_modul": hedef}
+        self._ilk = self._mevcut_metinler()                       # taslak saklandı: modül değişimi soru çıkarmasın
+        self._yukleniyor = True
+        self.modul_kutusu.setCurrentIndex(max(0, self.modul_kutusu.findData(hedef)))
+        self._yukleniyor = False
+        self._modul_kur(hedef, None)
+        self.yeni_kayit(onay=False)
+        self.alanlar[bark[0].kimlik].yaz(kod)
+        self.durum.setText(f"Yeni kayıt: barkod {kod} dolu. Kaydedince önceki forma dönülür.")
+        return True
+
+    def _geri_don(self, kayit_satiri: int) -> None:
+        d, self._donus = self._donus, None
+        if d is None:
+            return
+        gv = self.b.gorunum(d["hedef_modul"])
+        deger = kayitlar.duzenleme_metni(gv, kayit_satiri, d["hedef_alan"])
+        self._yukleniyor = True
+        self.modul_kutusu.setCurrentIndex(max(0, self.modul_kutusu.findData(d["modul"])))
+        self._yukleniyor = False
+        self._modul_kur(d["modul"], d["satir"])
+        if d["satir"] is None:
+            self.yeni_kayit(onay=False)
+        for k, m in d["metinler"].items():
+            if k in self.alanlar:
+                self.alanlar[k].yaz(m)
+        self.alanlar[d["alan"]].yaz(deger)
+        self.alanlar[d["alan"]].hata_yaz("")
+        self._durum_yaz()
+        self.durum.setText(f"Yeni kayıt eklendi: {deger}")
+        self.focusNextChild()
+
     def _enter(self, kimlik: str) -> None:
+        if self.alanlar[kimlik].sutun.tur != "hesaplanan":
+            sonuc = self.barkod_isle(kimlik)
+            if sonuc is False:
+                return
         girdiler = [k for k, a in self.alanlar.items() if a.sutun.tur != "hesaplanan"]
         if kimlik == girdiler[-1]:
             self.kaydet()
@@ -518,6 +633,9 @@ class SablonFormu(QDialog):
             self._kaydediyor = False
         self.kayit_satirlari = kayitlar.kayit_satirlari(self.g)
         self.kaydedildi.emit()
+        if self._donus is not None and self._donus["hedef_modul"] == self.g.modul.kimlik:
+            self._geri_don(row)
+            return True
         if yeni:
             self._yukle(None)
             self._ilk_alana_odaklan()
@@ -606,6 +724,14 @@ class SablonFormu(QDialog):
             olay.ignore()
             return
         super().closeEvent(olay)
+
+
+def kosul_uyumlu(kutu, metin: str) -> bool:
+    """Açılır liste kutusunda `metin` (Türkçe harf duyarsız) tam bir seçenekse True."""
+    if not isinstance(kutu, QComboBox):
+        return False
+    h = kucuk(metin.strip())
+    return any(kucuk(kutu.itemText(i)) == h and kutu.itemText(i) for i in range(kutu.count()))
 
 
 class EslemePenceresi(QDialog):

@@ -409,3 +409,60 @@ def ornek_temizleme_haritasi(b: Baglam):
 def ornek_kaydini_sifirla(b: Baglam) -> None:
     """Temizlemeden sonra: sonradan aynı satırlara yazılan gerçek veriye bir daha dokunulmasın."""
     b.kayit.ornek_satirlar = {}
+
+
+# ---------------------------------------------------------------- barkod (Faz 10g)
+def _metin(h: Optional[Hucre]) -> str:
+    if _bos(h):
+        return ""
+    v = h.deger
+    if isinstance(v, float) and v == int(v):
+        return str(int(v))
+    return str(v).strip()
+
+
+def barkod_sutunlari(g: ModulGorunumu) -> List[Sutun]:
+    """Modülün barkod alanları (`barkod: true`)."""
+    return [s for s in g.girdi_alanlari() if s.barkod]
+
+
+def barkod_ara(g: ModulGorunumu, kod: str, haric: Optional[int] = None) -> Optional[int]:
+    """Barkod sütunlarında `kod` ile **tam** eşleşen ilk kaydın satırı (başta sıfırlar önemlidir; boşluk kırpılır)."""
+    kod = (kod or "").strip()
+    sutlar = [g.sutunlar[s.kimlik] for s in barkod_sutunlari(g)]
+    if not kod or not sutlar:
+        return None
+    for r in kayit_satirlari(g):
+        if r != haric and any(_metin(g.sayfa.hucre(r, c)) == kod for c in sutlar):
+            return r
+    return None
+
+
+def barkodlu_baglantilar(b: Baglam, g: ModulGorunumu) -> List[Sutun]:
+    """Bu modüldeki, hedef modülünde barkod alanı olan bağlantı alanları (ör. Stok hareketi → Ürün kodu)."""
+    cikti = []
+    for s in g.girdi_alanlari():
+        if s.tur == "baglanti" and s.baglanti:
+            h = b.gorunum(s.baglanti[0])
+            if h is not None and barkod_sutunlari(h):
+                cikti.append(s)
+    return cikti
+
+
+def baglanti_degeri(b: Baglam, sutun: Sutun, kod: str) -> Optional[str]:
+    """Okunan barkod → bağlantı alanının değeri (hedef modülde barkodu eşleşen kaydın bağlanılan alanı). Okunan metin zaten
+    bağlanılan alanın değeriyse (ör. ürün kodu) o döner. Bulunamazsa None."""
+    modul, alan = sutun.baglanti
+    h = b.gorunum(modul)
+    if h is None or alan not in h.sutunlar:
+        return None
+    r = barkod_ara(h, kod)
+    if r is not None:
+        v = _metin(h.sayfa.hucre(r, h.sutunlar[alan]))
+        return v or None
+    kod = (kod or "").strip()
+    for r in kayit_satirlari(h):
+        v = _metin(h.sayfa.hucre(r, h.sutunlar[alan]))
+        if v and esit_mi(v, kod):
+            return v
+    return None

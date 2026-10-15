@@ -385,6 +385,8 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - **Örnek verileri temizle** şablonla gelen örnek kayıtları siler (kendi değiştirdiğiniz satırlara dokunmaz; geri alınabilir).
 - Sütun başlıkları değiştirilmiş ya da silinmişse form kapanır; **Kayıt Formu**'nu açınca *Sütunları yeniden eşlemek* isteyip istemediğiniz sorulur ve eksik başlıklar tablodaki başlıklarla eşlenir.
 - **Tablo Sağlığı** artık *Şablon kural ihlali* de bulur: tabloya yapıştırılan ya da elle yazılan, forma girilseydi kaydedilmeyecek kayıtlar. (Stok gibi başka tabloların toplamlarına bakan kurallar yalnızca form girişinde denetlenir.)
+- **Barkod okuyucu:** USB barkod okuyucu klavye gibi çalışır (yazar, sonunda `Enter` gönderir); özel sürücü gerekmez. `Ctrl+B` odağı barkod okutulacak alana taşır. *Stok hareketi* formunda **Ürün kodu** alanına barkod okutunca ürün kendiliğinden seçilir ve sonraki alana geçilir (baştaki sıfırlar önemlidir; ürün kodu okutmak da olur). *Ürünler* formunda kayıtlı bir barkod okutursanız o ürünün kaydına gidilir.
+- Okutulan barkod hiçbir ürüne ait değilse alanın altında **Yeni ürün olarak ekle** düğmesi çıkar: Ürünler formu barkod dolu açılır, kaydedince hareket formuna dönülür (diğer alanlarınız korunur) ve yeni ürün seçili gelir.
 - Yeni kayıt, hazır formüllerin bittiği satırın ötesine eklenirse hesaplanan sütunların formülleri forma kaydederken o satıra da yazılır.
 
 <!-- konu: pano | Kopyala ve Yapıştır -->

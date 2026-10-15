@@ -199,3 +199,33 @@ def test_saglik_temiz_sablonda_kural_ihlali_yok(depo):
     from tabcel.formul import saglik
     kitap, _ = kur(depo)
     assert [x for x in saglik.Tarayici(kitap, Hesaplayici(kitap)).tara() if x.kontrol == "kural_ihlali"] == []
+
+
+# ---------------------------------------------------------------- barkod (10g)
+def _barkodlu(depo):
+    kitap, b = kur(depo)
+    g = b.gorunum("urunler")
+    g.sayfa.ata(2, g.sutunlar["barkod"], Hucre("0123456789012"))        # baştaki sıfır korunur
+    g.sayfa.ata(3, g.sutunlar["barkod"], Hucre("8690000000011"))
+    return kitap, b
+
+
+def test_barkod_sutunlari_ve_tam_eslesme(depo):
+    _, b = _barkodlu(depo)
+    g = b.gorunum("urunler")
+    assert [s.kimlik for s in kayitlar.barkod_sutunlari(g)] == ["barkod"]
+    assert kayitlar.barkod_ara(g, "0123456789012") == 2
+    assert kayitlar.barkod_ara(g, " 8690000000011 ") == 3            # boşluk kırpılır
+    assert kayitlar.barkod_ara(g, "123456789012") is None            # sıfırsız ≠ eşleşme
+    assert kayitlar.barkod_ara(g, "0123456789012", haric=2) is None
+    assert kayitlar.barkod_ara(g, "") is None
+
+
+def test_baglanti_degeri_barkoddan_urun_kodu(depo):
+    _, b = _barkodlu(depo)
+    gh = b.gorunum("stok_hareketleri")
+    urun = next(s for s in gh.girdi_alanlari() if s.kimlik == "urun")
+    assert kayitlar.barkodlu_baglantilar(b, gh) == [urun]
+    assert kayitlar.baglanti_degeri(b, urun, "8690000000011") == "U002"
+    assert kayitlar.baglanti_degeri(b, urun, "u001") == "U001"       # ürün kodu da kabul (Türkçe harf duyarsız)
+    assert kayitlar.baglanti_degeri(b, urun, "0000") is None

@@ -349,3 +349,106 @@ def test_satir_eklenince_form_yeniden_kurulur(p):
     f = p._sablon_formu
     p.izgara().yigin.calistir(SatirEkleSil(sayfa(p, "Ürünler"), 2, 1, True))
     assert f.isVisible() and f.kayit_satirlari == [3, 4] and f.alanlar["urun_kodu"].metin() == "U001"
+
+
+# ---------------------------------------------------------------- barkod (10g)
+def barkodlu_form(p):
+    from tabcel.model.sayfa import Hucre
+    s = sayfa(p, "Ürünler")
+    s.ata(2, 3, Hucre("0123456789012"))
+    s.ata(3, 3, Hucre("8690000000011"))
+    p.sekmeler.setCurrentIndex(1)
+    p.kayit_formu_ac()
+    f = p._sablon_formu
+    f.yeni_kayit()
+    return f
+
+
+def okut(f, kimlik, kod):
+    """Okuyucu gibi: karakterleri hızlıca yaz + Enter."""
+    kutu = f.alanlar[kimlik].kutu
+    kutu = kutu.lineEdit() if hasattr(kutu, "lineEdit") else kutu
+    kutu.setFocus()
+    kutu.setText(kod)
+    QTest.keyClick(kutu, Qt.Key_Return)
+
+
+def test_barkod_okutunca_urun_secilir_ve_sonraki_alana_gecilir(p):
+    f = barkodlu_form(p)
+    assert f.barkod_alanlari() == ["urun"]
+    okut(f, "urun", "8690000000011")
+    assert f.alanlar["urun"].metin() == "U002"
+    assert f.focusWidget() is not f.alanlar["urun"].kutu.lineEdit()
+
+
+def test_barkod_basindaki_sifir_korunur(p):
+    f = barkodlu_form(p)
+    okut(f, "urun", "0123456789012")
+    assert f.alanlar["urun"].metin() == "U001"
+
+
+def test_urun_kodu_okutulursa_olduğu_gibi_kalir(p):
+    f = barkodlu_form(p)
+    okut(f, "urun", "U002")
+    assert f.alanlar["urun"].metin() == "U002"
+
+
+def test_ctrl_b_barkod_alanina_gider(p):
+    f = barkodlu_form(p)
+    f.alanlar["tarih"].kutu.setFocus()
+    assert f.barkod_alanina_git() is True
+    kisayol(f, "Ctrl+B")
+
+
+def test_bilinmeyen_barkod_yeni_urun_duğmesi_cikar(p):
+    f = barkodlu_form(p)
+    okut(f, "urun", "9999999999999")
+    assert "bulunamadı" in f.alanlar["urun"].hata.text()
+    assert not f._yeni_dugmeleri["urun"].isHidden()
+    assert f.alanlar["urun"].metin() == "9999999999999"                  # alanda kalındı
+
+
+def test_yeni_urun_olarak_ekle_kaydet_geri_don(p):
+    f = barkodlu_form(p)
+    doldur(f, tarih="15.10.2026", hareket_turu="Giriş", miktar="7")
+    okut(f, "urun", "9999999999999")
+    assert f.yeni_olarak_ekle("urun") is True
+    assert f.g.modul.kimlik == "urunler" and f.alanlar["barkod"].metin() == "9999999999999"
+    doldur(f, urun_kodu="U300", ad="Barkodlu yeni ürün")
+    assert f.kaydet() is True
+    # önceki forma dönüldü, ürün seçili, diğer alanlar korundu
+    assert f.g.modul.kimlik == "stok_hareketleri" and f._donus is None
+    assert f.alanlar["urun"].metin() == "U300"
+    assert f.alanlar["miktar"].metin() == "7" and f.alanlar["hareket_turu"].metin() == "Giriş"
+    assert sayfa(p, "Ürünler").deger(4, 3) == "9999999999999"
+    assert f.kaydet() is True                                             # hareket de kaydedilir
+    assert sayfa(p, "Stok Hareketleri").deger(5, 2) == "U300"
+
+
+def test_urunler_formunda_kayitli_barkod_kayda_gider(p):
+    from tabcel.model.sayfa import Hucre
+    sayfa(p, "Ürünler").ata(3, 3, Hucre("8690000000011"))
+    p.kayit_formu_ac()
+    f = p._sablon_formu
+    f.yeni_kayit()
+    okut(f, "barkod", "8690000000011")
+    assert f.satir == 3 and f.alanlar["urun_kodu"].metin() == "U002"
+    assert "kayıtlı" in f.durum.text()
+
+
+def test_urunler_formunda_yeni_barkod_normal_devam(p):
+    p.kayit_formu_ac()
+    f = p._sablon_formu
+    f.yeni_kayit()
+    okut(f, "barkod", "1111111111116")
+    assert f.satir is None and f.alanlar["barkod"].metin() == "1111111111116"
+
+
+def test_yeni_urun_eklerken_modul_degisirse_donus_iptal(p):
+    f = barkodlu_form(p)
+    okut(f, "urun", "9999999999999")
+    f.yeni_olarak_ekle("urun")
+    f.alanlar["barkod"].yaz("")
+    f._ilk = f._mevcut_metinler()
+    f.modul_kutusu.setCurrentIndex(f.modul_kutusu.findData("stok_hareketleri"))
+    assert f._donus is None

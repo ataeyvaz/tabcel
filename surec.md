@@ -1220,3 +1220,10 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Testler:** `test_sablon_kayitlar.py` (19, Qt'siz), `test_sablon_formu.py` (23, QTest + ekranlı görüntü kontrolü yapıldı). Yardım güncellendi (Yenilikler, "Şablondan Yeni → Kayıt Formu", kısayol tablosu).
 - **Bilinçli sınırlar:** tarih alanı metin + takvim düğmesi; evet/hayır kutusu boş bırakılamaz (işaretsiz = Hayır); form kayıt kimliğini satır numarasıyla izler (satır ekle/sil'de form yeniden kurulur, anahtar sütunu izleme yok); Faz 10g (barkod) ve 10h (varyant matrisi) henüz yok.
 - Sıradaki: 10g (barkod okuyucu), 10h (varyant matrisi).
+
+### Faz 10g — barkod okuyucu (2026-10-15, Sonnet 5.5)
+- **Yaklaşım:** USB okuyucu = hızlı tuş dizisi + Enter (özel sürücü yok). Alan `Enter`ında `SablonFormu.barkod_isle`: (1) kendi barkod alanı (`barkod: true`, Ürünler): kayıtlı barkodsa o kayda gider; değilse normal devam; (2) barkodlu modüle bağlanan alan (Stok hareketi → Ürün kodu): barkod tam eşleşmesi (baştaki sıfır korunur, boşluk kırpılır) ya da bağlanılan alanın değeri → alan dolar ve sonraki alana geçilir; (3) bulunamazsa alan başında kalınır, hata + **“Yeni ürün olarak ekle”** düğmesi: hedef modül formu barkod önceden dolu açılır, kaydedince ilk forma dönülür (taslak korunur, yeni kayıt seçili). `Ctrl+B` odağı barkod alanına taşır. Mantık Qt'siz `kayitlar.barkod_ara / barkodlu_baglantilar / baglanti_degeri`.
+- **Testler:** `test_sablon_kayitlar.py` (+2), `test_sablon_formu.py` (+9: okutma, baştaki sıfır, ürün kodu, bilinmeyen barkod, yeni ürün–kaydet–geri dön–hareket kaydı, kayıtlı barkod → kayda git, modül değişince dönüş iptali). Yardım güncellendi.
+- **Elle kalan:** gerçek USB okuyucuyla deneme (okuyucu yoksa klavyeyle benzetildi; karakterler arası süre koşulu aranmıyor, yalnız Enter). Çok hızlı tuş dizisinden otomatik algılama yok (karar: gereksiz, `Ctrl+B` ve alan odağı yeterli).
+- Sıradaki: 10h (varyant matrisi).
+
