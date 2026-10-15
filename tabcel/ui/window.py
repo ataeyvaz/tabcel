@@ -369,7 +369,52 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         QShortcut(QKeySequence("F1"), self, activated=lambda: self.yardim_ac(None))
         QShortcut(QKeySequence("Alt+Q"), self, activated=lambda: self.asistan_ac(), context=Qt.WindowShortcut)
         QShortcut(QKeySequence("Ctrl+Alt+I"), self, activated=lambda: self.izleme_ac(), context=Qt.WindowShortcut)
+        QShortcut(QKeySequence("Ctrl+Alt+F"), self, activated=lambda: self.kayit_formu_ac(), context=Qt.WindowShortcut)
         QShortcut(QKeySequence("F7"), self, activated=lambda: self.yazim_denetle(), context=Qt.WindowShortcut)
+
+    # --- Şablon kayıt formu (Faz 10f) ---
+    def kayit_formu_ac(self, modul=None, satir=None) -> bool:
+        """Veri ▸ Kayıt Formu (Ctrl+Alt+F): şablon tablolarındaki kayıtlar için otomatik form. Kitapta şablon yoksa ya da
+        sütunlar şablonla uyuşmuyorsa form kapalıdır (tablo çalışır) ve nedeni söylenir."""
+        from .sablon_formu import SablonFormu
+        if getattr(self, "_sablon_formu", None) is None:
+            self._sablon_formu = SablonFormu(self)
+        if self._sablon_formu.ac(modul, satir):
+            return True
+        if self._yeniden_esle_sor():
+            return self.kayit_formu_ac(modul, satir)
+        d = getattr(self.kitap, "sablon_denetim", None)
+        if self.kitap.sablon is None:
+            ileti = "Bu çalışma kitabı bir şablondan oluşturulmamış; kayıt formu yok. (Dosya ▸ Şablondan Yeni…)"
+        elif d is not None and not d.aktif:
+            ileti = "Kayıt formu kapalı: " + d.metin()
+        else:
+            ileti = "Bu şablonda form açılacak tablo yok."
+        QMessageBox.information(self, "Kayıt Formu", ileti)
+        return False
+
+    def _yeniden_esle_sor(self) -> bool:
+        """Form başlık uyuşmazlığı yüzünden kapalıysa yeniden eşleme önerir (sütun silinmiş/adı değişmiş). Eşleme yapılıp form
+        açılabilir hâle geldiyse True; belge değişmiş sayılır (kayıtlı başlıklar güncellenir)."""
+        from ..sablon import saklama
+        from . import sablon_formu
+        kayit = self.kitap.sablon
+        if kayit is None:
+            return False
+        durumlar = [d for d in saklama.esleme_durumlari(self.kitap, kayit) if d.adaylar]
+        if not durumlar:
+            return False
+        if QMessageBox.question(self, "Kayıt Formu", "Şablonun bazı sütun başlıkları tabloda bulunamadı; form kapalı. "
+                                "Sütunları yeniden eşlemek ister misiniz?", QMessageBox.Yes | QMessageBox.No,
+                                QMessageBox.Yes) != QMessageBox.Yes:
+            return False
+        pen = sablon_formu.EslemePenceresi(durumlar, self)
+        if pen.exec() != QDialog.Accepted or not pen.harita():
+            return False
+        denetim = saklama.yeniden_esle(self.kitap, kayit, pen.harita())
+        self._gorunum_kirli = True
+        self._baslik_guncelle()
+        return denetim.aktif
 
     # --- Tablo Sağlık Kontrolü (Faz 9c) ---
     def saglik_ac(self) -> None:
@@ -610,6 +655,7 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
         e("ad_tanimla", "Ad Tanımla…", lambda: self.ad_tanimla_ac(), "", "define_name")
         e("ad_yoneticisi", "Ad Yöneticisi", lambda: self.ad_yoneticisi_ac(), "Ctrl+F3", "name_manager32")
         # notlar
+        e("kayit_formu", "Kayıt Formu", lambda: self.kayit_formu_ac(), "Ctrl+Alt+F", "validation32")
         e("saglik", "Tablo Sağlığı", lambda: self.saglik_ac(), "", "saglik32")
         e("temizleyici", "Paylaşım Temizleyici", lambda: self.temizleyici_ac(), "", "temizle32")
         e("izleme", "Hesap İzleme", lambda: self.izleme_ac(), "Ctrl+Alt+I", "trace32", isaretli=True)
@@ -792,6 +838,8 @@ class Pencere(DosyaIslemleri, BulutIslemleri, HizliErisim, QMainWindow):
             self.izleme.olay(olay)
         if getattr(self, "saglik", None) is not None:
             self.saglik.olay(olay)
+        if getattr(self, "_sablon_formu", None) is not None:
+            self._sablon_formu.olay(olay)
         if olay.tur in ("hucre", "sonuc", "yapi", "ek", "sayfa"):
             kuralli = False
             for g in self._izgaralar.values():

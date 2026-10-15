@@ -239,3 +239,52 @@ def denetle(kitap, kayit: SablonKaydi) -> Denetim:
             d.esleme[mk] = esle
             d.sayfalar[mk] = sayfa.kimlik
     return d
+
+
+# ---------------------------------------------------------------- yeniden eşleme (Faz 10f)
+@dataclass
+class EslemeDurumu:
+    modul: str
+    sayfa_adi: str
+    eksik: List[Tuple[str, str]]            # (sütun kimliği, kayıtlı başlık) — tabloda bulunamayanlar
+    adaylar: List[str]                      # tabloda olup şablonda tanımlı olmayan başlıklar (eşleme seçenekleri)
+
+
+def esleme_durumlari(kitap, kayit: SablonKaydi) -> List[EslemeDurumu]:
+    """Başlığı bulunamayan sütunlar için kullanıcıya sunulacak eşleme önerileri (yalnız eksiği olan modüller)."""
+    sonuc = []
+    for mk, bag in kayit.baglar.items():
+        capa = capa_coz(kitap, mk)
+        if capa is not None:
+            sayfa, ilk, son, satir = capa
+        else:
+            sayfa = next((s for s in kitap.sayfalar if s.ad == bag.sayfa_adi), None)
+            if sayfa is None:
+                continue
+            ilk, son, satir = 1, 0, bag.ilk_satir - 1
+        kul = sayfa.kullanilan_aralik()
+        son_sutun = max(son, kul[3] if kul else 0, len(bag.basliklar))
+        mevcut = {}
+        for c in range(1, son_sutun + 1):
+            b = _baslik_metni(sayfa, satir, c)
+            if b and b not in mevcut:
+                mevcut[b] = c
+        eksik = [(sk, b) for sk, b in bag.basliklar.items() if b not in mevcut]
+        if eksik:
+            adaylar = [b for b in mevcut if b not in bag.basliklar.values()]
+            sonuc.append(EslemeDurumu(mk, sayfa.ad, eksik, adaylar))
+    return sonuc
+
+
+def yeniden_esle(kitap, kayit: SablonKaydi, harita: Dict[str, Dict[str, str]]) -> Denetim:
+    """`harita`: {modül: {sütun kimliği: tablodaki yeni başlık}}. Kayıttaki başlık adı güncellenir (tablo ve formüller değişmez);
+    sonra uyuşma yeniden denetlenir, sonuç `kitap.sablon_denetim`e yazılır. Çağıran belgeyi değişmiş işaretler."""
+    for mk, m in harita.items():
+        bag = kayit.baglar.get(mk)
+        if bag is None:
+            continue
+        for sk, yeni in m.items():
+            if sk in bag.basliklar and yeni:
+                bag.basliklar[sk] = yeni
+    kitap.sablon_denetim = denetle(kitap, kayit)
+    return kitap.sablon_denetim

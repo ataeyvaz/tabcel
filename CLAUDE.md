@@ -50,14 +50,14 @@ tabcel/formul/       yerel, sozcuk (tokenizer), agac (parser), degerler, donustu
 tabcel/io/           xlsx_io, xlsx_grafik (grafik/resim), xlsx_kayip (Excel'de değişmiş grafik tespiti),
                      csv_io, kurtarma, son_dosyalar; Faz 7: bulut (Drive/OneDrive klasörleri, Qt yok),
                      yazim_motoru (Windows yazım denetimi, comtypes); Faz 9d: temiz_dosya (KVKK temiz kopya yazma + doğrulama); formul/asistan (Türkçe cümle → formül önerisi)
-tabcel/sablon/       Faz 10: sema (tanım şeması + doğrulayıcı), yukleyici (yerleşik + kullanıcı klasörü, sürüm göçü, rapor), eslestirici — Qt yok
+tabcel/sablon/       Faz 10: sema (tanım şeması + doğrulayıcı), yukleyici (yerleşik + kullanıcı klasörü, sürüm göçü, rapor), eslestirici, uretici, saklama, kayitlar (kural motoru: alan kuralları = tablo doğrulaması, satır kuralları = tanım formülü) — Qt yok
 tabcel/sablonlar/    yerleşik şablon tanımları (JSON, kural 22): akislar/, moduller/
 tabcel/veri/         resmi_tatiller.json (TRİŞGÜNÜ/TRTAMİŞGÜNÜ; model/tatiller.py okur)
 tabcel/ui/           window, grid (+ grid_nesneler/grid_nesne_etkilesim: yüzen nesneler), theme, icons, widgets, serit +
                      serit_sekmeleri (sekmeli şerit), grafik_eylemleri/grafik_pencereleri/grafik_boyayici, yardim,
                      arka_plan (iş parçacığı), dosya_islemleri, bicim_cubugu, renkli,
                      pencereler (*_penceresi: bicim, csv, sayfa yapısı, yazdır…);
-                     Faz 7: bulut_islemleri, hizli_erisim, hakkinda_penceresi, yazim_penceresi; Faz 9: izleme_paneli, saglik_paneli, temizleyici_penceresi
+                     Faz 7: bulut_islemleri, hizli_erisim, hakkinda_penceresi, yazim_penceresi; Faz 9: izleme_paneli, saglik_paneli, temizleyici_penceresi; Faz 10: sablon_sihirbazi, sablon_formu (kayıt formu)
 testler/             pytest
 araclar/             ölçüm/doğrulama betikleri (performans_olcum, formul_olcum, dosya_olcum, cizim_dogrula,
                      test_raporu, test_parcali [tam paket 3 süreçte], ornek_uret(.py/_excel.ps1),

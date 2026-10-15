@@ -194,9 +194,10 @@ def _dogrulama(sutun: Sutun, harf: str, c: int, kapasite: int, ilk: int = 2) -> 
 
 # ---------------------------------------------------------------- formül genişletme
 def genislet(formul: str, satir: Optional[int], bu_modul: ModulYeri, yerler: Dict[str, ModulYeri], yol: str,
-             ayarlar: Optional[set] = None) -> str:
+             ayarlar: Optional[set] = None, sabitler: Optional[Dict[str, str]] = None) -> str:
     """Yer tutucuları kanonik İngilizce, sıradan başvuru/ad biçimine çevirir (kitapta yer tutucu kalmaz).
-    `[@x?]` / `[m.x?]` (isteğe bağlı): sütun kapalıysa `0` olur. `ayarlar`: üretilen (açık) ayar kimlikleri; None = denetleme yok."""
+    `[@x?]` / `[m.x?]` (isteğe bağlı): sütun kapalıysa `0` olur. `ayarlar`: üretilen (açık) ayar kimlikleri; None = denetleme yok.
+    `sabitler`: {sütun kimliği: formül sabiti} — verilirse `[@x]` bu sabite çevrilir (kaydedilmemiş form taslağı; satır gerekmez)."""
     def degistir(m):
         t = m.group(0)
         if t.startswith('"'):
@@ -210,6 +211,8 @@ def genislet(formul: str, satir: Optional[int], bu_modul: ModulYeri, yerler: Dic
         if opsiyonel:
             ic = ic[:-1]
         if ic.startswith("@"):
+            if sabitler is not None and ic[1:] in sabitler:       # form taslağı (Faz 10f): `[@x]` yerine değer sabiti
+                return sabitler[ic[1:]]
             sutun = bu_modul.sutunlar.get(ic[1:])
             if sutun is None:
                 if opsiyonel and bu_modul.modul.sutun(ic[1:]) is not None:

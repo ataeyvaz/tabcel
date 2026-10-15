@@ -36,6 +36,7 @@ En yenisi en üstte.
 
 ## 15 Ekim 2026
 - **İşlev kitaplığı genişledi** (2026-10-15, adlar ve sonuçlar gerçek Excel'de doğrulandı): trigonometri (`SİN`, `COS`, `TAN`, `ASİN`, `ATAN2`…), sayı kuramı (`ÇARPINIM`, `KOMBİNASYON`, `OBEB`, `OKEK`, `ROMEN`, `TABAN`…), bit ve sayı tabanı çevirme (`BİTVE`, `DEC2BIN`, `HEX2DEC`…), istatistik (`STDSAPMA.S/P`, `VAR.S/P`, `YÜZDEBİRLİK`, `DÖRTTEBİRLİK`, `KORELASYON`, `EĞİM`, `TAHMİN`, `NORM.DAĞ`, `NORM.TERS`, `RANK.EŞİT`…), metin (`DAMGA`, `KOD`, `SAYIDÜZENLE`, `LİRA`, `SAYIDEĞERİ`, `ÖNCEKİMETİN`, `SONRAKİMETİN`…), tarih (`TARİHSAYISI`, `ZAMANSAYISI`, `GÜN360`, `YILORAN`, `ISOHAFTASAY`, `TAMİŞGÜNÜ.ULUSL`, `İŞGÜNÜ.ULUSL`), finans (`FAİZTUTARI`, `ANA_PARA_ÖDEMESİ`, `TAKSİT_SAYISI`, `DA`, `YAT`, `AZALANBAKİYE`, `ÇİFTAZALANBAKİYE`, `AİÇVERİMORANI`, `ANBD`…) bilgi (`ÇİFTMİ`, `TEKMİ`, `HATA.TİPİ`, `TÜR`, `ADRES`, `SAYFA`…), matris/dizi (`DÇARP`, `DETERMİNANT`, `DİZEY_TERS`, `BİRİMMATRİS`, `SIKLIK`, `EĞİLİM`, `BÜYÜME`, `DOT`, `SATIRSAR`, `SÜTUNSAR`, `METİNBÖL`) ve veritabanı (`VSEÇTOPLA`, `VSEÇORT`, `VSEÇSAY`, `VSEÇMAK`, `VSEÇMİN`, `VAL`) işlevleri, ayrıca `TOPLAMA` (AGGREGATE)..
+- **Şablonlar için Kayıt Formu** (Veri → Kayıt Formu, `Ctrl+Alt+F`): tablodaki kayıtları form olarak girin; kurallar (zorunlu, benzersiz, stok eksiye düşmesin…) tabloyla aynıdır. **Tablo Sağlığı** artık *Şablon kural ihlali* de bulur. Ayrıntı: "Şablondan Yeni".
 - **Excel ile karşılaştırma düzeltmeleri** (gerçek Excel'de ölçüldü): sıfıra bölme hatası `#SAYI/0!` olarak gösterilir (eski `#BÖL/0!` yazımı girişte hâlâ okunur); **İLKEŞLEŞEN** (SWITCH) adı düzeltildi; yeni işlev **ARA** (LOOKUP); Genel biçim en çok 11 karakter gösterir (`1,23457E+11`); `DÜŞEYARA`/`KAÇINCI` yaklaşık eşleşmesi Excel gibi ikili arama yapar; `EĞERSAY(…;"=")` yalnız gerçekten boş hücreleri sayar; Türkçe özel biçim kodlarında saat `s`, dakika `d`, saniye `n` olur (`ss:dd:nn`).
 - **Formül yazınca biçim kendiliğinden ayarlanır** (Genel biçimli hücrede, Excel gibi): `=BUGÜN()`/`=TARİH(…)` tarih, `=ŞİMDİ()` tarih ve saat, `=DEVRESEL_ÖDEME(…)` ve benzeri finans işlevleri para, `=İÇ_VERİM_ORANI(…)` yüzde; `=A1+1` gibi formüller başvurulan hücrenin biçimini taşır. Ayrıntı: "Formüller".
 - **Dosya → Şablondan Yeni…:** ne yapmak istediğinizi yazın, {APP_NAME} uygun hazır tabloyu soru-cevapla kurar. Hazır şablonlar: *Stok takibi*, *Cari hesap takibi*, *Apartman / site aidat takibi*, *Teklif hazırlama*, *Çek ve senet takibi*, *Not çizelgesi*. Ayrıntı: "Dosyalar, Yazdırma ve Kurtarma".
@@ -375,6 +376,17 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 - Apartman aidatındaki gecikme zammı basit bir hesaptır (kalan borç × aylık oran), yasal faiz hesabı değildir; oranı kendiniz belirlersiniz.
 - *Paylaşım Temizleyici* şablon bilgisindeki kişisel verileri de tarar.
 
+### Kayıt Formu (Veri → Kayıt Formu, `Ctrl+Alt+F`)
+Şablonla üretilen tablolardaki her kayıt için otomatik bir form açılır; tabloyu elle doldurmak yerine alan alan girebilirsiniz.
+- **Alanlar** sütun türüne göre gelir: metin kutusu, takvimli tarih (`gg.aa.yyyy`), açılır liste, yazdıkça süzülen bağlantı listesi (ör. ürün kodu), evet/hayır kutusu; hesaplanan alanlar yalnızca gösterilir. `*` zorunlu alandır.
+- **Klavye:** `Enter` sonraki alana geçer (son alanda kaydeder), `Ctrl+Enter` kaydeder ve yeni kayda geçer, `Ctrl+PgDn` / `Ctrl+PgUp` sonraki / önceki kayıt, `Ctrl+F` kayıt arar (Türkçe harf duyarsız), `Esc` kapatır.
+- **Kurallar tabloyla aynıdır:** zorunlu, benzersiz, sayı aralığı, T.C./vergi no/IBAN/telefon/e-posta ve açılır liste kuralları tablodaki veri doğrulamasıdır; ayrıca şablonun satır kuralları da denetlenir (ör. *stok eksiye düşemez*). Hata iletisi alanın altında kırmızı çıkar ve kayıt yapılmaz; *uyarı* düzeyindeki kurallarda onay sorulur.
+- Form ayrı veri tutmaz: tablodaki satırı doğrudan okur ve yazar. Bir kaydın kaydedilmesi tek **Geri Al** adımıdır; tablodaki değişiklikler formda, formdaki kayıtlar tabloda anında görünür.
+- **Örnek verileri temizle** şablonla gelen örnek kayıtları siler (kendi değiştirdiğiniz satırlara dokunmaz; geri alınabilir).
+- Sütun başlıkları değiştirilmiş ya da silinmişse form kapanır; **Kayıt Formu**'nu açınca *Sütunları yeniden eşlemek* isteyip istemediğiniz sorulur ve eksik başlıklar tablodaki başlıklarla eşlenir.
+- **Tablo Sağlığı** artık *Şablon kural ihlali* de bulur: tabloya yapıştırılan ya da elle yazılan, forma girilseydi kaydedilmeyecek kayıtlar. (Stok gibi başka tabloların toplamlarına bakan kurallar yalnızca form girişinde denetlenir.)
+- Yeni kayıt, hazır formüllerin bittiği satırın ötesine eklenirse hesaplanan sütunların formülleri forma kaydederken o satıra da yazılır.
+
 <!-- konu: pano | Kopyala ve Yapıştır -->
 # Kopyala ve Yapıştır
 
@@ -413,6 +425,7 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 | `F7` | Yazım denetimi |
 | `Alt+Q` | Ne yapmak istiyorsun? (asistan) |
 | `Ctrl+Alt+I` | Hesap İzleme panelini aç/kapat |
+| `Ctrl+Alt+F` | Kayıt Formu (şablon tabloları) |
 | `Ctrl+9` / `Ctrl+0` | Satırları / Sütunları gizle |
 | `Ctrl+Shift+9` / `Ctrl+Shift+0` | Satırları / Sütunları göster |
 | `Ctrl+Boşluk` / `Shift+Boşluk` | Sütunu / Satırı seç |

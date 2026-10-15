@@ -3528,3 +3528,7 @@ Kullanıcı arayüz/menü/formül elle testlerinin Claude'da olduğunu bildirdi.
 | İşlev kapsamı | ⚠️ 188 sık kullanılan Excel işlevi yok (`eksik_fonksiyonlar.md`) |
 | Gerçek yazıcı, Excel/Word pano, çökme kurtarma, %125/%150 ölçek, Excel arayüz hissi | ⏳ hâlâ elle (kullanıcıyla) |
 | Tam paket (5 parça) | ✅ ≈3.940 geçti (+ ≈200 yeni); tek zamanlama testi yük altında kararsız |
+
+## 20. Faz 10f — kural motoru + kayıt formu (Claude, 2026-10-15)
+- Otomatik: `test_sablon_kayitlar.py` (19: bağlam, zorunlu/benzersiz/aralık/kimlik/liste kuralları, stok satır kuralı, `ne_zaman`, tablo taraması, yapıştırılan hatalı kayıt, yazım haritası, Sağlık Kontrolü) ve `test_sablon_formu.py` (23: açılış, kurallı kaydetme, Enter gezintisi, Ctrl+Enter, tek geri al adımı, hesaplanan alan, durdur/uyar, gezinme, kirli kayıt sorusu, arama, silme, yeniden eşleme, örnek veri temizleme, canlı eşzaman).
+- Elle (ekranlı pencere + ekran görüntüsü): stok hareketi formu — tarih/ürün/hareket türü/miktar alanları, takvim düğmesi, kırmızı "Bu çıkış stoğu eksiye düşürür." iletisi. **Elle kalan:** gerçek klavyede uzun kullanım hissi, çok pencere/çok kullanıcı yok.

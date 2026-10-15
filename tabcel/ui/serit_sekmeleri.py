@@ -158,6 +158,7 @@ class VeriSayfasi(SeritSayfasi):
         self.grup_ekle(sf)
         va = SeritGrubu("Veri Araçları", 4, "validation32")
         va.buyuk(e["dogrulama"], metin="Veri\nDoğrulama")
+        va.buyuk(e["kayit_formu"], metin="Kayıt\nFormu")
         self.grup_ekle(va)
 
 

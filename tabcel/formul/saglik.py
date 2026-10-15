@@ -44,6 +44,7 @@ KONTROLLER = (
     ("sabit_sayi", "Formül içinde sabit sayı", BILGI, "Formüle elle yazılmış sayılar (ör. =B5*1,18)"),
     ("bos_basvuru", "Boş hücreye başvuru", BILGI, "Formülün veri arasındaki boş bir hücreyi kullanması"),
     ("yinelenen_satir", "Yinelenen satırlar", BILGI, "Tamamen aynı olan satırlar"),
+    ("kural_ihlali", "Şablon kural ihlali", UYARI, "Şablon tablosunda zorunlu/benzersiz/aralık ya da satır kuralına uymayan kayıtlar (ör. yapıştırılan hatalı satırlar)"),
 )
 KONTROL_ADI = {k: a for k, a, _, _ in KONTROLLER}
 KONTROL_ONEMI = {k: o for k, _, o, _ in KONTROLLER}
@@ -622,6 +623,33 @@ class Tarayici:
                     "Aynı kayıt iki kez girilmiş olabilir; toplamlar ve sayımlar şişer.", None)
 
     # =========================================================== 8. geçersiz kimlik verileri
+    def _k_kural_ihlali(self, sayfa) -> Iterator[Bulgu]:
+        """Faz 10f: şablon modülü sayfasındaki kayıtların alan/satır kuralı ihlalleri (kural motoru `sablon/kayitlar.py`).
+        Yapıştırma ve dışarıdan veri hücre doğrulamasını atlar; form her zaman denetler."""
+        from ..sablon import kayitlar
+        if self.kitap.sablon is None:
+            return
+        if not hasattr(self, "_sablon_baglami"):
+            self._sablon_baglami = kayitlar.Baglam.kur(self.kitap)
+        b = self._sablon_baglami
+        g = b.gorunum_sayfadan(sayfa) if b is not None else None
+        if g is None:
+            return
+        gruplar: Dict[str, list] = {}
+        for _mk, r, ih in kayitlar.tablo_ihlalleri(b, g.modul.kimlik):
+            if self._ritim():
+                yield None
+            c = g.sutunlar.get(ih.alan, min(g.sutunlar.values())) if ih.alan else min(g.sutunlar.values())
+            gruplar.setdefault(ih.kural, []).append(((r, c), ih))
+        for kural, uyeler in gruplar.items():
+            hucreler = [h for h, _ in sorted(uyeler)]
+            ilk = uyeler[0][1]
+            ad = ilk.ileti
+            yield self._bulgu("kural_ihlali", sayfa, hucreler, f"Kural ihlali: {len(hucreler)} kayıt",
+                              f"{g.modul.ad}: {ad}" + (f" ({len(hucreler)} hücre)" if len(hucreler) > 1 else ""),
+                              "Form bu kayıtları kaydetmezdi; tabloya yapıştırma ya da elle düzenleme doğrulamayı atlamış olabilir.",
+                              ek=kural)
+
     def _k_gecersiz_kimlik(self, sayfa) -> Iterator[Bulgu]:
         sutunlar: Dict[int, List[Tuple[int, str]]] = {}
         for (r, c), h in sayfa._hucreler.items():
