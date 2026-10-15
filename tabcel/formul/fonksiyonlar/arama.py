@@ -54,26 +54,35 @@ def bul_tam(aranan, liste: List, joker=True, sondan=False) -> Optional[int]:
 
 
 def bul_yaklasik(aranan, liste: List, artan=True) -> Optional[int]:
-    """artan=True: aranandan küçük/eşit en büyük (liste artan sıralı varsayılır);
-    False: büyük/eşit en küçük (azalan sıralı). Yalnız aynı türdeki öğeler karşılaştırılır."""
-    en_iyi = None
+    """artan=True: aranandan küçük/eşit en büyük (artan sıralı varsayılır); False: büyük/eşit en küçük (azalan).
+    Artan aramada Excel gibi İKİLİ ARAMA (COM, 2026-10-15): sırasız veride de Excel'in verdiği sonucu verir
+    (DÜŞEYARA(6;{10;5;7}) → 5'in satırı); eşitler arasında sonuncuyu seçer. Karışık türlü/hatalı
+    listede yalnız aynı türdeki öğeler karşılaştırılır (doğrusal tarama)."""
     t = _tur(aranan)
+    saf = artan and all(_tur(v) == t and not isinstance(v, Hata) for v in liste)
+    if saf:                      # azalan (KAÇINCI −1) için Excel doğrusal davranır (COM ile doğrulandı)
+        alt, ust, en_iyi = 0, len(liste) - 1, None
+        while alt <= ust:
+            orta = (alt + ust) // 2
+            k = karsilastir(liste[orta], aranan)
+            if isinstance(k, Hata):
+                return None
+            if (k <= 0) if artan else (k >= 0):
+                en_iyi, alt = orta, orta + 1
+            else:
+                ust = orta - 1
+        return en_iyi
+    en_iyi = None
     for i, v in enumerate(liste):
         if _tur(v) != t or isinstance(v, Hata):
             continue
         k = karsilastir(v, aranan)
         if isinstance(k, Hata):
             continue
-        if artan:
-            if k <= 0:
-                en_iyi = i
-            else:
-                break
+        if (k <= 0) if artan else (k >= 0):
+            en_iyi = i
         else:
-            if k >= 0:
-                en_iyi = i
-            else:
-                break
+            break
     return en_iyi
 
 
@@ -162,6 +171,34 @@ def _match(b, aranan, dizi, tur=None):
     else:
         p = bul_yaklasik(a, liste, t > 0)
     return D.YOK if p is None else float(p + 1)
+
+
+@fonksiyon("LOOKUP", en_az=2, en_cok=3)
+def _lookup(b, aranan, vektor, sonuc=None):
+    """ARA: vektör biçimi LOOKUP(x; arama_vektörü; [sonuç_vektörü]) ve dizi biçimi LOOKUP(x; dizi)
+    (geniş dizide ilk satırda arar, son satırı; değilse ilk sütunda arar, son sütunu döndürür). Hep yaklaşık eşleşme."""
+    a = _aranan(aranan)
+    if isinstance(a, Hata):
+        return a
+    if not isinstance(vektor, (AralikDeger, Dizi)):
+        return D.YOK
+    R, C, oku = matris(vektor)
+    if sonuc is None or sonuc is BOS_ARG:
+        if C > R:
+            anahtar, getir = [oku(0, k) for k in range(C)], (lambda p: oku(R - 1, p))
+        else:
+            anahtar, getir = [oku(k, 0) for k in range(R)], (lambda p: oku(p, C - 1))
+    else:
+        anahtar = _dogrusal((R, C, oku))
+        if anahtar is None or not isinstance(sonuc, (AralikDeger, Dizi)):
+            return D.YOK
+        R2, C2, oku2 = matris(sonuc)
+        sonuc_listesi = _dogrusal((R2, C2, oku2))
+        if sonuc_listesi is None:
+            return D.YOK
+        getir = lambda p: sonuc_listesi[p] if p < len(sonuc_listesi) else D.YOK    # noqa: E731
+    p = bul_yaklasik(a, anahtar, True)
+    return D.YOK if p is None else getir(p)
 
 
 def _arama_konumu(aranan, liste, eslesme, arama):

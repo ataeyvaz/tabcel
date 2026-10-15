@@ -51,19 +51,30 @@ def sayiya(v) -> Sayi:
 
 
 def sayi_metni(x: float) -> str:
-    """Sayının metin hali (`&`, METNEÇEVİR olmadan birleştirme): en çok 15 anlamlı basamak,
-    ondalık virgül. Bilimsel gösterime geçiş eşiği Excel'de doğrulanmadı (surec.md §8b)."""
+    """Sayının metin hali (`&`, METNEÇEVİR olmadan birleştirme): en çok 15 anlamlı basamak, ondalık virgül.
+    Gerçek Excel 16'da (COM, 2026-10-15) ölçülen kural: 15 basamağa yuvarlanıp sondaki sıfırlar atılır;
+    ondalık gösterim, tamsayı kısmı ≤ 20 basamak ve ondalık basamak sayısı ≤ 18 ise kullanılır
+    (0,00001; 123456789012345000), aksi halde bilimsel (1,5E+20; 1,23456789012345E-05)."""
     if x == 0:
         return "0"
     if x == int(x) and abs(x) < 1e15:
         return str(int(x))
-    t = f"{x:.15g}"
-    if "e" in t:
-        mantis, us = t.split("e")
-        isaret = us[0]
-        us = us[1:].lstrip("0").rjust(2, "0")
-        t = f"{mantis}E{isaret}{us}"
-    return t.replace(".", ",")
+    isaret = "-" if x < 0 else ""
+    mantis, us = f"{abs(x):.14e}".split("e")
+    basamaklar = mantis.replace(".", "").rstrip("0") or "0"
+    e = int(us)
+    if e >= 0:
+        sigar = e + 1 <= 20
+    else:
+        sigar = (-e - 1) + len(basamaklar) <= 18
+    if not sigar:
+        govde = basamaklar[0] + ("," + basamaklar[1:] if len(basamaklar) > 1 else "")
+        return f"{isaret}{govde}E{'-' if e < 0 else '+'}{abs(e):02d}"
+    if e >= 0:
+        tam = basamaklar[:e + 1].ljust(e + 1, "0")
+        kesir = basamaklar[e + 1:]
+        return isaret + tam + ("," + kesir if kesir else "")
+    return isaret + "0," + "0" * (-e - 1) + basamaklar
 
 
 def metne(v) -> Union[str, Hata]:
@@ -89,9 +100,10 @@ def mantiga(v) -> Union[bool, Hata]:
         return v
     if isinstance(v, str):
         k = tr_kucuk(v.strip())
-        if k in ("doğru", "true"):
+        # Türkçe Excel (COM, 2026-10-15): yalnız yerel ad çevrilir; "TRUE"/"FALSE"/"1"/"0" metni #DEĞER! verir
+        if k == "doğru":
             return True
-        if k in ("yanliş", "yanlış", "false"):
+        if k in ("yanliş", "yanlış"):
             return False
     return D.DEGER_HATASI
 

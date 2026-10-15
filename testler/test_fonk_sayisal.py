@@ -124,15 +124,15 @@ ISTATISTIK = [
 
 MANTIK_BILGI = [
     ("=IFS(FALSE,1,TRUE,2)", 2.0, None), ("=IFS(FALSE,1)", Y, None), ("=IFS(B1,1,TRUE,2)", 2.0, None),
-    ("=IFS(#N/A,1)", Y, None), ('=IFS("TRUE",1)', 1.0, None),
+    ("=IFS(#N/A,1)", Y, None), ('=IFS("TRUE",1)', V, None), ('=IFS("DOĞRU",1)', 1.0, None),   # Excel-tr: yalnız yerel ad çevrilir (COM)
     ("=AND(TRUE,TRUE)", True, None), ("=AND(TRUE,FALSE)", False, None), ("=AND(B1:B3)", V, None),
-    ("=AND(TRUE,#N/A)", Y, None), ("=AND(A1:A4)", True, V1), ('=AND(1,"x")', V, None),
+    ("=AND(TRUE,#N/A)", Y, None), ("=AND(A1:A4)", True, V1), ('=AND(1,"x")', True, None), ('=AND("x")', V, None),   # metin argüman atlanır (Excel COM 2026-10-15)
     ("=OR(FALSE,TRUE)", True, None), ("=OR(FALSE,0)", False, None), ("=OR(B1:B3)", V, None),
-    ("=OR(FALSE,#N/A)", Y, None), ("=OR(A1:A4)", True, V1), ('=OR(0,"x")', V, None),
+    ("=OR(FALSE,#N/A)", Y, None), ("=OR(A1:A4)", True, V1), ('=OR(0,"x")', False, None),
     ("=XOR(TRUE,FALSE)", True, None), ("=XOR(TRUE,TRUE)", False, None), ("=XOR(B1:B3)", V, None),
     ("=XOR(TRUE,#N/A)", Y, None), ("=XOR(A1:A4)", True, {"A1": 1, "A2": 0, "A3": 0, "A4": "x"}),
     ("=NOT(TRUE)", False, None), ("=NOT(0)", True, None), ("=NOT(B1)", True, None), ("=NOT(#N/A)", Y, None),
-    ('=NOT("x")', V, None), ('=NOT("TRUE")', False, None),
+    ('=NOT("x")', V, None), ('=NOT("TRUE")', V, None), ('=NOT("DOĞRU")', False, None),
     ("=TRUE()", True, None), ("=FALSE()", False, None), ("=TRUE()+1", 2.0, None), ("=FALSE()+#N/A", Y, None),
     ('=TRUE()&""', "DOĞRU", None),
     ('=IFERROR(1/0,"h")', "h", None), ('=IFERROR(5,"h")', 5.0, None), ('=IFERROR(B1,"h")', 0.0, None),

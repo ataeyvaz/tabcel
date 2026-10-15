@@ -37,7 +37,7 @@ ONEM_ADLARI = {KRITIK: "Kritik", UYARI: "Uyarı", BILGI: "Bilgi"}
 # (kimlik, ad, önem, kısa açıklama) — ayarlar penceresi ve rapor bu listeden okur
 KONTROLLER = (
     ("eksik_aralik", "Eksik aralık", KRITIK, "TOPLA/ORTALAMA/SAY… aralığının hemen bitişiğindeki veri toplamaya katılmıyor"),
-    ("hata", "Hata değerleri", KRITIK, "#DEĞER!, #BAŞV!, #BÖL/0! gibi hata veren hücreler ve hatanın kaynağı"),
+    ("hata", "Hata değerleri", KRITIK, "#DEĞER!, #BAŞV!, #SAYI/0! gibi hata veren hücreler ve hatanın kaynağı"),
     ("gecersiz_kimlik", "Geçersiz kimlik verisi", KRITIK, "T.C. kimlik no, vergi no ve IBAN sütunlarında algoritmaya uymayan değerler"),
     ("tutarsiz_formul", "Tutarsız formül", UYARI, "Komşu formüllerle aynı desende olması gereken ama farklı olan formül"),
     ("metin_sayi", "Metin olarak saklanan sayı", UYARI, "Sayıya benzeyen ama metin olan değerler (IBAN, T.C. no, telefon hariç)"),

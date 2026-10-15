@@ -54,9 +54,9 @@ def test_metin_islenen_formulde_sabit():
 
 def test_bolen_sifir_ya_da_bos():
     k, _ = kur({"A1": 5.0, "C1": "=A1/B1"})
-    assert yazi(k, "C1") == "#BÖL/0!: Bölen (B1) sıfır ya da boş."
+    assert yazi(k, "C1") == "#SAYI/0!: Bölen (B1) sıfır ya da boş."
     k, _ = kur({"C1": "=1/0"})
-    assert yazi(k, "C1") == "#BÖL/0!: Bölen sıfır ya da boş."
+    assert yazi(k, "C1") == "#SAYI/0!: Bölen sıfır ya da boş."
 
 
 def test_us_tanimsiz():
@@ -130,7 +130,7 @@ def test_aralik_onculu_ilk_hatali_hucre():
 
 def test_tembel_islev_secilen_dal():
     k, _ = kur({"A1": 1.0, "B1": "=EĞER(A1>0;1/0;2)"})
-    assert yazi(k, "B1") == "#BÖL/0!: Bölen sıfır ya da boş."
+    assert yazi(k, "B1") == "#SAYI/0!: Bölen sıfır ya da boş."
 
 
 def test_tembel_secilmeyen_daldaki_hata_suclanmaz():
@@ -167,7 +167,7 @@ def test_karekok_negatif():
 
 def test_ortalama_bos_aralik():
     k, _ = kur({"B1": "=ORTALAMA(A1:A5)"})
-    assert yazi(k, "B1") == "#BÖL/0!: ORTALAMA: ortalaması alınacak sayı yok."
+    assert yazi(k, "B1") == "#SAYI/0!: ORTALAMA: ortalaması alınacak sayı yok."
 
 
 def test_islev_metin_argumani():

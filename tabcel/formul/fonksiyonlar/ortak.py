@@ -12,7 +12,7 @@ from ...model.deger import Hata
 from ..degerler import (
     BOS_ARG, AralikDeger, Dizi, _boyut, _okuyucu, _yay,
 )
-from ..donustur import karsilastir, mantiga, metne, sayi_metninden, sayiya
+from ..donustur import karsilastir, mantiga, metne, onbes_basamak, sayi_metninden, sayiya
 from ..yerel import tr_kucuk
 from . import fonksiyon
 
@@ -189,11 +189,14 @@ def kriter(olcut) -> Callable[[object], bool]:
         esit = lambda v: isinstance(v, bool) and v is False    # noqa: E731
         return esit if op == "=" else (lambda v: not esit(v))
     if geri == "":
-        bos = lambda v: v is None or v == ""                    # noqa: E731
+        # Excel (COM, 2026-10-15): ölçüt "" → boş hücre + boş metin; "=" → yalnız gerçekten boş hücre;
+        # "<>" → boş olmayan her hücre (boş metin ="" dahil)
+        if olcut == "":
+            return lambda v: v is None or v == ""
         if op == "=":
-            return bos
+            return lambda v: v is None
         if op == "<>":
-            return lambda v: not bos(v)
+            return lambda v: v is not None
         return lambda v: False
     hata = _hata_adindan(geri) if geri.startswith("#") else None
     if hata is not None and op in ("=", "<>"):
@@ -220,12 +223,14 @@ def kriter(olcut) -> Callable[[object], bool]:
 
 
 def _hata_adindan(metin: str):
-    """Ölçütteki hata adı: kanonik (`#DIV/0!`) ya da Türkçe görünümü (`#BÖL/0!`)."""
+    """Ölçütteki hata adı: kanonik (`#DIV/0!`) ya da Türkçe görünümü (`#SAYI/0!`)."""
     from ...model.gosterim import HATA_TR
     h = D.hata_bul(metin)
     if h is not None:
         return h
     ust = tr_kucuk(metin.strip())
+    if ust == tr_kucuk("#BÖL/0!"):                      # eski Türkçe yazım takma adı
+        return D.hata_bul("#DIV/0!")
     for kod, tr in HATA_TR.items():
         if tr_kucuk(tr) == ust:
             return D.hata_bul(kod)
@@ -235,11 +240,11 @@ def _hata_adindan(metin: str):
 def _sayi_esit(v, hedef: float) -> bool:
     if isinstance(v, bool):
         return False
-    if isinstance(v, float):
-        return v == hedef
+    if isinstance(v, float):                   # 15 basamak duyarlığı (Excel COM 2026-10-15: EĞERSAY(=0,1+0,2; 0,3) = 1)
+        return v == hedef or onbes_basamak(v) == onbes_basamak(hedef)
     if isinstance(v, str):                     # EĞERSAY(…;5) "5" metnini de sayar (Excel davranışı)
         n = sayi_metninden(v)
-        return n is not None and n == hedef
+        return n is not None and onbes_basamak(n) == onbes_basamak(hedef)
     return False
 
 

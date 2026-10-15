@@ -94,7 +94,8 @@ def test_sayfa_oneki_yaz():
 def test_hata_sabitleri():
     assert sozcukle("#N/A", EN)[0].deger == "#N/A"
     assert sozcukle("#yok", TR)[0].deger == "#N/A"
-    assert sozcukle("#BÖL/0!", TR)[0].deger == "#DIV/0!"
+    assert sozcukle("#BÖL/0!", TR)[0].deger == "#DIV/0!"       # eski yazım takma adı
+    assert sozcukle("#SAYI/0!", TR)[0].deger == "#DIV/0!" and sozcukle("#SAYI!", TR)[0].deger == "#NUM!"
     assert sozcukle("Sayfa1!#REF!", EN)[0].deger == "#REF!"
     with pytest.raises(FormulHatasi):
         sozcukle("#ABC", EN)

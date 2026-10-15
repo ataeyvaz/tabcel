@@ -99,6 +99,6 @@ def test_birlesik_hucrede_sol_ust_aciklanir(p):
     s.ata(5, 1, Hucre(None, "=1/0"))
     g.yigin.calistir(birlesim_komutu(s, [Aralik(5, 1, 5, 2)], "birlestir"))
     QApplication.processEvents()
-    assert ipucu(g, 5, 2) == "#BÖL/0!: Bölen sıfır ya da boş."
+    assert ipucu(g, 5, 2) == "#SAYI/0!: Bölen sıfır ya da boş."
     g.sec((5, 1))
     assert p.hata_etiketi.isVisible()

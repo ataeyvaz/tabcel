@@ -209,10 +209,17 @@ def _us(x, y):
         return D.SAYI                      # Excel: 0^0 = #SAYI!
     if x == 0 and y < 0:
         return D.BOL0
+    if x < 0 and y != math.floor(y):
+        # Excel (COM, 2026-10-15): negatif tabanın kesirli üssü yalnız üs 1/n (n tek tamsayı) ise gerçek kök verir
+        # (POWER(-8;1/3) = -2); diğer kesirli üslerde (0,5; 2/3; 0,25) #SAYI!
+        n = 1 / y
+        if abs(n - round(n)) < 1e-9 and round(n) % 2 != 0:
+            return sayi_sonucu(-math.pow(-x, y))
+        return D.SAYI
     try:
         r = math.pow(x, y)
     except (OverflowError, ValueError):
-        return D.SAYI                      # negatif tabanın kesirli üssü, taşma
+        return D.SAYI                      # taşma
     return sayi_sonucu(r)
 
 

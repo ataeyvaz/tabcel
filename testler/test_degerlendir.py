@@ -41,7 +41,7 @@ def test_isleçler(kitap, formul, beklenen):
 
 
 @pytest.mark.parametrize("formul,beklenen", [
-    ("1/0", D.BOL0), ("0^0", D.SAYI), ("(-8)^(1/3)", D.SAYI), ('"a"+1', D.DEGER_HATASI),
+    ("1/0", D.BOL0), ("0^0", D.SAYI), ("(-8)^(0.5)", D.SAYI), ("(-8)^(2/3)", D.SAYI), ('"a"+1', D.DEGER_HATASI),
     ("#N/A+1", D.YOK), ("1+#N/A", D.YOK), ("#REF!", D.BASV), ("10^400", D.SAYI),
     ("#DIV/0!&#N/A", D.BOL0),             # soldaki hata önce
     ("TANIMSIZ(1)", D.AD), ("Satislar", D.AD),

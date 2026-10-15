@@ -25,7 +25,10 @@ class Yerel:
 
     def hata_kanonik(self) -> Dict[str, str]:
         """Bu yereldeki yazım (büyük harf) → kanonik kod."""
-        return {v.upper(): k for k, v in self.hatalar.items()}
+        sonuc = {v.upper(): k for k, v in self.hatalar.items()}
+        if self.hatalar.get("#DIV/0!") == "#SAYI/0!":          # eski (yanlış) Türkçe yazım: girişte kabul
+            sonuc["#BÖL/0!"] = "#DIV/0!"
+        return sonuc
 
 
 _KANONIK_HATALAR = ("#NULL!", "#DIV/0!", "#VALUE!", "#REF!", "#NAME?", "#NUM!", "#N/A",

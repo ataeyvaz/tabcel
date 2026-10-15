@@ -9,8 +9,8 @@ from .temel import cok_hucreli, dizi_sec
 
 
 def _mantiklar(args):
-    """AND/OR/XOR için mantıksal değerler (liste) ya da ilk hata. Aralıkta metin/boş atlanır,
-    doğrudan yazılan metin mantıksala çevrilemezse #DEĞER!. Hiç değer yoksa #DEĞER!."""
+    """AND/OR/XOR için mantıksal değerler (liste) ya da ilk hata. Aralıktaki de doğrudan yazılan da metin ve boş
+    atlanır (Excel COM 2026-10-15: AND(DOĞRU;"a") = DOĞRU, OR("a";YANLIŞ) = YANLIŞ). Hiç değer yoksa #DEĞER!."""
     cikti = []
     for a in args:
         if isinstance(a, (AralikDeger, Dizi)):
@@ -23,6 +23,8 @@ def _mantiklar(args):
                 elif isinstance(v, float):
                     cikti.append(v != 0)
         elif a is BOS_ARG:
+            continue
+        elif isinstance(a, str):
             continue
         else:
             m = mantiga(a)

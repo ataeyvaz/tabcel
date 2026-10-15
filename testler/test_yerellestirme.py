@@ -21,7 +21,7 @@ def kitap():
     ("=eğer(doğru;1;2)", "=IF(TRUE,1,2)"),
     ("=TOPLA(EĞER(A1;1;2);3)", "=SUM(IF(A1,1,2),3)"),            # iç içe
     ("={1\\2;3\\4}", "={1,2;3,4}"),                              # dizi ayırıcıları (doğrulanacak §8b-4)
-    ("=#BÖL/0!", "=#DIV/0!"),
+    ("=#SAYI/0!", "=#DIV/0!"), ("=#BÖL/0!", "=#DIV/0!"),      # ikincisi eski yazım (takma ad)
     ("=#yok", "=#N/A"),
     ("=$b$2*c3", "=$B$2*C3"),
     ("=B2:A1", "=A1:B2"),                                        # aralık normalize (Excel gibi)
@@ -34,7 +34,7 @@ def test_tr_den_sakliya(kitap, tr, sakli):
 
 
 @pytest.mark.parametrize("tr", [
-    "=TOPLA(A1:A3;2,5)", "=EĞER(A1>0;\"a;b,c\";YANLIŞ)", "={1\\2;3\\4}", "=#BÖL/0!+#YOK",
+    "=TOPLA(A1:A3;2,5)", "=EĞER(A1>0;\"a;b,c\";YANLIŞ)", "={1\\2;3\\4}", "=#SAYI/0!+#YOK",
     "=TOPLA( A1 ; B2 )", "='Gelir Gider'!A1:B2*2", "=Şubat!$C$5", "=-2^2%", "=A:A", "=2:3",
 ])
 def test_gidis_donus(kitap, tr):

@@ -7,7 +7,10 @@ def sigar(n):
 
 def test_goster_genel():
     assert goster(None) == "" and goster(3.0) == "3" and goster(2.5) == "2,5"
-    assert goster(1.23e-5) == "1,23E-05" and goster(1.5e20) == "1,5E+20"
+    # Genel biçim en çok 11 karakter (işaretsiz): gerçek Excel'de (COM, 2026-10-15) ölçüldü
+    assert goster(1.23e-5) == "0,0000123" and goster(1.5e20) == "1,5E+20" and goster(1e-10) == "1E-10"
+    assert goster(1 / 3) == "0,333333333" and goster(123456789012.0) == "1,23457E+11" and goster(-123456789012.0) == "-1,23457E+11"
+    assert goster(12345678901.2345) == "12345678901" and goster(1.2345678e-6) == "1,23457E-06"
     assert goster(True) == "DOĞRU" and goster("a") == "a"
 
 
@@ -47,7 +50,7 @@ def test_sifira_yuvarlanan_sifir_gosterilmez():
 
 def test_hata_turkce_gosterilir():
     from tabcel.model.deger import BASV, BOL0, DEGER_HATASI, Hata
-    assert goster(BOL0) == "#BÖL/0!" and goster(BASV) == "#BAŞV!" and goster(DEGER_HATASI) == "#DEĞER!"
+    assert goster(BOL0) == "#SAYI/0!" and goster(BASV) == "#BAŞV!" and goster(DEGER_HATASI) == "#DEĞER!"
     assert goster(Hata("#BILINMEYEN")) == "#BILINMEYEN"       # tanımsız kod olduğu gibi
 
 

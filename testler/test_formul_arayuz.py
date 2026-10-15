@@ -107,4 +107,4 @@ def test_hata_sonucu_turkce_cizilir(pencere):
     g.sec((6, 1))
     yaz_onayla(g, "=1/0")
     from tabcel.ui.grid import goster
-    assert goster(g.sayfa.deger(6, 1)) == "#BÖL/0!"
+    assert goster(g.sayfa.deger(6, 1)) == "#SAYI/0!"

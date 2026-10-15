@@ -239,7 +239,8 @@ TEXT = [
     # normal (biçim argümanı Türkçe yazım)
     ('=TEXT(1234.5,"#.##0,00")', "1.234,50", None), ('=TEXT(46307,"gg.aa.yyyy")', "12.10.2026", None),
     ('=TEXT(0.256,"0,0%")', "25,6%", None), ('=TEXT(12,"000")', "012", None),
-    ('=TEXT(46307,"d mmmm yyyy dddd")', "12 Ekim 2026 Pazartesi", None), ('=TEXT(0.5,"hh:mm")', "12:00", None),
+    ('=TEXT(46307,"g aaaa yyyy gggg")', "12 Ekim 2026 Pazartesi", None), ('=TEXT(0.5,"ss:dd")', "12:00", None),
+    ('=TEXT(46307.5+30/1440,"gg.aa.yyyy ss:dd")', "12.10.2026 12:30", None),   # Türkçe Excel: saat s, dakika d (COM ile doğrulandı)
     ('=TEXT(1234.5,"Genel")', "1234,5", None), ('=TEXT(-5,"0,00")', "-5,00", None),
     ('=TEXT(1234.5,"#.##0,00 ""TL""")', "1.234,50 TL", None),
     # boş hücre / boş biçim

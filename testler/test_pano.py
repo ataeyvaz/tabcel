@@ -176,7 +176,7 @@ def test_k4_pano_formul_sonucunu_metin_olarak_verir_girdiyi_json_ile():
     s.sonuc_ata(1, 2, BOL0)
     s.ata(1, 3, Hucre(None, "=ABC"))                           # henüz hesaplanmamış
     v = pano_verisi_al(s, Aralik(1, 1, 1, 3))
-    assert metin_satirlari(v) == [["10", "#BÖL/0!", "=ABC"]]
+    assert metin_satirlari(v) == [["10", "#SAYI/0!", "=ABC"]]
     geri = PanoVerisi.json_oku(v.json_yaz())
     assert geri.hucreler[(0, 0)] == Hucre(None, "=A2*2")       # kendi biçimimiz yalnız girdiyi taşır
     assert geri.sonuclar == {}

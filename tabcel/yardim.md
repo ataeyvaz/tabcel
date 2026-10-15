@@ -35,6 +35,8 @@ Yazım kuralları:
 En yenisi en üstte.
 
 ## 15 Ekim 2026
+- **Excel ile karşılaştırma düzeltmeleri** (gerçek Excel'de ölçüldü): sıfıra bölme hatası `#SAYI/0!` olarak gösterilir (eski `#BÖL/0!` yazımı girişte hâlâ okunur); **İLKEŞLEŞEN** (SWITCH) adı düzeltildi; yeni işlev **ARA** (LOOKUP); Genel biçim en çok 11 karakter gösterir (`1,23457E+11`); `DÜŞEYARA`/`KAÇINCI` yaklaşık eşleşmesi Excel gibi ikili arama yapar; `EĞERSAY(…;"=")` yalnız gerçekten boş hücreleri sayar; Türkçe özel biçim kodlarında saat `s`, dakika `d`, saniye `n` olur (`ss:dd:nn`).
+- **Formül yazınca biçim kendiliğinden ayarlanır** (Genel biçimli hücrede, Excel gibi): `=BUGÜN()`/`=TARİH(…)` tarih, `=ŞİMDİ()` tarih ve saat, `=DEVRESEL_ÖDEME(…)` ve benzeri finans işlevleri para, `=İÇ_VERİM_ORANI(…)` yüzde; `=A1+1` gibi formüller başvurulan hücrenin biçimini taşır. Ayrıntı: "Formüller".
 - **Dosya → Şablondan Yeni…:** ne yapmak istediğinizi yazın, {APP_NAME} uygun hazır tabloyu soru-cevapla kurar. Hazır şablonlar: *Stok takibi*, *Cari hesap takibi*, *Apartman / site aidat takibi*, *Teklif hazırlama*, *Çek ve senet takibi*, *Not çizelgesi*. Ayrıntı: "Dosyalar, Yazdırma ve Kurtarma".
 
 ## 12 Ekim 2026
@@ -119,11 +121,19 @@ Formül `=` ile başlar. Fonksiyon adları **Türkçe**, bağımsız değişken 
 - `F4` başvuruyu `A1 → $A$1 → A$1 → $A1 → A1` sırasıyla mutlak/göreli yapar.
 - **Otomatik Toplam** (`Alt+=`) seçili sayıların toplamını altına ya da yanına yazar.
 
+## Formül yazınca hücre biçimi (biçim mirası)
+
+Hücrenin biçimi **Genel** iken formül yazarsanız {APP_NAME} de Excel gibi sonuca uygun biçimi kendiliğinden verir; biçimi sonradan Hücreleri Biçimlendir ile değiştirebilirsiniz. Başka bir biçim verilmiş hücreye dokunulmaz; kopyala-yapıştırda kaynağın biçimi gelir.
+
+- `=BUGÜN()`, `=TARİH(…)`: kısa tarih · `=ŞİMDİ()`: tarih ve saat · `=ZAMAN(…)`: saat.
+- `=DEVRESEL_ÖDEME`, `=GD`, `=BD`, `=NBD` finans işlevleri: para; `=İÇ_VERİM_ORANI`, `=FAİZ_ORANI`: yüzde.
+- `=A1`, `=A1+1`, `=B1+A1`, `=-A1`, `=TOPLA(…)`, `=ORTALAMA(…)`, `=MAK`, `=MİN`, `=ORTANCA`, `=YUVARLA`, `=TAMSAYI`, `=MOD`: başvurulan ilk biçimli hücrenin biçimi. İki tarihin farkı gün sayısıdır (Genel). `*`, `/`, `^`, `&`, `%` ve karşılaştırma işleçleri ya da diğer işlevler (MUTLAK, EĞER, EĞERSAY…) biçim taşımaz.
+
 ## Hata değerleri
 
 | Değer | Anlamı |
 |---|---|
-| `#BÖL/0!` | sıfıra bölme |
+| `#SAYI/0!` | sıfıra bölme |
 | `#DEĞER!` | işlenemeyen değer türü (ör. sayı beklenen yerde metin) |
 | `#BAŞV!` | geçersiz başvuru (silinen hücre/sayfa) |
 | `#AD?` | tanınmayan fonksiyon ya da ad |
@@ -216,7 +226,7 @@ Sütun adları büyük/küçük harf, Türkçe harf ve ek farkına bakmaz (`böl
 **Giriş** sekmesi: yazı tipi ve boyutu, `Ctrl+B` kalın, `Ctrl+I` italik, `Ctrl+U` altı çizili, `Ctrl+5` üstü çizili, dolgu ve yazı rengi, kenarlıklar, hizalama, girinti, **Metni Kaydır**, **Birleştir ve Ortala**.
 
 - **Hücreleri Biçimlendir** (`Ctrl+1`): Sayı, Hizalama, Yazı Tipi, Kenarlık ve Dolgu sekmeleri. Yalnız değiştirdiğiniz alanlar seçili tüm hücrelere uygulanır.
-- **Sayı biçimleri:** Genel, Sayı, Para Birimi, Yüzde, Tarih, Saat, Kesir, Bilimsel, Metin ve Özel. Kısayollar: `Ctrl+Shift+4` para, `Ctrl+Shift+5` yüzde, `Ctrl+Shift+1` binlik ayraçlı sayı. Özel biçim kodları Türkçe yazılır.
+- **Sayı biçimleri:** Genel, Sayı, Para Birimi, Yüzde, Tarih, Saat, Kesir, Bilimsel, Metin ve Özel. Kısayollar: `Ctrl+Shift+4` para, `Ctrl+Shift+5` yüzde, `Ctrl+Shift+1` binlik ayraçlı sayı. Özel biçim kodları Türkçe yazılır: ondalık ayraç `,`, binlik `.`; gün `g`, ay `a`, yıl `yyyy`, **saat `s`, dakika `d`, saniye `n`** (ör. `gg.aa.yyyy ss:dd:nn`), geçen süre `[s]:dd`. Tarih biçiminde `/` ayırıcı olarak `.` görünür (Türkçe Excel gibi).
 - **Biçim Boyacısı:** kaynak hücreyi seçip fırçaya bir kez tıklayın (tek kullanım) ya da çift tıklayın (kalıcı); hedefi seçin. `Esc` bitirir.
 - **Birleştirme:** birden çok hücre seçili iken Birleştir'e basılırsa yalnız sol üstteki değer kalır (uyarı verilir). Aynı düğme birleşimi geri çözer.
 - **Metni Kaydır** açıkken satır yüksekliği içeriğe göre kendiliğinden artar; satır başlığına çift tıklayarak elle verilen yüksekliği otomatiğe döndürebilirsiniz.
@@ -417,6 +427,10 @@ Bir grafik seçiliyken beliren **Grafik** sekmesinde: tür ve veri değiştirme,
 
 {APP_NAME} Excel davranışını esas alır; aşağıdakiler **bilerek** farklıdır ya da henüz yoktur.
 
+- **Çok uzun sayı girişi:** Excel 15 anlamlı basamaktan sonrasını atar (`1234567890123456` → `1234567890123450`); {APP_NAME} sayıyı tam duyarlıkla tutar. Kimlik koruması (TC, IBAN) için bkz. "Akıllı giriş".
+- **Kesir biçimi** (`# ?/?`, `# ??/??`): Excel gibi ardışık yaklaşım (sürekli kesir) kullanılır; az sayıda değerde Excel farklı bir kesir seçebilir (ör. `0,9` için `8/9`).
+- **METNEÇEVİR** biçim argümanında Türkçe kod beklenir (`"gg.aa.yyyy"`); {APP_NAME} Excel'in aksine İngilizce kodu (`"dd.mm.yyyy"`) Türkçe kodlar çözümlenemezse yine kabul eder.
+- **DATEDIF "YD"** ve 1900 yılı Şubat'ındaki sahte 29 Şubat çevresinde Excel'in kendi hatalı davranışı bazı uç tarihlerde birebir taklit edilmez.
 - **Hata açıklamaları:** Excel hatalı hücrede yeşil üçgen ve "Hatayı İzle" okları gösterir; {APP_NAME} açıklamayı ipucunda ve durum çubuğunda yazar (ok çizimi yok). Açıklama cümleleri {APP_NAME}'e özgüdür, Excel'in iletilerinin çevirisi değildir.
 - **Taşma yalnız hesaplanmış dizilerde:** `=SIRALA(…)`, `=A1:A3*2` gibi hesaplanmış dizi sonuçları taşar; düz aralık başvurusu (`=A1:A3`) taşmaz, tek değer (örtük kesişim) verir (Excel 365 bu durumda da taşırır). Taşan formül Excel'e eski tür dizi formülü olarak kaydedilir (alan sabit). `LAMBDA`, `MAP`, `REDUCE`, `BYROW`, `METİNBÖL`, `SATIRSAR` gibi diğer dinamik dizi işlevleri henüz yoktur; `@` işleci ve `A1#` taşma başvurusu da yoktur.
 - **Pivot tablo, Tablo nesnesi, makro (VBA), Solver, .xls ve .ods** henüz desteklenmez.

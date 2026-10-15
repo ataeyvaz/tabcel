@@ -6,3 +6,7 @@ dist/
 .pytest_cache/
 *.spec.bak
 ~$*
+
+# Excel karşılaştırma ara çıktıları (araclar/excel_vaka.py)
+araclar/vaka_*.json*
+araclar/*.excel.tsv

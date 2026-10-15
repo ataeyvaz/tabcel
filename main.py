@@ -1,6 +1,7 @@
 """Giriş noktası: python main.py [dosya.xlsx ...]"""
 import sys
 
+from PySide6.QtCore import QLibraryInfo, QTranslator
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QApplication
 
@@ -12,6 +13,11 @@ from tabcel.ui.window import Pencere
 def main() -> int:
     app = QApplication(sys.argv)
     app.setApplicationName(APP_NAME)
+    # Qt'nin hazır iletişim kutusu metinleri (Tamam/İptal, Evet/Hayır, dosya/renk seçici) Türkçe olsun:
+    # Windows görüntü dili İngilizce olsa bile (kullanıcı arayüzü her zaman Türkçe).
+    cevirmen = QTranslator(app)
+    if cevirmen.load("qtbase_tr", QLibraryInfo.path(QLibraryInfo.TranslationsPath)):
+        app.installTranslator(cevirmen)
     ikon = resource_dir() / "tabcel.ico"
     if ikon.is_file():
         app.setWindowIcon(QIcon(str(ikon)))

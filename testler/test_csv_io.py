@@ -95,7 +95,7 @@ def test_yaz_gorunen_metin_ve_tirnaklama():
     metin = csv_io.metin_yaz(s)
     assert metin == ('"Ali; Veli";"tırnak ""x""";"iki\nsatır"\r\n'
                      '1234,5;25%;DOĞRU\r\n'
-                     '#BÖL/0!;;\r\n')
+                     '#SAYI/0!;;\r\n')
 
 
 def test_yaz_formul_sonucu_ve_bos_sayfa():

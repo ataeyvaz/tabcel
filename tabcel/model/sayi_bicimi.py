@@ -118,6 +118,8 @@ def _koseli(icerik: str, yerel: bool):
     if renk is not None:
         return ("renk", renk[0], renk[2])
     kk = k.lower()
+    if yerel and kk.startswith("renk") and kk[4:].isdigit():       # [Renk10] (Excel tr, COM ile doğrulandı)
+        kk = "color" + kk[4:]
     if kk.startswith("color") and kk[5:].isdigit():
         n = int(kk[5:])
         if 1 <= n <= 56:
@@ -126,7 +128,10 @@ def _koseli(icerik: str, yerel: bool):
     for op in _KOSUL_OP:
         if k.startswith(op):
             return ("kosul", op, _sayi_metni_coz(k[len(op):], yerel))
-    if k and set(kk) <= set("hms") and len(set(kk)) == 1:
+    if yerel:                      # Türkçe Excel: saat s, dakika d, saniye n ([ss]:dd:nn); h/m eski kabul
+        if k and set(kk) <= set("sdnhm") and len(set(kk)) == 1:
+            return ("gecen", {"s": "H", "d": "N", "n": "S", "h": "H", "m": "N"}[kk[0]], len(kk))
+    elif k and set(kk) <= set("hms") and len(set(kk)) == 1:
         return ("gecen", {"h": "H", "m": "N", "s": "S"}[kk[0]], len(kk))
     if k.startswith("$") or kk.startswith("dbnum") or kk.startswith("natnum"):
         return ("yerel", icerik)
@@ -203,13 +208,16 @@ def _sozcukle(s: str, yerel: bool) -> List[tuple]:
                 i += 5
                 continue
             harf = ch.lower()
-            harfler = "ymdhsga" if yerel else "ymdhs"
-            if harf in harfler:
+            # Türkçe Excel (COM ile doğrulandı, 2026-10-15): gün g, ay a, yıl y, SAAT s, DAKİKA d, SANİYE n;
+            # kanonik: d, m (ay/dakika bağlama göre), y, h, s
+            eslem = ({"y": "Y", "g": "D", "a": "M", "s": "H", "d": "N", "n": "S", "h": "H", "m": "m?"} if yerel
+                     else {"y": "Y", "d": "D", "h": "H", "s": "S", "m": "m?"})
+            if harf in eslem:
                 j = i
                 while j < n and s[j].lower() == harf:
                     j += 1
                 adet = j - i
-                tur = {"y": "Y", "d": "D", "g": "D", "h": "H", "s": "S", "a": "M", "m": "m?"}[harf]
+                tur = eslem[harf]
                 out.append(("t", tur, adet))
                 i = j
                 continue
@@ -305,8 +313,8 @@ def _tarih_coz(ogeler: list) -> list:
             sonuc.append(("sabit", t[1], t[1]))
         elif t[0] == "rakam":
             sonuc.append(("sabit", t[1], t[1]))
-        elif t[0] == "bolu":
-            sonuc.append(("sabit", "/", "/"))
+        elif t[0] == "bolu":                 # tarih biçiminde '/' = sistem tarih ayırıcısı (tr-TR: '.'; Excel COM ile doğrulandı)
+            sonuc.append(("sabit", ".", "."))
         elif t[0] == "yuzde":
             sonuc.append(("sabit", "%", "%"))
         else:
@@ -554,12 +562,14 @@ def _bolum_yaz(b: Bolum, yerel: bool) -> str:
         ad = b.renk_adi
         if yerel and ad.lower() in _RENK_ADI:
             ad = _RENK_ADI[ad.lower()][1]
+        elif yerel and ad.lower().startswith("color") and ad[5:].isdigit():
+            ad = "Renk" + ad[5:]
         parca.append(f"[{ad}]")
     if b.kosul is not None:
         parca.append(f"[{b.kosul[0]}{_sayi_yaz(b.kosul[1], yerel)}]")
     ondalik, binlik = (",", ".") if yerel else (".", ",")
-    harf = {"Y": "y", "D": "g" if yerel else "d", "M": "a" if yerel else "m", "N": "m", "H": "h",
-            "S": "s"}
+    harf = ({"Y": "y", "D": "g", "M": "a", "N": "d", "H": "s", "S": "n"} if yerel
+            else {"Y": "y", "D": "d", "M": "m", "N": "m", "H": "h", "S": "s"})
     for t in b.ogeler:
         tur = t[0]
         if tur == "sabit":
@@ -589,7 +599,7 @@ def _bolum_yaz(b: Bolum, yerel: bool) -> str:
         elif tur == "t":
             parca.append(harf[t[1]] * t[2])
         elif tur == "gecen":
-            parca.append("[" + {"H": "h", "N": "m", "S": "s"}[t[1]] * t[2] + "]")
+            parca.append("[" + ({"H": "s", "N": "d", "S": "n"} if yerel else {"H": "h", "N": "m", "S": "s"})[t[1]] * t[2] + "]")
         elif tur == "ampm":
             parca.append(t[1])
         elif tur == "ssk":
@@ -712,7 +722,7 @@ def _hizli_sayi(h: tuple, v: float, isaret: bool):
     on, on_d, en_az, binlik, m, nokta, son, son_d = h
     olcek = 10 ** m
     s = v * olcek
-    if s >= 1e15:
+    if s >= 1e13:                    # v·10^m ikili yuvarlaması 15 basamağı bozabilir (5691075034743,234 → ,23; Excel COM) → tam yol
         return None
     # 15 anlamlı basamağa indirip yarımı yukarı yuvarla (1,005 → 1,01; Excel gibi)
     n = int(math.floor(float(f"{s:.15g}") + 0.5))
@@ -733,6 +743,16 @@ def _hizli_sayi(h: tuple, v: float, isaret: bool):
 
 
 def _sayi_bicimle(b: Bolum, x: float, isaret: bool) -> Tuple[str, Optional[tuple]]:
+    metin, dolgu = _sayi_bicimle_ham(b, x, isaret)
+    if isaret and metin.startswith("-") and not any(c in "123456789" for c in metin):
+        # yuvarlanınca sıfır görünen eksi sayıda işaret yazılmaz (Excel COM: -0,4 "0" biçiminde "0")
+        metin = metin[1:]
+        if dolgu is not None:
+            dolgu = (dolgu[0] - 1,) + tuple(dolgu[1:])
+    return metin, dolgu
+
+
+def _sayi_bicimle_ham(b: Bolum, x: float, isaret: bool) -> Tuple[str, Optional[tuple]]:
     d: _SayiDuzeni = b.duzen
     v = abs(x) * (100 ** d.yuzde) / (1000 ** d.olcek)
     if d.hizli is not None:
@@ -807,6 +827,21 @@ def _ph_doldur(sayi: str, phler: tuple, sola: bool) -> str:
     return dolgu + sayi if sola else sayi + dolgu[::-1]
 
 
+def _kesir_yaklas(kesir: Fraction, en_cok: int) -> Tuple[int, int]:
+    """Excel'in kesir biçimi en iyi yaklaşımı değil, payda sınırını aşmayan SON SÜREKLİ KESİR YAKINSAĞINI
+    (convergent) verir (COM ile doğrulandı: 3,14159 → 1/7 [14/99 değil]; 0,1 '# ?/?' → 0; 0,37 → 10/27)."""
+    h0, k0, h1, k1 = 0, 1, 1, 0
+    a, b = kesir.numerator, kesir.denominator
+    while b:
+        q = a // b
+        h2, k2 = q * h1 + h0, q * k1 + k0
+        if k2 > en_cok:
+            break
+        h0, k0, h1, k1 = h1, k1, h2, k2
+        a, b = b, a - q * b
+    return (h1, k1) if k1 else (0, 1)
+
+
 def _kesir_yaz(d: _SayiDuzeni, v: float, cikti: list, dolgu: list) -> None:
     pay_og, pay_arasi, payda_k, son, tam_var = d.kesir
     dec = _ondalik_dec(v)
@@ -820,8 +855,7 @@ def _kesir_yaz(d: _SayiDuzeni, v: float, cikti: list, dolgu: list) -> None:
         pay = int(_yuvarla(Decimal(kesir.numerator) * payda / Decimal(kesir.denominator), 0))
     else:
         en_cok = 10 ** len(payda_k) - 1
-        yak = kesir.limit_denominator(en_cok)
-        pay, payda = yak.numerator, yak.denominator
+        pay, payda = _kesir_yaklas(kesir, en_cok)
     if tam_var and pay == payda:
         tam, pay = tam + 1, 0
     pay_ph = tuple(t[1] for t in pay_og)

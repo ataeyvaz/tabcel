@@ -94,7 +94,7 @@ def test_hata_sonucu_turkce_ve_ortali(izgara):
     izgara.sayfa.ata(2, 1, Hucre(None, "=X"))
     izgara.sayfa.sonuc_ata(2, 1, BASV)
     m = yerlesim(izgara)
-    assert [x[3] for x in m] == ["#BÖL/0!", "#BAŞV!"]
+    assert [x[3] for x in m] == ["#SAYI/0!", "#BAŞV!"]
     from PySide6.QtCore import Qt
     assert all(x[2] == Qt.AlignHCenter for x in m)
 

@@ -53,7 +53,7 @@ def test_bos_hucre_bos_metin(kod):
 @pytest.mark.parametrize("kod", AILELER.values(), ids=AILELER.keys())
 def test_hata_degeri_bicimlenmez_ortalanir(kod):
     s = bicimle(D.BOL0, kod)
-    assert (s.metin, s.hizalama, s.renk) == ("#BÖL/0!", ORTA, None)
+    assert (s.metin, s.hizalama, s.renk) == ("#SAYI/0!", ORTA, None)
 
 
 @pytest.mark.parametrize("kod", AILELER.values(), ids=AILELER.keys())
@@ -327,8 +327,11 @@ def test_gecen_sure():
     ("General", "Genel"),
     ("0.00E+00", "0,00E+00"),
     ("[>1.5]0.0;0", "[>1,5]0,0;0"),
-    ("hh:mm:ss.00", "hh:mm:ss,00"),
-    ("[h]:mm", "[h]:mm"),
+    # Türkçe Excel (COM ile doğrulandı, 2026-10-15): saat s, dakika d, saniye n
+    ("hh:mm:ss.00", "ss:dd:nn,00"),
+    ("[h]:mm", "[s]:dd"),
+    ("[mm]:ss", "[dd]:nn"),
+    ("[Color10]0", "[Renk10]0"),
     ('#,##0.00 "₺"', '#.##0,00 "₺"'),
     ("# ?/?", "# ?/?"),
     ("@", "@"),
@@ -350,7 +353,9 @@ def test_hazir_ve_ornek_kodlar_gidis_donus(kod):
 def test_yerel_tarih_harfleri():
     n = seri(2026, 10, 12)
     assert m(n, "gg.aa.yyyy", yerel=True) == "12.10.2026"
-    assert m(n, "dd.mm.yyyy", yerel=True) == "12.10.2026"      # d de gün; m bağlamla ay
+    # Türkçe Excel'de 'd' DAKİKA'dır (gün değil): gg.aa.yyyy ss:dd:nn (Excel COM ile doğrulandı)
+    assert m(n + 0.5 + 30 / 1440 + 5 / 86400, "gg.aa.yyyy ss:dd:nn", yerel=True) == "12.10.2026 12:30:05"
+    assert m(n, "dd/mm/yyyy") == "12.10.2026"      # tarih biçiminde '/' = sistem tarih ayırıcısı ('.', Excel COM)
 
 
 @pytest.mark.parametrize("kod", ['"abc', "[Foo]0", "0;0;0;0;0", "0x", "[Color0]0", "0_", "[>a]0",

@@ -22,6 +22,7 @@ from ..model.adres import (
 )
 from ..formul import ceviri, isaretleme
 from ..formul.ceviri import hucre_girdisi, hucre_girdisi_akilli, hucre_metni
+from ..formul.bicim_miras import onerilen_bicim
 from ..formul.sozcuk import FormulHatasi
 from ..formul.kosul import KosulluHesap, dogrula, liste_ogeleri
 from ..model.harmanla import tr_kucuk
@@ -137,9 +138,10 @@ class _Duzenleyici(QLineEdit):
             QToolTip.showText(self.mapToGlobal(self.rect().bottomLeft()), ipucu, self)
 
     def liste_konumla(self) -> None:
-        satir_y = self.fontMetrics().height() + 6
+        # satır yüksekliği stil sayfasındaki dolgudan etkilenir: tahmin yerine listenin kendi ölçüsü
+        satir_y = max(self._liste.sizeHintForRow(0), self.fontMetrics().height() + 6)
         self._liste.setGeometry(self.x(), self.y() + self.height(), max(self.width(), 160),
-                                min(self._liste.count(), 8) * satir_y + 4)
+                                min(self._liste.count(), 8) * satir_y + 2 * self._liste.frameWidth() + 2)
 
     def oneri_kabul(self) -> None:
         oge = self._liste.currentItem()
@@ -3016,6 +3018,9 @@ class Izgara(NesneEtkilesimi, NesneKatmani, QAbstractScrollArea):
             except FormulHatasi as h:
                 self.uyari.emit(f"Bu formülde bir sorun var: {h}")
                 return False
+            if (kod is None and yeni is not None and yeni.formul is not None
+                    and self.sayfa.stil(satir, sutun).sayi_bicimi == "General"):
+                kod = onerilen_bicim(yeni.formul, self.sayfa, self.sayfa.kitap)   # =TODAY() → tarih, =PMT() → para…
             if kod is not None and self.sayfa.stil(satir, sutun).sayi_bicimi != "General":
                 kod = None                              # biçim yalnız Genel hücreye önerilir (Excel)
         if not self._dogrulama_izni(satir, sutun, yeni):

@@ -3513,3 +3513,18 @@ model 1886 ✅ · arayüz 782 ✅ + 1 başarısız (`test_izgara_stil::test_buyu
 | 1 | Çizgiler | uzun tablo aç → Görünüm → Sayfa Sonlarını Göster; boyut/kenar/ölçek değişince çizgiler kayıyor mu | ⏳ |
 | 2 | Sayfa sonu ekle/kaldır | hücre seç → Kesmeler → Ekle; PDF'te o satırda yeni sayfa; Ctrl+Z | ⏳ |
 | 3 | Excel uyumu | sayfa sonlu dosyayı Excel'de aç/kaydet ve Tabcel'e geri aç; Sığdır (yükseklik) ve Sayfa Sırası aynı mı | ⏳ |
+
+## 19. Excel karşılaştırma ve "elle" test turu (Claude, 2026-10-15)
+Kullanıcı arayüz/menü/formül elle testlerinin Claude'da olduğunu bildirdi. Yöntem: gerçek pencerede QTest klavye/fare + ekran görüntüsü; formül/biçim/ad doğrulaması bu bilgisayardaki **Türkçe Excel 16'ya COM ile** (`araclar/excel_vaka.py`). Ayrıntı ve düzeltme listesi: `surec.md` §8b bloğu + günlük "Excel karşılaştırma turu".
+
+| Kalem | Sonuç |
+|---|---|
+| §9.4-1…4 formül yazarken tıkla/sürükle başvuru, sayfa sekmesine geçip dönme, Alt+Tab, Alt+= ve tamamlama | ✅ (tamamlama listesi kesilmesi düzeltildi) |
+| §11.4-2…5 doldurma tutamacı, Biçim Boyacısı, dondurma | ✅ (metni kaydır/otomatik yükseklik testlerle kapsanıyor) |
+| §16.4-3…5, §15.4-4 şerit sekmeleri ve pencereler görünümü | ✅ ekran görüntüsüyle; küçük kozmetik: açılır ok yakın, Sayfa Yapısı yer tutucu kırpık |
+| Qt hazır düğme metinleri | ❌→✅ "OK/Cancel" görünüyordu → `qtbase_tr` yüklendi |
+| Formül sonucu biçim mirası (Excel'de var, Tabcel'de yoktu) | ❌→✅ `formul/bicim_miras.py` |
+| §8b Excel doğrulamaları | ✅ 5, 6, 12, 17–19, 24–27, 30–32, 34, 36–37, 40, 46; diğerleri §8b bloğunda |
+| İşlev kapsamı | ⚠️ 188 sık kullanılan Excel işlevi yok (`eksik_fonksiyonlar.md`) |
+| Gerçek yazıcı, Excel/Word pano, çökme kurtarma, %125/%150 ölçek, Excel arayüz hissi | ⏳ hâlâ elle (kullanıcıyla) |
+| Tam paket (5 parça) | ✅ ≈3.940 geçti (+ ≈200 yeni); tek zamanlama testi yük altında kararsız |

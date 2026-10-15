@@ -62,9 +62,11 @@ def _date(b, y, m, g):
 @skaler("TIME", "sss")
 def _time(b, h, m, s):
     h, m, s = math.trunc(h), math.trunc(m), math.trunc(s)
-    if h < 0 or m < 0 or s < 0 or h > 32767 or m > 32767 or s > 32767:
+    if abs(h) > 32767 or abs(m) > 32767 or abs(s) > 32767:
         return D.SAYI
     toplam = h * 3600 + m * 60 + s
+    if toplam < 0:                           # Excel (COM, 2026-10-15): TIME(1;-30;0) = 0:30; toplam eksiyse #SAYI!
+        return D.SAYI
     return (toplam % 86400) / 86400
 
 
@@ -150,6 +152,12 @@ def _weeknum(b, x, tur=1.0):
     return float((n - bas + kayma) // 7 + 1)
 
 
+def _gercek_ay_gun(y: int, m: int) -> int:
+    """Gerçek takvimdeki ay uzunluğu (Şubat 1900 = 28): Excel'in EDATE/EOMONTH'u ay sonuna kırparken sahte
+    29 Şubat 1900'ü saymaz (COM ile doğrulandı: EOMONTH(40;0) = 59)."""
+    return 28 if (y == 1900 and m == 2) else ay_gun_sayisi(y, m)
+
+
 def ay_ekle(n: int, aylar: int):
     """n tarihine `aylar` ay ekler (gün ay sonunu aşarsa kırpılır) → seri ya da #SAYI!."""
     y, m, g = seri_ymd(n)
@@ -157,7 +165,10 @@ def ay_ekle(n: int, aylar: int):
     if yy < 1900 or yy > 9999:
         return D.SAYI
     mm += 1
-    seri = ymd_seri(yy, mm, min(max(g, 1), ay_gun_sayisi(yy, mm)))
+    if n == 0:                               # 0 = "0 Ocak 1900": gün 0 korunur (EDATE(0;1) = 31)
+        seri = ymd_seri(yy, mm, 1) - 1
+    else:
+        seri = ymd_seri(yy, mm, min(max(g, 1), _gercek_ay_gun(yy, mm)))
     return float(seri) if 0 <= seri <= MAKS_SERI else D.SAYI
 
 
@@ -177,7 +188,7 @@ def _eomonth(b, x, aylar):
     if yy < 1900 or yy > 9999:
         return D.SAYI
     mm += 1
-    seri = ymd_seri(yy, mm, ay_gun_sayisi(yy, mm))
+    seri = ymd_seri(yy, mm, _gercek_ay_gun(yy, mm))
     return float(seri) if 0 <= seri <= MAKS_SERI else D.SAYI
 
 
@@ -209,12 +220,14 @@ def _datedif(b, bas, son, birim):
         yo, mo = (y2, m2 - 1) if m2 > 1 else (y2 - 1, 12)
         return float(g2 - g1 + ay_gun_sayisi(yo, mo))
     if birim == "YD":
+        def yil_donumu(yil):                 # Excel (COM): 29 Şubat'ın artık olmayan yıldaki dönümü 1 Mart
+            if m1 == 2 and g1 == 29 and ay_gun_sayisi(yil, 2) < 29:
+                return ymd_seri(yil, 3, 1)
+            return ymd_seri(yil, m1, min(g1, ay_gun_sayisi(yil, m1)))
         yil = y2
-        yil_donumu = min(g1, ay_gun_sayisi(yil, m1)) if m1 != 2 or g1 != 29 else 28
-        if ymd_seri(yil, m1, yil_donumu) > n2:
+        if yil_donumu(yil) > n2:
             yil -= 1
-            yil_donumu = min(g1, ay_gun_sayisi(yil, m1))
-        return float(n2 - ymd_seri(yil, m1, yil_donumu))
+        return float(n2 - yil_donumu(yil))
     return D.SAYI
 
 
