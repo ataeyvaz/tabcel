@@ -53,3 +53,4 @@ from . import temel  # noqa: E402,F401
 from . import matematik, istatistik, mantik, bilgi, metin  # noqa: E402,F401
 from . import tarih, arama, finans, turkiye  # noqa: E402,F401
 from . import dizi  # noqa: E402,F401  (Faz 8e)
+from . import matematik2, istatistik2, tarih2, bilgi2, finans2, metin2, dizi2, birim  # noqa: E402,F401  (işlev kitaplığı genişletmesi)

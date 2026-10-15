@@ -70,7 +70,7 @@ def test_ad_oneki():
 
 
 def test_oneriler_turkce_ad_ve_sirali():
-    assert i.oneriler("topl") == ["TOPLA", "TOPLA.ÇARPIM"]
+    assert i.oneriler("topl") == ["TOPLA", "TOPLA.ÇARPIM", "TOPLAMA"]   # TOPLAMA (AGGREGATE) 2026-10-15 eklendi
     assert "EĞER" in i.oneriler("eğ") and i.oneriler("eğ") == sorted(i.oneriler("eğ"))
     assert i.oneriler("zzzz") == []
     assert len(i.oneriler("e", en_cok=3)) == 3

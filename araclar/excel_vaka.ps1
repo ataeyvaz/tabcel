@@ -9,7 +9,7 @@ try {
     try {
       if ($v.hucreler) { foreach ($p in $v.hucreler.PSObject.Properties) {
         $h=$ws.Range($p.Name); $val=$p.Value; if ($val -eq $null) { continue }
-        if ($val -is [string] -and $val.StartsWith("=")) { $h.Formula=$val } elseif ($val -is [string]) { $h.NumberFormat="@"; $h.Value2=$val } elseif ($val -is [bool]) { $h.Value2=$val } else { $h.Value2=[double]$val } } }
+        if ($val -is [string] -and $val.StartsWith("=")) { $h.Formula=$val } elseif ($val -is [string]) { $h.NumberFormat="@"; $h.Value2=$val } elseif ($val -is [bool]) { if ($val) { $h.Formula='=TRUE' } else { $h.Formula='=FALSE' } } else { $h.Value2=[double]$val } } }
       $t=$ws.Range("Z1")
       if ($v.bicim) { $t.NumberFormatLocal=$v.bicim }
       if ($v.formul -ne $null) { $t.Formula=$v.formul } elseif ($v.deger -ne $null) { $t.Value2=[double]$v.deger }

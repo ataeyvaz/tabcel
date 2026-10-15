@@ -86,7 +86,8 @@ def test_ingilizce_disa_ve_iceri(kitap):
 
 
 def test_turkcesi_olmayan_fonksiyon_ingilizce_gorunur(kitap):
-    assert gosterime("=SQRTPI(1.25)", kitap) == "=SQRTPI(1,25)"
+    assert gosterime("=SQRTPI(1.25)", kitap) == "=KAREKÖKPİ(1,25)"      # Excel adı 2026-10-15 eklendi
+    assert gosterime("=ADLARIYOK(1.25)", kitap) == "=ADLARIYOK(1,25)"      # Türkçe adı olmayan işlev İngilizce kalır
     assert gosterime("=ROUND(1.25,1)", kitap) == "=YUVARLA(1,25;1)"
 
 

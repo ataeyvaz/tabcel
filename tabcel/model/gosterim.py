@@ -71,6 +71,12 @@ def _genel(x: float) -> str:
     pos_sig = len(s.split(".")[1].lstrip("0"))
     if pos_sig >= len(sig) or pos_sig >= min(len(sig), ARALIK - 4 - 1):
         return isaret + s.replace(".", ",")
+    # bilimsel yazım ondalıktan fazla anlamlı basamak göstermiyorsa ondalık yazılır (0,0899999999999999 → 0,09; Excel COM)
+    n = min(len(sig), ARALIK - 4 - 1)
+    m = d15.scaleb(-e).quantize(Decimal(1).scaleb(-(n - 1)), rounding=ROUND_HALF_UP)
+    bil_sig = len(sade(min(m, Decimal(10))).replace(".", "").lstrip("0")) if m < 10 else 1
+    if pos_sig >= bil_sig:
+        return isaret + s.replace(".", ",")
     return bilimsel()
 
 
