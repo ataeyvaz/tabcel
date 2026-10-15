@@ -1,3 +1,4 @@
+"""xlsx açılış süresi: özgün openpyxl okuyucusu ile hızlı okuyucu karşılaştırması. Kullanım: python araclar/xlsx_acilis_olcum.py dosya.xlsx"""
 import sys, os, time
 sys.path.insert(0, '.')
 yol = sys.argv[1]
