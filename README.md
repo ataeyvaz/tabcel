@@ -2,7 +2,9 @@
 
 Excel'in kalabalığı yerine, günlük işte gerçekten kullanılan özellikleri sade bir yüzle sunan **Türkçe masaüstü hesap tablosu**. Windows için; Python 3.11 ve PySide6 ile yazıldı. [Sözcük](../sozcuk)'ün kardeş uygulamasıdır.
 
-**Developed By Usta ve Ata**
+**Eagle Office** paketi (Sözcük · Tabcel) — **Developed By Usta ve Ata**
+
+İletişim: ataeyvaz@gmail.com
 
 Her şey **bilgisayarda** çalışır: çalışma kitaplarınız hiçbir sunucuya gönderilmez; bulut yapay zekâ, telemetri ve hesap bağlantısı yoktur.
 

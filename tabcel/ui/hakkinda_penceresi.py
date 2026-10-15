@@ -1,7 +1,9 @@
 """Hakkında penceresi (Faz 7b): sürüm, künye, gizlilik notu ve kullanılan açık kaynak bileşenler (CLAUDE.md kural 5)."""
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QVBoxLayout
 
-from .. import APP_NAME, DEVELOPERS, __version__
+from .. import APP_NAME, DEVELOPERS, ILETISIM_EPOSTA, PAKET_ADI, PAKET_URUNLERI, __version__
 from . import theme
 
 # (ad, ne için, lisans) — yeni bağımlılık eklenince buraya ve README'ye yazılır
@@ -15,9 +17,15 @@ BILESENLER = [
 ]
 
 
+def paket_metni() -> str:
+    """`Eagle Office paketi: Sözcük (kelime işlemci) · Tabcel (hesap tablosu)`."""
+    return f"{PAKET_ADI} paketi: " + "  ·  ".join(f"{ad} ({ne})" for ad, ne in PAKET_URUNLERI)
+
+
 def hakkinda_metni() -> str:
     """Pencerenin düz metin özeti (testte ve panoya kopyalamada kullanılır)."""
-    satirlar = [APP_NAME, f"Sürüm {__version__}  ·  Türkçe hesap tablosu", DEVELOPERS,
+    satirlar = [PAKET_ADI, APP_NAME, f"Sürüm {__version__}  ·  Türkçe hesap tablosu", DEVELOPERS, paket_metni(),
+                f"İletişim: {ILETISIM_EPOSTA}",
                 "Çalışma kitaplarınız bu bilgisayarda kalır; hiçbir sunucuya gönderilmez.",
                 "Kullanılan açık kaynak bileşenler:"]
     satirlar += [f"•  {ad} — {ne} ({lisans})" for ad, ne, lisans in BILESENLER]
@@ -32,6 +40,15 @@ class HakkindaPenceresi(QDialog):
         d = QVBoxLayout(self)
         d.setContentsMargins(20, 18, 20, 14)
         d.setSpacing(10)
+
+        paket = QLabel(PAKET_ADI)
+        fp = paket.font()
+        fp.setPointSizeF(fp.pointSizeF() + 1)
+        fp.setBold(True)
+        fp.setLetterSpacing(QFont.PercentageSpacing, 108)
+        paket.setFont(fp)
+        paket.setStyleSheet(f"color: {theme.TEXT_MUTED};")
+        d.addWidget(paket)
 
         baslik = QLabel(APP_NAME)
         f = baslik.font()
@@ -50,6 +67,16 @@ class HakkindaPenceresi(QDialog):
         f2.setBold(True)
         imza.setFont(f2)
         d.addWidget(imza)
+
+        paketler = QLabel(paket_metni())
+        paketler.setWordWrap(True)
+        d.addWidget(paketler)
+
+        iletisim = QLabel(f'İletişim: <a href="mailto:{ILETISIM_EPOSTA}">{ILETISIM_EPOSTA}</a>')
+        iletisim.setTextFormat(Qt.RichText)
+        iletisim.setOpenExternalLinks(True)
+        iletisim.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        d.addWidget(iletisim)
 
         gizlilik = QLabel("Çalışma kitaplarınız bu bilgisayarda kalır; hiçbir sunucuya gönderilmez. "
                           "Bulut yapay zekâ, telemetri ve hesap bağlantısı yoktur.")

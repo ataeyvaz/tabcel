@@ -10,6 +10,9 @@ APP_NAME = "Tabcel"
 __version__ = "0.1"
 DEVELOPERS = "Developed By Usta ve Ata"
 KUNYE = f"{APP_NAME} {__version__}"
+PAKET_ADI = "Eagle Office"                      # ürün ailesinin ortak adı (Sözcük ve Tabcel bu paketin parçasıdır)
+PAKET_URUNLERI = (("Sözcük", "kelime işlemci"), (APP_NAME, "hesap tablosu"))
+ILETISIM_EPOSTA = "ataeyvaz@gmail.com"
 
 
 def resource_dir() -> Path:

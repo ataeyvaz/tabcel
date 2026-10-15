@@ -5,7 +5,8 @@
 
 #define AppName "Tabcel"
 #define AppVersion "0.1"
-#define AppPublisher "Usta ve Ata"
+#define AppPublisher "Eagle Office"
+#define AppContact "mailto:ataeyvaz@gmail.com"
 #define AppExe "Tabcel.exe"
 
 [Setup]
@@ -14,6 +15,8 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppVerName={#AppName} {#AppVersion}
 AppPublisher={#AppPublisher}
+AppSupportURL={#AppContact}
+AppContact={#AppContact}
 DefaultDirName={autopf}\{#AppName}
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes

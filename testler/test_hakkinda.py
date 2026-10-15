@@ -7,7 +7,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 import pytest
 from PySide6.QtWidgets import QApplication, QLabel
 
-from tabcel import APP_NAME, DEVELOPERS, __version__, resource_dir
+from tabcel import APP_NAME, DEVELOPERS, ILETISIM_EPOSTA, PAKET_ADI, __version__, resource_dir
 from tabcel.model.sayfa import CalismaKitabi
 from tabcel.ui.hakkinda_penceresi import BILESENLER, HakkindaPenceresi, hakkinda_metni
 from tabcel.ui.window import Pencere
@@ -24,6 +24,23 @@ def test_hakkinda_metni_ad_surum_kunye_lisans():
     for ad, _, lisans in BILESENLER:
         assert ad in m and lisans in m
     assert not any("GPL" in l and "LGPL" not in l for _, _, l in BILESENLER)          # kural 5
+
+
+def test_eagle_office_paketi_ve_iletisim():
+    m = hakkinda_metni()
+    assert PAKET_ADI == "Eagle Office" and ILETISIM_EPOSTA == "ataeyvaz@gmail.com"
+    assert m.splitlines()[0] == "Eagle Office"
+    assert "Eagle Office paketi: Sözcük (kelime işlemci)  ·  " + APP_NAME + " (hesap tablosu)" in m
+    assert f"İletişim: {ILETISIM_EPOSTA}" in m
+
+
+def test_pencere_eagle_office_ve_eposta_baglantisi(app):
+    d = HakkindaPenceresi()
+    etiketler = d.findChildren(QLabel)
+    metin = " ".join(l.text() for l in etiketler)
+    assert "Eagle Office" in metin and f"mailto:{ILETISIM_EPOSTA}" in metin
+    baglanti = next(l for l in etiketler if "mailto:" in l.text())
+    assert baglanti.openExternalLinks()
 
 
 def test_pencere_icerigi(app):
