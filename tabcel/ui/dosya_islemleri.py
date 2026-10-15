@@ -139,6 +139,7 @@ class DosyaIslemleri:
             self.eylemler["dosya." + anahtar] = menu.addAction(metin, islev)     # eylem kataloğu (5j-3)
         ekle("yeni", "Yeni\tCtrl+N", self.yeni)
         ekle("sablondan_yeni", "Şablondan Yeni…", self.sablondan_yeni)
+        ekle("kitaptan_sablon", "Kitaptan Şablon Oluştur…", self.kitaptan_sablon_olustur)
         ekle("ac", "Aç…\tCtrl+O", self.ac_penceresi)
         menu.addSeparator()
         ekle("kaydet", "Kaydet\tCtrl+S", self.kaydet)
@@ -219,6 +220,26 @@ class DosyaIslemleri:
         if self._bos_ve_temiz() and p is not self:
             self.close()
         return p
+
+    def kitaptan_sablon_olustur(self, ad=None, sayfalar=None):
+        """Açık kitaptaki sayfalardan kullanıcı şablonu taslağı üretir ve Şablon Düzenleyici'de açar (Faz 11). Testler `ad`/`sayfalar`
+        verip pencereyi atlayabilir; döner: düzenleyici penceresi (ya da None)."""
+        from ..sablon import duzenleme, yukleyici
+        from .sablon_duzenleyici import DuzenleyiciPenceresi, KitaptanSablonPenceresi
+        mevcut = {s.akis.kimlik for s in yukleyici.depo_yukle().sablonlar}
+        if ad is None:
+            pen = KitaptanSablonPenceresi(self.kitap, self, mevcut)
+            if pen.exec() != QDialog.Accepted or pen.sonuc is None:
+                return None
+            sonuc = pen.sonuc
+        else:
+            sonuc = duzenleme.kitaptan_taslak(self.kitap, sayfalar or list(self.kitap.sayfalar), ad, kullanilan_akis_kimlikleri=mevcut)
+        if sonuc.uyarilar:
+            QMessageBox.information(self, "Kitaptan Şablon", "\n".join(sonuc.uyarilar[:10]))
+        ed = DuzenleyiciPenceresi(sonuc.taslak, None, self)
+        self._duzenleyici = ed
+        ed.exec() if ad is None else ed.show()
+        return ed
 
     def _sihirbaz_olustur(self):
         """Testlerde yamalanır."""

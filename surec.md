@@ -15,9 +15,9 @@ Kalıcı kurallar için `CLAUDE.md`, fazların kapsamı için `plan.md`. Bu dosy
 | 7 | Drive/OneDrive, yazım denetimi, yardım, .exe + kurulum | 7a ✅ bulut · 7b ✅ Hakkında+ikon · 7c ✅ yazım denetimi (F7) · 7d ✅ PyInstaller+Inno Setup (kurulum/kaldırma denendi) · 7e ✅ README · ✅ Hızlı Erişim | 🔄 **Açık:** GitHub deposu (kullanıcı onayı), tam test koşusu, elle testler |
 | 8 | .xls/.ods, pivot, dinamik diziler… | 8a ✅ .xls okuma (xlrd) | 🔄 8b ✅ parolalı .xlsx · 8c ✅ .ods · 8d ✅ Özet Tablo (anlık görüntü) · 8e ✅ dinamik diziler (işlevler + taşma + LET) |
 | 9 | Güven ve denetim araçları (kural 17–20) | 9a ✅ kimlik altyapısı · 9b ✅ Hesap İzleme · 9c ✅ Tablo Sağlığı · 9d ✅ Paylaşım Temizleyici (KVKK) | ✅ Faz 9 bitti (9d elle/arayüz testi yapıldı 2026-10-11) |
-| 10 | Şablon Sihirbazı + Veri Giriş Formları (`plan.md` Faz 10, `sablon_tasarim.md`) | 10-ön ✅ · 10a ✅ · 10b ✅ · 10c ✅ saklama · 10d ✅ sihirbaz · 10e ✅ 6 akış · 10f ✅ kural motoru + kayıt formu · 10g ✅ barkod · 10h ✅ varyant matrisi | ✅ Faz 10 bitti; sıradaki Faz 11 (Şablon Düzenleyici) |
+| 10 | Şablon Sihirbazı + Veri Giriş Formları (`plan.md` Faz 10, `sablon_tasarim.md`) | 10-ön ✅ · 10a ✅ · 10b ✅ · 10c ✅ saklama · 10d ✅ sihirbaz · 10e ✅ 6 akış · 10f ✅ kural motoru + kayıt formu · 10g ✅ barkod · 10h ✅ varyant matrisi | ✅ Faz 10 bitti · Faz 11 ✅ Şablon Düzenleyici |
 
-Testler: ≈5220 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
+Testler: ≈5300 geçiyor · Son commit: bkz. `git log` · Ayrıntılı test sonuçları: `test.md` (Faz 2 bölümü henüz yazılmadı)
 
 ## 2. Sıradaki işler (öncelik sırasıyla)
 1. ✅ Faz 1 iskeleti bitti (2026-10-08): `.venv`, `requirements.txt`, `main.py` (boş pencere), `Tabcel.bat`, `tabcel/__init__.py`, boş alt paketler, `testler/test_iskelet.py` (3 test geçti)
@@ -1234,4 +1234,11 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 - **Karar/sınır:** ızgarada boşalttığınız hücre kayıtlı bir değeri silmez (boş = değişiklik yok); silmek için formdaki Sil ya da tablo. Matris yalnız tek değer alanı destekler.
 - **Testler:** `test_sablon_kayitlar.py` (+5), `test_sablon_formu.py` (+6: düğme görünürlüğü, ayrı satırlar + tek geri al, güncelleme, ihlalde yazmama, zorunlu ortak alan, yapıştırma). Şablon test kümesi (222) geçti; ekranlı pencerede görsel kontrol yapıldı.
 - **Faz 10 bitti** (10-ön…10h). Sıradaki: Faz 11 (Şablon Düzenleyici).
+
+### Faz 11 — Şablon Düzenleyici (2026-10-15, Sonnet 5.5; kullanıcı "Faz 11'e geç" dedi)
+- **Kapsam kararı (plan.md "Faz 10 sonunda yeniden planlanır"):** (a) `sablon/duzenleme.py` çekirdeği (Qt'siz): `Taslak` (ham akış + modül sözlükleri), `bos_taslak`, `kopya` (yerleşik/kullanıcı şablonunun kopyası: yeni akış kimliği + modül önekleri — kullanıcı klasöründeki modüller yerleşik modülleri sessizce ezmesin), `modul_yeniden_adlandir` (bağlantı + formül yer tutucuları güncellenir), `kimlik_uret` (Türkçe → ASCII), `dogrula` (Faz 10a doğrulayıcısı + akış/modül uyumu; tek kaynak), `uretim_denetimi` (**kural 22:** tüm cevap kombinasyonlarında üret + Tablo Sağlık Kontrolü 0 bulgu), `kaydet` (atomik; hata/sağlık sorunu/kimlik çakışması/başka şablonun modülünü ezme → `KayitHatasi`), `taslak_yukle`, `kullanici_sablonu_sil` (yalnız kendi modülleri), `kitaptan_taslak` (sayfa → modül; tür tahmini, hesaplanan sütun dönüşümü `A2*B2 → [@a]*[@b]`, örnek veri). (b) Arayüz `ui/sablon_duzenleyici.py`: genel `SozlukTablosu` (sözlük listesi ↔ tablo; satır ekle/sil/taşı; hücre doğrudan sözlüğe yazılır, boş değer anahtarı siler), sekmeler Genel/Sorular/Modüller(Modül, Sütunlar, Kurallar)/Ayarlar/Nasıl kullanılır/İleri (ham JSON, kimlik değişimi kilitli), gecikmeli canlı doğrulama, Denetle, Kaydet (hata varken kapalı); `KitaptanSablonPenceresi`. (c) Girişler: Şablonlar penceresinde Yeni / Düzenle / Kopyasını düzenle / Sil; Dosya ▸ Kitaptan Şablon Oluştur…. Yardım güncellendi.
+- **Kararlar:** yerleşik şablon asla düzenlenmez (yalnız kopya); kopyada modüllere `<akış kimliği>_` öneki; sürümler `surum: 1`; matris/form grupları/örnek veri ileri sekmesinden (ham JSON) düzenlenir; bayrak ifadesi (`eger`) düzenleyicide düz metin.
+- **Testler:** `test_sablon_duzenleme.py` (25, Qt'siz) + `test_sablon_duzenleyici.py` (22, arayüz).
+- **Bilinçli sınırlar:** form grupları ve örnek veri için ayrı arayüz yok (ham JSON); sorular yalnız evet/hayır (şema); düzenleyici tek pencerede tek şablon.
+- **Plan durumu:** Faz 10 ve 11 bitti. Önerilen sonraki işler: gerçek kullanıcı elle testleri (yazıcı, Excel/Word pano, çökme kurtarma, %125 ölçek), doğrulanmamış alan bilgileri (aidat, cari, bayram tarihleri), isteğe bağlı LAMBDA ailesi, Faz 12 (alan şifreleme önerisi).
 

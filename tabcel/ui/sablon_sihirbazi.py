@@ -43,6 +43,16 @@ class SablonlarPenceresi(QDialog):
         d.addWidget(self.rapor, 2)
         d.addWidget(_soluk(f"Kendi şablonlarınızı {self.klasor()} klasörüne koyabilirsiniz (akislar\\ ve moduller\\ "
                            "alt klasörlerinde .json). Hatalı dosyalar atlanır; nedeni yukarıda yazılır."))
+        duz = QHBoxLayout()
+        self.yeni_dugme = QPushButton("Yeni şablon…")
+        self.duzenle_dugme = QPushButton("Düzenle…")
+        self.kopya_dugme = QPushButton("Kopyasını düzenle…")
+        self.sil_dugme = QPushButton("Sil…")
+        for b in (self.yeni_dugme, self.duzenle_dugme, self.kopya_dugme, self.sil_dugme):
+            b.setAutoDefault(False)
+            duz.addWidget(b)
+        duz.addStretch(1)
+        d.addLayout(duz)
         alt = QHBoxLayout()
         self.klasor_ac = QPushButton("Klasörü Aç")
         self.yenile = QPushButton("Yenile")
@@ -52,10 +62,17 @@ class SablonlarPenceresi(QDialog):
         alt.addStretch(1)
         alt.addWidget(kapat)
         d.addLayout(alt)
+        self.yeni_dugme.clicked.connect(lambda: self.yeni_sablon())
+        self.duzenle_dugme.clicked.connect(lambda: self.duzenle())
+        self.kopya_dugme.clicked.connect(lambda: self.kopyasini_duzenle())
+        self.sil_dugme.clicked.connect(lambda: self.sil())
+        self.liste.currentRowChanged.connect(lambda _i: self._dugmeleri_guncelle())
         self.klasor_ac.clicked.connect(self._klasoru_ac)
         self.yenile.clicked.connect(self._yenilendi)
         kapat.clicked.connect(self.accept)
         self._doldur()
+        if self.liste.count():
+            self.liste.setCurrentRow(0)
 
     @staticmethod
     def klasor() -> str:
@@ -67,10 +84,82 @@ class SablonlarPenceresi(QDialog):
             kaynak = "yerleşik" if s.kaynak == yukleyici.YERLESIK else "sizin"
             self.liste.addItem(f"{s.etiket}  ·  {s.akis.kategori}  ·  {kaynak}")
         self.rapor.setPlainText(self.depo.rapor.metin() or f"{self.depo.rapor.yuklenen} şablon yüklendi; sorun yok.")
+        self._dugmeleri_guncelle()
 
     def _yenilendi(self) -> None:
         self.depo = self._yenile()
         self._doldur()
+
+    # --- Şablon Düzenleyici (Faz 11)
+    def secili(self):
+        i = self.liste.currentRow()
+        return self.depo.sablonlar[i] if 0 <= i < len(self.depo.sablonlar) else None
+
+    def _dugmeleri_guncelle(self) -> None:
+        s = self.secili()
+        self.duzenle_dugme.setEnabled(s is not None and s.kaynak == yukleyici.KULLANICI)
+        self.sil_dugme.setEnabled(s is not None and s.kaynak == yukleyici.KULLANICI)
+        self.kopya_dugme.setEnabled(s is not None)
+
+    def _kullanilan_kimlikler(self):
+        return {s.akis.kimlik for s in self.depo.sablonlar}
+
+    def _duzenleyici_ac(self, taslak, uzerine_yaz: bool = False) -> bool:
+        from ..sablon.duzenleme import Taslak  # noqa: F401
+        from .sablon_duzenleyici import DuzenleyiciPenceresi
+        pen = DuzenleyiciPenceresi(taslak, None, self, uzerine_yaz)
+        self.duzenleyici = pen
+        pen.exec()
+        if pen.yazilan:
+            self._yenilendi()
+        return bool(pen.yazilan)
+
+    def yeni_sablon(self, ad: Optional[str] = None) -> bool:
+        from PySide6.QtWidgets import QInputDialog
+        from ..sablon import duzenleme
+        if ad is None:
+            ad, ok = QInputDialog.getText(self, "Yeni şablon", "Şablonun adı:", text="Benim şablonum")
+            if not ok or not ad.strip():
+                return False
+        return self._duzenleyici_ac(duzenleme.bos_taslak(ad.strip(), "Diğer", self._kullanilan_kimlikler()))
+
+    def duzenle(self) -> bool:
+        from ..sablon import duzenleme
+        s = self.secili()
+        if s is None or s.kaynak != yukleyici.KULLANICI:
+            return False
+        yol = yukleyici.kullanici_klasoru() / "akislar" / f"{s.akis.kimlik}.json"
+        try:
+            t = duzenleme.taslak_yukle(yol)
+        except duzenleme.KayitHatasi as e:
+            QMessageBox.warning(self, APP_NAME, str(e))
+            return False
+        return self._duzenleyici_ac(t, uzerine_yaz=True)
+
+    def kopyasini_duzenle(self, ad: Optional[str] = None) -> bool:
+        from PySide6.QtWidgets import QInputDialog
+        from ..sablon import duzenleme
+        s = self.secili()
+        if s is None:
+            return False
+        if ad is None:
+            ad, ok = QInputDialog.getText(self, "Kopyasını düzenle", "Kopyanın adı:", text=s.akis.ad + " (benim)")
+            if not ok or not ad.strip():
+                return False
+        return self._duzenleyici_ac(duzenleme.kopya(s, ad.strip(), self._kullanilan_kimlikler()))
+
+    def sil(self, onay: bool = False) -> bool:
+        from ..sablon import duzenleme
+        s = self.secili()
+        if s is None or s.kaynak != yukleyici.KULLANICI:
+            return False
+        if not onay and QMessageBox.question(self, APP_NAME, f"“{s.akis.ad}” şablonu ve yalnız ona ait modül dosyaları silinsin mi?\n"
+                                             "(Bu şablondan daha önce oluşturulmuş kitaplar etkilenmez.)",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return False
+        duzenleme.kullanici_sablonu_sil(s.akis.kimlik)
+        self._yenilendi()
+        return True
 
     def _klasoru_ac(self) -> None:
         k = self.klasor()
