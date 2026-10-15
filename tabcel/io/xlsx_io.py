@@ -1321,46 +1321,32 @@ def _ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
                         for cc in range(cr.min_col, cr.max_col + 1):
                             if (rr, cc) != (r, c):
                                 kapsanan.add((rr, cc))
-        hizli = getattr(ws, "_hizli_hucreler", None)
-        if hizli:
-            # hızlı okuyucunun demetleri (`xlsx_hizli`): Cell nesnesi yok; formül/süre gibi özel hücreler aşağıda `ws._cells`'te
-            hucre_al = ws._cells.get
-            stil_idx_onb: Dict[int, int] = {}
+        hizli = getattr(ws, "_hizli_yeni", None)
+        if hizli is not None:
+            # hızlı okuyucunun hazır `Hucre`leri (`xlsx_hizli`, Cell nesnesi yok); formül/süre gibi özel hücreler aşağıda `ws._cells`'te
+            yeni.update(hizli)
+            for k in kapsanan:                           # dizi formülünün kapsadığı hücreler yeniden üretilir
+                yeni.pop(k, None)
+            for k, hc in ws._cells.items():               # birleşimin üst-sol dışı hücreleri (MergedCell)
+                if hc.__class__ is not Cell:
+                    yeni.pop(k, None)
             ornek = Cell.__new__(Cell)
             ornek.parent = ws
-            for (r, c, v, tur, sid) in hizli:
-                hc = hucre_al((r, c))
-                if hc is not None and hc.__class__ is not Cell:      # birleşimin üst-sol dışı hücresi
+            stil_idx_onb: Dict[int, int] = {}
+            for k, sid in ws._hizli_stil.items():
+                if ws._cells.get(k).__class__ not in (Cell, type(None)):      # MergedCell: biçim de alınmaz (özgün davranış)
                     continue
-                if kapsanan and (r, c) in kapsanan:
-                    continue
-                if v is not None:
-                    if tur == "n":
-                        yeni[(r, c)] = Hucre(float(v))
-                    elif tur == "s":
-                        yeni[(r, c)] = Hucre(v)
-                    elif tur == "b":
-                        yeni[(r, c)] = Hucre(bool(v))
-                    elif tur == "e":
-                        yeni[(r, c)] = Hucre(hata_bul(str(v)) or Hata(str(v)))
-                    elif isinstance(v, bool):
-                        yeni[(r, c)] = Hucre(v)
-                    elif isinstance(v, (int, float)):
-                        yeni[(r, c)] = Hucre(float(v))
-                    elif isinstance(v, str):
-                        yeni[(r, c)] = Hucre(v)
-                if sid:
-                    k = stil_idx_onb.get(sid)
-                    if k is None:
-                        dizi = wb._cell_styles[sid]
-                        if any(dizi):
-                            ornek._style = dizi
-                            k = kimlik_al(ornek)
-                        else:
-                            k = 0
-                        stil_idx_onb[sid] = k
-                    if k:
-                        stiller[(r, c)] = k
+                kid = stil_idx_onb.get(sid)
+                if kid is None:
+                    dizi = wb._cell_styles[sid]
+                    if any(dizi):
+                        ornek._style = dizi
+                        kid = kimlik_al(ornek)
+                    else:
+                        kid = 0
+                    stil_idx_onb[sid] = kid
+                if kid:
+                    stiller[k] = kid
         for (r, c), hc in ws._cells.items():          # yalnız var olan hücreler (iter_rows seyrek dosyada tüm kutuyu gezer)
             if hc.__class__ is not Cell:                # MergedCell
                 continue

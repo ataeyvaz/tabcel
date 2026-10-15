@@ -25,6 +25,9 @@ from openpyxl.utils.cell import column_index_from_string, coordinate_to_tuple
 from openpyxl.worksheet._reader import WorkSheetParser, WorksheetReader, _cast_number
 from openpyxl.xml.constants import SHEET_MAIN_NS
 
+from ..model.deger import Hata, hata_bul                       # noqa: E402
+from ..model.sayfa import Hucre                                 # noqa: E402
+
 _YAMALI = False
 _YEREL = threading.local()               # `demet_izni`: yalnız `xlsx_io.ac` içinde açılır (başka `load_workbook` çağrıları Cell nesnesi alır)
 _SUTUN: dict = {}                    # sütun harfi → numara önbelleği
@@ -216,9 +219,9 @@ def _regex_yukle(self, govde: bytes) -> bool:
     # `(satır, sütun, değer, tür, stil)` demeti olarak `ws._hizli_hucreler`e konur (Cell oluşturma maliyeti yok; `xlsx_io.ac` doğrudan okur).
     demet_modu = (getattr(_YEREL, "izin", False) and not (p.hyperlinks and p.hyperlinks.hyperlink) and ws.title != "_tabcel"          # `_tabcel` sayfası `iter_rows` ile okunur → Cell
                   and os.environ.get("TABCEL_HUCRE_NESNESI") != "1")
-    demetler = []
-    demet_ekle = demetler.append
-    max_satir = 0
+    yeni_hucre: dict = {}                                     # (satır, sütun) → Hucre (Tabcel modeli; basit hücreler)
+    stil_idx: dict = {}                                       # (satır, sütun) → dosyadaki stil numarası (0 olmayanlar)
+    en_son = 0
 
     stil_onb: dict = {}
     son_satir_b, son_satir_i = b"", 0
@@ -292,7 +295,22 @@ def _regex_yukle(self, govde: bytes) -> bool:
                 return False
             satir, sutun, deger, tur, stil = d["row"], d["column"], d["value"], d["data_type"], d["style_id"]
         elif demet_modu:
-            demet_ekle((satir, sutun, deger, tur, stil))
+            if deger is not None:
+                if tur == "n":
+                    hc = Hucre(float(deger))
+                elif tur == "s":
+                    hc = Hucre(deger)
+                elif tur == "b":
+                    hc = Hucre(bool(deger))
+                elif tur == "e":
+                    hc = Hucre(hata_bul(str(deger)) or Hata(str(deger)))
+                else:
+                    hc = Hucre(deger) if isinstance(deger, (str, bool)) else Hucre(float(deger))
+                yeni_hucre[(satir, sutun)] = hc
+            if stil:
+                stil_idx[(satir, sutun)] = stil
+            if satir > en_son:
+                en_son = satir
             continue
         c = yeni(Cell)
         c.parent = ws
@@ -307,9 +325,10 @@ def _regex_yukle(self, govde: bytes) -> bool:
     beklenen = govde.count(b"<c ") + govde.count(b"<c>") + govde.count(b"<c/>")
     if not (islenen == beklenen and satir_sayisi == govde.count(b"<row")):
         return False
-    ws._hizli_hucreler = demetler
-    en_son = max((d[0] for d in demetler), default=0) if demetler else 0
-    ws._hizli_en_son_satir = en_son
+    if demet_modu:
+        ws._hizli_yeni = yeni_hucre
+        ws._hizli_stil = stil_idx
+        ws._hizli_en_son_satir = en_son
     return True
 
 
@@ -376,7 +395,7 @@ def _hizli_bind_cells(self):
             p.source = io.BytesIO(veri)
             return _ozgun_bind_cells(self)
     ws = self.ws
-    if ws._cells or getattr(ws, "_hizli_hucreler", None):
+    if ws._cells or getattr(ws, "_hizli_yeni", None):
         ws._current_row = max(ws.max_row if ws._cells else 0, getattr(ws, "_hizli_en_son_satir", 0))
 
 
