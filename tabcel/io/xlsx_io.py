@@ -21,6 +21,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
 from openpyxl import Workbook, load_workbook
+from openpyxl.cell.cell import Cell
 from openpyxl.comments import Comment
 from openpyxl.worksheet.filters import (
     CustomFilter, CustomFilters, DynamicFilter, FilterColumn, Filters, Top10,
@@ -42,7 +43,7 @@ from openpyxl.utils.datetime import to_excel
 
 from .. import APP_NAME
 from ..formul import ceviri
-from . import sifreleme, xlsx_grafik, xlsx_kayip
+from . import sifreleme, xlsx_grafik, xlsx_hizli, xlsx_kayip
 from ..formul.sozcuk import FormulHatasi
 from ..model import olcu
 from ..model.ad import AdHatasi, TanimliAd, ad_dogrula
@@ -53,6 +54,8 @@ from ..model.kosullu import KosulluKural
 from ..model.filtre import DegerKosulu, Filtre, IlkKosul, OrtalamaKosulu, OzelKosul, RenkKosulu
 from ..model.notlar import Not
 from ..model.sayfa import CalismaKitabi, Hucre, Sayfa, TasmaHucre
+
+xlsx_hizli.kur()                       # hızlı hücre okuyucu (openpyxl yaması); TABCEL_YAVAS_OKUYUCU=1 ile kapanır
 from ..model.sayfa_yapisi import SayfaYapisi
 from ..model.stil import Kenarlik, Stil, StilYama
 
@@ -1192,12 +1195,10 @@ def _ozel_yukseklikler(yol: str) -> Optional[Dict[str, set]]:
                 p = h.lstrip("/") if h.startswith("/") else "xl/" + h
                 xml = z.read(p)
                 satirlar = set()
-                for m in re.finditer(rb"<row\b[^>]*>", xml):
-                    etiket = m.group(0)
-                    if re.search(rb'customHeight="(?:1|true)"', etiket):
-                        n = re.search(rb'\br="(\d+)"', etiket)
-                        if n:
-                            satirlar.add(int(n.group(1)))
+                for m in re.finditer(rb'<row\b[^>]*?customHeight="(?:1|true)"[^>]*>', xml):      # yalnız özel yükseklikli satırlar (satır başına arama yok)
+                    n = re.search(rb'\br="(\d+)"', m.group(0))
+                    if n:
+                        satirlar.add(int(n.group(1)))
                 sonuc[sh.get("name")] = satirlar
             return sonuc
     except Exception:
@@ -1226,6 +1227,19 @@ def _nesne_uyarilari(yol: str, rapor: Rapor, grafik: int, resim: int, atlanan_se
 
 
 def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
+    """Dosyayı okur (ayrıntı `_ac`). Okuma sırasında döngüsel çöp toplayıcı kapatılır: yüz binlerce küçük nesne (hücre, demet) ardışık
+    toplama turlarını tetikleyip süreyi %30-40 uzatıyordu (ölçüldü); okuma bitince eski duruma döner."""
+    import gc
+    acikti = gc.isenabled()
+    gc.disable()
+    try:
+        return _ac(yol, parola)
+    finally:
+        if acikti:
+            gc.enable()
+
+
+def _ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
     """`yol`daki .xlsx dosyasını yeni bir kitaba okur (`yol` bellekteki paket de olabilir). Parolayla şifreliyse `parola`
     verilmelidir (yanlışsa `sifreleme.YanlisParola`, verilmediyse XlsxHatasi); çözülmüş paket yalnız bellekte tutulur. Dönen rapor desteklenmeyen öğeleri listeler.
     Formül sonuçları dosyadan alınmaz; motor yeniden hesaplar."""
@@ -1238,7 +1252,8 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
             raise XlsxHatasi(str(e)) from e
     rapor = tara(yol)
     try:
-        wb = load_workbook(yol, data_only=False)
+        with xlsx_hizli.demet_izni():
+            wb = load_workbook(yol, data_only=False)
     except zipfile.BadZipFile as e:
         raise XlsxHatasi("Dosya geçerli bir .xlsx değil (bozuk ya da farklı biçim).") from e
     except PermissionError as e:
@@ -1283,6 +1298,8 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
             st = _stil_oku(t.font, t.fill, t.border, t.alignment, t.number_format, tema)
             k = stil_onb[anahtar] = havuz.kimlik(st)
         return k
+    paylasilan_stil = {id(a): any(a) for a in wb._cell_styles}      # hızlı okuyucunun paylaştığı StyleArray'ler → (stil var mı)
+    stil_kimlik_onb: Dict[int, int] = {}                           # id(StyleArray) → kimlik (0 = varsayılan)
 
     bozuk_formul = 0
     formul_onb = _FormulOnbellek()
@@ -1291,7 +1308,9 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
         yeni, stiller, notlar = {}, {}, {}
         kapsanan = set()                              # dizi formülünün (taşmanın) kapsadığı diğer hücreler: yeniden üretilir
         for (r, c), hc in ws._cells.items():
-            va = hc.value
+            if hc.data_type != "f":
+                continue
+            va = hc._value
             if type(va).__name__ == "ArrayFormula" and va.ref:
                 try:
                     cr = CellRange(va.ref)
@@ -1302,10 +1321,50 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
                         for cc in range(cr.min_col, cr.max_col + 1):
                             if (rr, cc) != (r, c):
                                 kapsanan.add((rr, cc))
+        hizli = getattr(ws, "_hizli_hucreler", None)
+        if hizli:
+            # hızlı okuyucunun demetleri (`xlsx_hizli`): Cell nesnesi yok; formül/süre gibi özel hücreler aşağıda `ws._cells`'te
+            hucre_al = ws._cells.get
+            stil_idx_onb: Dict[int, int] = {}
+            ornek = Cell.__new__(Cell)
+            ornek.parent = ws
+            for (r, c, v, tur, sid) in hizli:
+                hc = hucre_al((r, c))
+                if hc is not None and hc.__class__ is not Cell:      # birleşimin üst-sol dışı hücresi
+                    continue
+                if kapsanan and (r, c) in kapsanan:
+                    continue
+                if v is not None:
+                    if tur == "n":
+                        yeni[(r, c)] = Hucre(float(v))
+                    elif tur == "s":
+                        yeni[(r, c)] = Hucre(v)
+                    elif tur == "b":
+                        yeni[(r, c)] = Hucre(bool(v))
+                    elif tur == "e":
+                        yeni[(r, c)] = Hucre(hata_bul(str(v)) or Hata(str(v)))
+                    elif isinstance(v, bool):
+                        yeni[(r, c)] = Hucre(v)
+                    elif isinstance(v, (int, float)):
+                        yeni[(r, c)] = Hucre(float(v))
+                    elif isinstance(v, str):
+                        yeni[(r, c)] = Hucre(v)
+                if sid:
+                    k = stil_idx_onb.get(sid)
+                    if k is None:
+                        dizi = wb._cell_styles[sid]
+                        if any(dizi):
+                            ornek._style = dizi
+                            k = kimlik_al(ornek)
+                        else:
+                            k = 0
+                        stil_idx_onb[sid] = k
+                    if k:
+                        stiller[(r, c)] = k
         for (r, c), hc in ws._cells.items():          # yalnız var olan hücreler (iter_rows seyrek dosyada tüm kutuyu gezer)
-            if type(hc).__name__ == "MergedCell":
+            if hc.__class__ is not Cell:                # MergedCell
                 continue
-            v = None if ((r, c) in kapsanan and hc.data_type != "f") else hc.value
+            v = None if (kapsanan and (r, c) in kapsanan and hc.data_type != "f") else hc._value
             if v is not None:
                 if hc.data_type == "f" or (isinstance(v, str) and hc.data_type == "f"):
                     metin = v if isinstance(v, str) else getattr(v, "text", None)
@@ -1333,15 +1392,23 @@ def ac(yol, parola: Optional[str] = None) -> "tuple[CalismaKitabi, Rapor]":
                         yeni[(r, c)] = Hucre(float(to_excel(v)))
                     except (TypeError, ValueError, OverflowError):
                         rapor.ekle(f"'{ws.title}' sayfasında okunamayan tarih değerleri atlandı.")
-            if hc.has_style:
+            st = hc._style
+            sid = id(st)
+            if sid in paylasilan_stil:                    # hızlı okuyucunun paylaşılan stil dizisi: kimlik bir kez hesaplanır
+                k = stil_kimlik_onb.get(sid)
+                if k is None:
+                    k = stil_kimlik_onb[sid] = kimlik_al(hc) if paylasilan_stil[sid] else 0
+                if k:
+                    stiller[(r, c)] = k
+            elif hc.has_style:
                 k = kimlik_al(hc)
                 if k:
                     stiller[(r, c)] = k
-            if hc.comment is not None:
-                n = _not_oku(hc.comment)
+            if hc._comment is not None:
+                n = _not_oku(hc._comment)
                 if n is not None:
                     notlar[(r, c)] = n          # dizili açıklama da düz kopyasıyla not olur (uyarı `tara`dan)
-        s.toplu_yaz(yeni)
+        s.ilk_yukle(yeni, guvenli=True) if not s._hucreler else s.toplu_yaz(yeni)
         if notlar:
             s.notlari_yaz(notlar)
         satir_st, sutun_st = {}, {}

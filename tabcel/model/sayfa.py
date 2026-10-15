@@ -257,6 +257,39 @@ class Sayfa:
             self._bildir("hucre", degisiklikler={(satir, sutun): (eski, yeni_h)})
         return None if type(eski) is TasmaHucre else eski
 
+    def ilk_yukle(self, yeni: Dict[Anahtar, Optional[Hucre]], guvenli: bool = False) -> None:
+        """Boş sayfaya dosya açılışında toplu yükleme (olay yayılmaz — henüz dinleyen yok; hücre başına kontrol/eski-yeni sözlüğü yok).
+        Boş olmayan sayfada `toplu_yaz` kullanılır. Aralık dışı hücre `AdresHatasi`."""
+        if self._hucreler:
+            self.toplu_yaz(yeni)
+            return
+        if guvenli:                      # değerler zaten boş olmayan `Hucre`ler (dosya okuyucu): yeniden süzme yok, yalnız sınır denetimi
+            temiz = yeni
+        else:
+            temiz = {k: (Hucre(h.deger) if type(h) is TasmaHucre else h) for k, h in yeni.items()
+                     if h is not None and not (h.deger is None and h.formul is None)}
+        if temiz:
+            r_min = r_max = c_min = c_max = None
+            for r, c in temiz:
+                if r_min is None:
+                    r_min = r_max = r
+                    c_min = c_max = c
+                    continue
+                if r < r_min:
+                    r_min = r
+                elif r > r_max:
+                    r_max = r
+                if c < c_min:
+                    c_min = c
+                elif c > c_max:
+                    c_max = c
+            if r_min < 1 or r_max > MAX_ROW or c_min < 1 or c_max > MAX_COL:
+                raise AdresHatasi("Hücre aralık dışı")
+        self._hucreler.update(temiz)
+        self._kul = None
+        if self._sonuc:
+            self._sonuc.clear()
+
     def toplu_yaz(self, yeni: Dict[Anahtar, Optional[Hucre]]) -> Dict[Anahtar, Optional[Hucre]]:
         """Birçok hücreyi yazar ve TEK `hucre` olayı yayar (100.000 hücrede olay maliyeti sabit kalır).
         Döner: {anahtar: eski hücre} (verilen her anahtar için)."""
