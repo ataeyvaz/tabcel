@@ -66,6 +66,12 @@ Sonuç: `dist\Tabcel\` (taşınabilir klasör, ≈75 MB) ve `dist\Tabcel-0.1-kur
 | `kurulum/`, `tabcel.spec` | Inno Setup betiği, PyInstaller tarifi |
 | `CLAUDE.md`, `plan.md`, `surec.md` | kurallar, plan, süreç günlüğü |
 
+## Lisans
+
+Tabcel **GNU Affero Genel Kamu Lisansı v3 (AGPL-3.0)** altındadır: bkz. [`LICENSE`](LICENSE). Ücretsizdir; satılmaz. Kodu inceleyebilir, değiştirebilir ve paylaşabilirsiniz; değiştirilmiş hâlini dağıtırsanız aynı lisansla ve kaynağıyla birlikte dağıtmanız gerekir. Kullandığımız açık kaynak bileşenlerin hepsi (PySide6 LGPL, openpyxl MIT, xlrd BSD, Pillow HPND, msoffcrypto-tool MIT, comtypes MIT) AGPL-3.0 ile uyumludur (aşağıdaki liste).
+
+Sözcük, Tabcel ve EaglePDF'i tek pakette kuran depo: [Eagle Office](https://github.com/ataeyvaz/eagle-office).
+
 ## Kullanılan açık kaynak bileşenler
 
 PySide6 (Qt, LGPL v3) · openpyxl + et_xmlfile (MIT) · xlrd (BSD) · msoffcrypto-tool + cryptography (MIT / Apache 2.0 / BSD) · Pillow (HPND) · comtypes (MIT, yalnız Windows).

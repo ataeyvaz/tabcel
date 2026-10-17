@@ -1266,3 +1266,7 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 ## [2026-10-17] — GitHub bağlantısı ve Eagle Office ailesi
 - **Depo:** https://github.com/ataeyvaz/tabcel (ilk gönderim; yerel dal `master` → `main` adlandırıldı). README'ye 'Eagle Office ailesi' bölümü eklendi (Sözcük · Tabcel · EaglePDF); Sözcük'e göreli bağlantı GitHub adresine çevrildi.
 - **Kurulum paketi:** Eagle Office 1.2 (Sözcük + Tabcel + EaglePDF), kurulu sürümü denetleyen akıllı kurulumla, https://github.com/ataeyvaz/eagle-office deposunda (`kurulum/`; Sözcük, Tabcel ve EaglePDF alt modül olarak bağlı): güncel kurulu uygulamaya dokunmaz, yalnızca eksik/eski olanı kurar. Tabcel sürümü `tabcel/__init__.py` içindeki `__version__`'dan okunur.
+
+## [2026-10-17] — Lisans: AGPL-3.0
+- **Karar (kullanıcı: 'paralı satmayacağım, koda göre uygun lisansı seç'):** Tabcel **AGPL-3.0** (`LICENSE` eklendi, README'ye Lisans bölümü). Gerekçe: bağımlılıkların hepsi uyumlu (PySide6 LGPL v3, openpyxl/et_xmlfile MIT, xlrd BSD, Pillow HPND, msoffcrypto-tool MIT + cryptography BSD/Apache, comtypes MIT); Sözcük/EaglePDF/Eagle Office ile aynı lisans. Yalnızca belge eklendi: koda, `.spec` ve `.iss` dosyalarına DOKUNULMADI.
+- **Sonra çözülecek:** ikili dağıtımda lisans metni → kurulum paketine `LICENSE` koymak ve Hakkında'ya lisans satırı (paketleme/kod değişikliği; bu turda yapılmadı).
