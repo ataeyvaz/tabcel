@@ -1265,4 +1265,4 @@ Excel'in web sürümü (ücretsiz, Microsoft hesabıyla) Türkçe arayüze/yerel
 
 ## [2026-10-17] — GitHub bağlantısı ve Eagle Office ailesi
 - **Depo:** https://github.com/ataeyvaz/tabcel (ilk gönderim; yerel dal `master` → `main` adlandırıldı). README'ye 'Eagle Office ailesi' bölümü eklendi (Sözcük · Tabcel · EaglePDF); Sözcük'e göreli bağlantı GitHub adresine çevrildi.
-- **Kurulum paketi:** Eagle Office 1.2 (Sözcük + Tabcel + EaglePDF), kurulu sürümü denetleyen akıllı kurulumla, EaglePDF deposunda (`yapi/kurulum/`): güncel kurulu uygulamaya dokunmaz, yalnızca eksik/eski olanı kurar. Tabcel sürümü `tabcel/__init__.py` içindeki `__version__`'dan okunur.
+- **Kurulum paketi:** Eagle Office 1.2 (Sözcük + Tabcel + EaglePDF), kurulu sürümü denetleyen akıllı kurulumla, https://github.com/ataeyvaz/eagle-office deposunda (`kurulum/`; Sözcük, Tabcel ve EaglePDF alt modül olarak bağlı): güncel kurulu uygulamaya dokunmaz, yalnızca eksik/eski olanı kurar. Tabcel sürümü `tabcel/__init__.py` içindeki `__version__`'dan okunur.
