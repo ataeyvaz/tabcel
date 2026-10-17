@@ -1,12 +1,22 @@
 # Tabcel
 
-Excel'in kalabalığı yerine, günlük işte gerçekten kullanılan özellikleri sade bir yüzle sunan **Türkçe masaüstü hesap tablosu**. Windows için; Python 3.11 ve PySide6 ile yazıldı. [Sözcük](../sozcuk)'ün kardeş uygulamasıdır.
+Excel'in kalabalığı yerine, günlük işte gerçekten kullanılan özellikleri sade bir yüzle sunan **Türkçe masaüstü hesap tablosu**. Windows için; Python 3.11 ve PySide6 ile yazıldı. [Sözcük](https://github.com/ataeyvaz/sozcuk)'ün kardeş uygulamasıdır.
 
-**Eagle Office** paketi (Sözcük · Tabcel) — **Developed By Usta ve Ata**
+**Eagle Office** ailesi (Sözcük · Tabcel · EaglePDF) — **Developed By Usta ve Ata**
 
 İletişim: ataeyvaz@gmail.com
 
 Her şey **bilgisayarda** çalışır: çalışma kitaplarınız hiçbir sunucuya gönderilmez; bulut yapay zekâ, telemetri ve hesap bağlantısı yoktur.
+
+## Eagle Office ailesi
+
+Üç uygulama aynı görünüm diline sahiptir, hepsi bilgisayarınızda çalışır (belgeleriniz hiçbir sunucuya gönderilmez) ve tek kurulum paketiyle de kurulabilir:
+
+- **[Sözcük](https://github.com/ataeyvaz/sozcuk)** — Türkçe kelime işlemci
+- **[Tabcel](https://github.com/ataeyvaz/tabcel)** — Türkçe hesap tablosu ← bu depo
+- **[EaglePDF](https://github.com/ataeyvaz/eaglepdf)** — Türkçe PDF görüntüleyici ve düzenleyici
+
+Kurulum paketi, kurulu uygulamaların sürümünü denetler: güncel olanlara dokunmaz, yalnızca eksik ya da eski olanları kurar.
 
 ## Neler var
 
